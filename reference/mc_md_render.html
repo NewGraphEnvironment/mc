@@ -47,7 +47,7 @@ styles for Gmail compatibility, and appends the New Graph signature.</p>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">mc_md_render</span><span class="op">(</span><span class="va">path</span>, sig <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">mc_md_render</span><span class="op">(</span><span class="va">path</span>, sig <span class="op">=</span> <span class="cn">TRUE</span>, sig_path <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -59,7 +59,12 @@ styles for Gmail compatibility, and appends the New Graph signature.</p>
 
 
 <dt id="arg-sig">sig<a class="anchor" aria-label="anchor" href="#arg-sig"></a></dt>
-<dd><p>Logical. Append the standard signature? Default <code>TRUE</code>.</p></dd>
+<dd><p>Logical. Append a signature? Default <code>TRUE</code>.</p></dd>
+
+
+<dt id="arg-sig-path">sig_path<a class="anchor" aria-label="anchor" href="#arg-sig-path"></a></dt>
+<dd><p>Path to a custom signature HTML file. Default <code>NULL</code>
+uses the bundled New Graph signature. Ignored when <code>sig = FALSE</code>.</p></dd>
 
 </dl></div>
     <div class="section level2">

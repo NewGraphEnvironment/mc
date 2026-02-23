@@ -73,7 +73,7 @@ You can’t put R code in a plain <code>.md</code> file.</p>
 <div class="section level2">
 <h2 id="mc_compose">mc_compose()<a class="anchor" aria-label="anchor" href="#mc_compose"></a>
 </h2>
-<p><code>mc_compose()</code> takes any mix of markdown files, HTML
+<p><code><a href="../reference/mc_compose.html">mc_compose()</a></code> takes any mix of markdown files, HTML
 strings, and kable objects and stitches them into one email body.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/NewGraphEnvironment/mc" class="external-link">mc</a></span><span class="op">)</span></span>
@@ -83,7 +83,7 @@ strings, and kable objects and stitches them into one email body.</p>
 <span>  Plugs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">4000</span>, <span class="fl">3000</span>, <span class="fl">3000</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">body</span> <span class="op">&lt;-</span> <span class="fu">mc_compose</span><span class="op">(</span></span>
+<span><span class="va">body</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/mc_compose.html">mc_compose</a></span><span class="op">(</span></span>
 <span>  <span class="st">"communications/intro.md"</span>,</span>
 <span>  <span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">df</span>, format <span class="op">=</span> <span class="st">"html"</span><span class="op">)</span>,</span>
 <span>  <span class="st">"&lt;p&gt;Let me know if the numbers look right.&lt;/p&gt;"</span></span>
@@ -169,7 +169,7 @@ Pending
 </tr>
 </tbody>
 </table>
-<p><code>mc_compose()</code> adds border and padding inline styles to
+<p><code><a href="../reference/mc_compose.html">mc_compose()</a></code> adds border and padding inline styles to
 every cell.</p>
 </div>
 <div class="section level2">
@@ -241,41 +241,2587 @@ classes in a <code>&lt;style&gt;</code> block that Gmail strips. Use
 <code><a href="https://rdrr.io/pkg/kableExtra/man/row_spec.html" class="external-link">row_spec()</a></code> with explicit <code>background</code> colors
 instead:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Manual striping that works in Gmail</span></span>
-<span><span class="fu"><a href="https://rdrr.io/pkg/kableExtra/man/kbl.html" class="external-link">kbl</a></span><span class="op">(</span><span class="va">df</span>, format <span class="op">=</span> <span class="st">"html"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/kableExtra/man/kbl.html" class="external-link">kbl</a></span><span class="op">(</span><span class="va">df</span>, format <span class="op">=</span> <span class="st">"html"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/pkg/kableExtra/man/kable_styling.html" class="external-link">kable_styling</a></span><span class="op">(</span>full_width <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/pkg/kableExtra/man/row_spec.html" class="external-link">row_spec</a></span><span class="op">(</span><span class="fl">0</span>, bold <span class="op">=</span> <span class="cn">TRUE</span>, background <span class="op">=</span> <span class="st">"#f5f5f5"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/pkg/kableExtra/man/row_spec.html" class="external-link">row_spec</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">df</span><span class="op">)</span>, <span class="fl">2</span><span class="op">)</span>, background <span class="op">=</span> <span class="st">"#f9f9f9"</span><span class="op">)</span></span></code></pre></div>
+<table class="table table" style="width: auto !important; margin-left: auto; margin-right: auto;">
+<thead><tr>
+<th style="text-align:left;font-weight: bold;background-color: rgba(245, 245, 245, 255) !important;">
+Site
+</th>
+<th style="text-align:right;font-weight: bold;background-color: rgba(245, 245, 245, 255) !important;">
+Plugs
+</th>
+<th style="text-align:left;font-weight: bold;background-color: rgba(245, 245, 245, 255) !important;">
+Status
+</th>
+</tr></thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+Nechako
+</td>
+<td style="text-align:right;">
+4000
+</td>
+<td style="text-align:left;">
+Confirmed
+</td>
+</tr>
+<tr>
+<td style="text-align:left;background-color: rgba(249, 249, 249, 255) !important;">
+Mackenzie
+</td>
+<td style="text-align:right;background-color: rgba(249, 249, 249, 255) !important;">
+3000
+</td>
+<td style="text-align:left;background-color: rgba(249, 249, 249, 255) !important;">
+Pending
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Skeena
+</td>
+<td style="text-align:right;">
+3000
+</td>
+<td style="text-align:left;">
+Pending
+</td>
+</tr>
+</tbody>
+</table>
 </div>
 <div class="section level2">
-<h2 id="no-scrolling-tables">No scrolling tables<a class="anchor" aria-label="anchor" href="#no-scrolling-tables"></a>
+<h2 id="scrollable-tables">Scrollable tables<a class="anchor" aria-label="anchor" href="#scrollable-tables"></a>
 </h2>
-<p>Gmail strips <code>overflow</code> CSS and JavaScript. Scrolling
-tables are not possible in email. If your table is too wide,
-consider:</p>
-<ul>
-<li>Fewer columns — move detail to an attachment or linked report</li>
-<li>Abbreviate headers</li>
-<li>Split into multiple smaller tables</li>
-</ul>
+<p>Large tables can be wrapped in a scrollable <code>&lt;div&gt;</code>
+using <code><a href="../reference/mc_scroll.html">mc_scroll()</a></code>. Gmail preserves the
+<code>overflow</code> CSS so these scroll in the email client.</p>
+<div class="section level3">
+<h3 id="wide-table-horizontal-scroll">Wide table (horizontal scroll)<a class="anchor" aria-label="anchor" href="#wide-table-horizontal-scroll"></a>
+</h3>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">wide_df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  Site <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Nechako"</span>, <span class="st">"Mackenzie"</span>, <span class="st">"Skeena"</span><span class="op">)</span>,</span>
+<span>  Plugs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">4000</span>, <span class="fl">3000</span>, <span class="fl">3000</span><span class="op">)</span>,</span>
+<span>  Season <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Fall 2026"</span>, <span class="st">"Fall 2026"</span>, <span class="st">"Fall 2026"</span><span class="op">)</span>,</span>
+<span>  Latitude <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">53.92</span>, <span class="fl">55.34</span>, <span class="fl">54.38</span><span class="op">)</span>,</span>
+<span>  Longitude <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">124.02</span>, <span class="op">-</span><span class="fl">122.97</span>, <span class="op">-</span><span class="fl">127.17</span><span class="op">)</span>,</span>
+<span>  BEC_Zone <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"SBSdw3"</span>, <span class="st">"SBSmk1"</span>, <span class="st">"SBSdk"</span><span class="op">)</span>,</span>
+<span>  Elevation_m <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">680</span>, <span class="fl">700</span>, <span class="fl">520</span><span class="op">)</span>,</span>
+<span>  Stock <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Local"</span>, <span class="st">"Transfer"</span>, <span class="st">"Transfer"</span><span class="op">)</span>,</span>
+<span>  Nursery <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"PRT Vernon"</span>, <span class="st">"PRT Vernon"</span>, <span class="st">"PRT Vernon"</span><span class="op">)</span>,</span>
+<span>  Crew <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Alpine Reforestation"</span>, <span class="st">"TBD"</span>, <span class="st">"TBD"</span><span class="op">)</span>,</span>
+<span>  Access <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"FSR 200"</span>, <span class="st">"FSR 440"</span>, <span class="st">"Morice West"</span><span class="op">)</span>,</span>
+<span>  Prep <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Complete"</span>, <span class="st">"Scheduled"</span>, <span class="st">"Not started"</span><span class="op">)</span>,</span>
+<span>  Soil <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Silty clay"</span>, <span class="st">"Sandy loam"</span>, <span class="st">"Clay loam"</span><span class="op">)</span>,</span>
+<span>  Moisture <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Subhygric"</span>, <span class="st">"Mesic"</span>, <span class="st">"Hygric"</span><span class="op">)</span>,</span>
+<span>  Permit <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Approved"</span>, <span class="st">"In review"</span>, <span class="st">"Not submitted"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="fu"><a href="../reference/mc_scroll.html">mc_scroll</a></span><span class="op">(</span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">wide_df</span>, format <span class="op">=</span> <span class="st">"html"</span><span class="op">)</span>, direction <span class="op">=</span> <span class="st">"wide"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<div style="overflow-x: auto; max-width: 100%;">
+<table class="table">
+<thead><tr>
+<th style="text-align:left;">
+Site
+</th>
+<th style="text-align:right;">
+Plugs
+</th>
+<th style="text-align:left;">
+Season
+</th>
+<th style="text-align:right;">
+Latitude
+</th>
+<th style="text-align:right;">
+Longitude
+</th>
+<th style="text-align:left;">
+BEC_Zone
+</th>
+<th style="text-align:right;">
+Elevation_m
+</th>
+<th style="text-align:left;">
+Stock
+</th>
+<th style="text-align:left;">
+Nursery
+</th>
+<th style="text-align:left;">
+Crew
+</th>
+<th style="text-align:left;">
+Access
+</th>
+<th style="text-align:left;">
+Prep
+</th>
+<th style="text-align:left;">
+Soil
+</th>
+<th style="text-align:left;">
+Moisture
+</th>
+<th style="text-align:left;">
+Permit
+</th>
+</tr></thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+Nechako
+</td>
+<td style="text-align:right;">
+4000
+</td>
+<td style="text-align:left;">
+Fall 2026
+</td>
+<td style="text-align:right;">
+53.92
+</td>
+<td style="text-align:right;">
+-124.02
+</td>
+<td style="text-align:left;">
+SBSdw3
+</td>
+<td style="text-align:right;">
+680
+</td>
+<td style="text-align:left;">
+Local
+</td>
+<td style="text-align:left;">
+PRT Vernon
+</td>
+<td style="text-align:left;">
+Alpine Reforestation
+</td>
+<td style="text-align:left;">
+FSR 200
+</td>
+<td style="text-align:left;">
+Complete
+</td>
+<td style="text-align:left;">
+Silty clay
+</td>
+<td style="text-align:left;">
+Subhygric
+</td>
+<td style="text-align:left;">
+Approved
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Mackenzie
+</td>
+<td style="text-align:right;">
+3000
+</td>
+<td style="text-align:left;">
+Fall 2026
+</td>
+<td style="text-align:right;">
+55.34
+</td>
+<td style="text-align:right;">
+-122.97
+</td>
+<td style="text-align:left;">
+SBSmk1
+</td>
+<td style="text-align:right;">
+700
+</td>
+<td style="text-align:left;">
+Transfer
+</td>
+<td style="text-align:left;">
+PRT Vernon
+</td>
+<td style="text-align:left;">
+TBD
+</td>
+<td style="text-align:left;">
+FSR 440
+</td>
+<td style="text-align:left;">
+Scheduled
+</td>
+<td style="text-align:left;">
+Sandy loam
+</td>
+<td style="text-align:left;">
+Mesic
+</td>
+<td style="text-align:left;">
+In review
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Skeena
+</td>
+<td style="text-align:right;">
+3000
+</td>
+<td style="text-align:left;">
+Fall 2026
+</td>
+<td style="text-align:right;">
+54.38
+</td>
+<td style="text-align:right;">
+-127.17
+</td>
+<td style="text-align:left;">
+SBSdk
+</td>
+<td style="text-align:right;">
+520
+</td>
+<td style="text-align:left;">
+Transfer
+</td>
+<td style="text-align:left;">
+PRT Vernon
+</td>
+<td style="text-align:left;">
+TBD
+</td>
+<td style="text-align:left;">
+Morice West
+</td>
+<td style="text-align:left;">
+Not started
+</td>
+<td style="text-align:left;">
+Clay loam
+</td>
+<td style="text-align:left;">
+Hygric
+</td>
+<td style="text-align:left;">
+Not submitted
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="section level3">
+<h3 id="long-table-vertical-scroll">Long table (vertical scroll)<a class="anchor" aria-label="anchor" href="#long-table-vertical-scroll"></a>
+</h3>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">42</span><span class="op">)</span></span>
+<span><span class="va">sites</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Nechako"</span>, <span class="st">"Mackenzie"</span>, <span class="st">"Skeena"</span>, <span class="st">"Fraser"</span>, <span class="st">"Bulkley"</span>,</span>
+<span>           <span class="st">"Stellako"</span>, <span class="st">"Endako"</span>, <span class="st">"Stuart"</span>, <span class="st">"Salmon"</span>, <span class="st">"Bowron"</span><span class="op">)</span></span>
+<span><span class="va">long_df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  Row <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">50</span>,</span>
+<span>  Site <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="va">sites</span>, <span class="fl">5</span><span class="op">)</span>,</span>
+<span>  Plugs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fl">100</span><span class="op">:</span><span class="fl">500</span>, <span class="fl">50</span>, replace <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>  Survival_Pct <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="fl">50</span>, <span class="fl">60</span>, <span class="fl">98</span><span class="op">)</span>, <span class="fl">1</span><span class="op">)</span>,</span>
+<span>  Height_cm <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="fl">50</span>, <span class="fl">15</span>, <span class="fl">85</span><span class="op">)</span>, <span class="fl">0</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="fu"><a href="../reference/mc_scroll.html">mc_scroll</a></span><span class="op">(</span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">long_df</span>, format <span class="op">=</span> <span class="st">"html"</span><span class="op">)</span>, direction <span class="op">=</span> <span class="st">"long"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<div style="overflow-y: auto; max-height: 400px;">
+<table class="table">
+<thead><tr>
+<th style="text-align:right;">
+Row
+</th>
+<th style="text-align:left;">
+Site
+</th>
+<th style="text-align:right;">
+Plugs
+</th>
+<th style="text-align:right;">
+Survival_Pct
+</th>
+<th style="text-align:right;">
+Height_cm
+</th>
+</tr></thead>
+<tbody>
+<tr>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:left;">
+Nechako
+</td>
+<td style="text-align:right;">
+148
+</td>
+<td style="text-align:right;">
+92.3
+</td>
+<td style="text-align:right;">
+53
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:left;">
+Mackenzie
+</td>
+<td style="text-align:right;">
+420
+</td>
+<td style="text-align:right;">
+67.2
+</td>
+<td style="text-align:right;">
+53
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+3
+</td>
+<td style="text-align:left;">
+Skeena
+</td>
+<td style="text-align:right;">
+252
+</td>
+<td style="text-align:right;">
+70.3
+</td>
+<td style="text-align:right;">
+15
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+4
+</td>
+<td style="text-align:left;">
+Fraser
+</td>
+<td style="text-align:right;">
+173
+</td>
+<td style="text-align:right;">
+91.5
+</td>
+<td style="text-align:right;">
+40
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+5
+</td>
+<td style="text-align:left;">
+Bulkley
+</td>
+<td style="text-align:right;">
+327
+</td>
+<td style="text-align:right;">
+86.3
+</td>
+<td style="text-align:right;">
+58
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+6
+</td>
+<td style="text-align:left;">
+Stellako
+</td>
+<td style="text-align:right;">
+245
+</td>
+<td style="text-align:right;">
+69.1
+</td>
+<td style="text-align:right;">
+73
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+7
+</td>
+<td style="text-align:left;">
+Endako
+</td>
+<td style="text-align:right;">
+221
+</td>
+<td style="text-align:right;">
+61.6
+</td>
+<td style="text-align:right;">
+40
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+8
+</td>
+<td style="text-align:left;">
+Stuart
+</td>
+<td style="text-align:right;">
+148
+</td>
+<td style="text-align:right;">
+65.3
+</td>
+<td style="text-align:right;">
+44
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+9
+</td>
+<td style="text-align:left;">
+Salmon
+</td>
+<td style="text-align:right;">
+227
+</td>
+<td style="text-align:right;">
+68.2
+</td>
+<td style="text-align:right;">
+55
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+10
+</td>
+<td style="text-align:left;">
+Bowron
+</td>
+<td style="text-align:right;">
+402
+</td>
+<td style="text-align:right;">
+78.2
+</td>
+<td style="text-align:right;">
+56
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+11
+</td>
+<td style="text-align:left;">
+Nechako
+</td>
+<td style="text-align:right;">
+123
+</td>
+<td style="text-align:right;">
+67.5
+</td>
+<td style="text-align:right;">
+65
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+12
+</td>
+<td style="text-align:left;">
+Mackenzie
+</td>
+<td style="text-align:right;">
+426
+</td>
+<td style="text-align:right;">
+87.3
+</td>
+<td style="text-align:right;">
+43
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+13
+</td>
+<td style="text-align:left;">
+Skeena
+</td>
+<td style="text-align:right;">
+455
+</td>
+<td style="text-align:right;">
+60.3
+</td>
+<td style="text-align:right;">
+79
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+14
+</td>
+<td style="text-align:left;">
+Fraser
+</td>
+<td style="text-align:right;">
+188
+</td>
+<td style="text-align:right;">
+74.3
+</td>
+<td style="text-align:right;">
+82
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+15
+</td>
+<td style="text-align:left;">
+Bulkley
+</td>
+<td style="text-align:right;">
+264
+</td>
+<td style="text-align:right;">
+79.5
+</td>
+<td style="text-align:right;">
+31
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+16
+</td>
+<td style="text-align:left;">
+Stellako
+</td>
+<td style="text-align:right;">
+209
+</td>
+<td style="text-align:right;">
+60.1
+</td>
+<td style="text-align:right;">
+66
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+17
+</td>
+<td style="text-align:left;">
+Endako
+</td>
+<td style="text-align:right;">
+119
+</td>
+<td style="text-align:right;">
+82.1
+</td>
+<td style="text-align:right;">
+78
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+18
+</td>
+<td style="text-align:left;">
+Stuart
+</td>
+<td style="text-align:right;">
+469
+</td>
+<td style="text-align:right;">
+66.0
+</td>
+<td style="text-align:right;">
+57
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+19
+</td>
+<td style="text-align:left;">
+Salmon
+</td>
+<td style="text-align:right;">
+466
+</td>
+<td style="text-align:right;">
+73.6
+</td>
+<td style="text-align:right;">
+59
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+20
+</td>
+<td style="text-align:left;">
+Bowron
+</td>
+<td style="text-align:right;">
+486
+</td>
+<td style="text-align:right;">
+84.5
+</td>
+<td style="text-align:right;">
+81
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+21
+</td>
+<td style="text-align:left;">
+Nechako
+</td>
+<td style="text-align:right;">
+396
+</td>
+<td style="text-align:right;">
+89.5
+</td>
+<td style="text-align:right;">
+75
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+22
+</td>
+<td style="text-align:left;">
+Mackenzie
+</td>
+<td style="text-align:right;">
+188
+</td>
+<td style="text-align:right;">
+81.4
+</td>
+<td style="text-align:right;">
+56
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+23
+</td>
+<td style="text-align:left;">
+Skeena
+</td>
+<td style="text-align:right;">
+382
+</td>
+<td style="text-align:right;">
+68.9
+</td>
+<td style="text-align:right;">
+72
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+24
+</td>
+<td style="text-align:left;">
+Fraser
+</td>
+<td style="text-align:right;">
+208
+</td>
+<td style="text-align:right;">
+63.4
+</td>
+<td style="text-align:right;">
+23
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+25
+</td>
+<td style="text-align:left;">
+Bulkley
+</td>
+<td style="text-align:right;">
+104
+</td>
+<td style="text-align:right;">
+63.3
+</td>
+<td style="text-align:right;">
+69
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+26
+</td>
+<td style="text-align:left;">
+Stellako
+</td>
+<td style="text-align:right;">
+311
+</td>
+<td style="text-align:right;">
+71.6
+</td>
+<td style="text-align:right;">
+59
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+27
+</td>
+<td style="text-align:left;">
+Endako
+</td>
+<td style="text-align:right;">
+447
+</td>
+<td style="text-align:right;">
+85.4
+</td>
+<td style="text-align:right;">
+25
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+28
+</td>
+<td style="text-align:left;">
+Stuart
+</td>
+<td style="text-align:right;">
+459
+</td>
+<td style="text-align:right;">
+60.0
+</td>
+<td style="text-align:right;">
+21
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+29
+</td>
+<td style="text-align:left;">
+Salmon
+</td>
+<td style="text-align:right;">
+358
+</td>
+<td style="text-align:right;">
+67.9
+</td>
+<td style="text-align:right;">
+47
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+30
+</td>
+<td style="text-align:left;">
+Bowron
+</td>
+<td style="text-align:right;">
+413
+</td>
+<td style="text-align:right;">
+95.5
+</td>
+<td style="text-align:right;">
+70
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+31
+</td>
+<td style="text-align:left;">
+Nechako
+</td>
+<td style="text-align:right;">
+397
+</td>
+<td style="text-align:right;">
+95.2
+</td>
+<td style="text-align:right;">
+66
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+32
+</td>
+<td style="text-align:left;">
+Mackenzie
+</td>
+<td style="text-align:right;">
+123
+</td>
+<td style="text-align:right;">
+87.9
+</td>
+<td style="text-align:right;">
+72
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+33
+</td>
+<td style="text-align:left;">
+Skeena
+</td>
+<td style="text-align:right;">
+257
+</td>
+<td style="text-align:right;">
+72.7
+</td>
+<td style="text-align:right;">
+27
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+34
+</td>
+<td style="text-align:left;">
+Fraser
+</td>
+<td style="text-align:right;">
+398
+</td>
+<td style="text-align:right;">
+79.6
+</td>
+<td style="text-align:right;">
+81
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+35
+</td>
+<td style="text-align:left;">
+Bulkley
+</td>
+<td style="text-align:right;">
+498
+</td>
+<td style="text-align:right;">
+88.3
+</td>
+<td style="text-align:right;">
+36
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+36
+</td>
+<td style="text-align:left;">
+Stellako
+</td>
+<td style="text-align:right;">
+413
+</td>
+<td style="text-align:right;">
+83.5
+</td>
+<td style="text-align:right;">
+25
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+37
+</td>
+<td style="text-align:left;">
+Endako
+</td>
+<td style="text-align:right;">
+235
+</td>
+<td style="text-align:right;">
+83.8
+</td>
+<td style="text-align:right;">
+65
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+38
+</td>
+<td style="text-align:left;">
+Stuart
+</td>
+<td style="text-align:right;">
+391
+</td>
+<td style="text-align:right;">
+68.3
+</td>
+<td style="text-align:right;">
+38
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+39
+</td>
+<td style="text-align:left;">
+Salmon
+</td>
+<td style="text-align:right;">
+423
+</td>
+<td style="text-align:right;">
+68.2
+</td>
+<td style="text-align:right;">
+70
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+40
+</td>
+<td style="text-align:left;">
+Bowron
+</td>
+<td style="text-align:right;">
+245
+</td>
+<td style="text-align:right;">
+74.8
+</td>
+<td style="text-align:right;">
+43
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+41
+</td>
+<td style="text-align:left;">
+Nechako
+</td>
+<td style="text-align:right;">
+208
+</td>
+<td style="text-align:right;">
+95.8
+</td>
+<td style="text-align:right;">
+63
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+42
+</td>
+<td style="text-align:left;">
+Mackenzie
+</td>
+<td style="text-align:right;">
+447
+</td>
+<td style="text-align:right;">
+96.6
+</td>
+<td style="text-align:right;">
+69
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+43
+</td>
+<td style="text-align:left;">
+Skeena
+</td>
+<td style="text-align:right;">
+296
+</td>
+<td style="text-align:right;">
+88.1
+</td>
+<td style="text-align:right;">
+28
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+44
+</td>
+<td style="text-align:left;">
+Fraser
+</td>
+<td style="text-align:right;">
+103
+</td>
+<td style="text-align:right;">
+87.9
+</td>
+<td style="text-align:right;">
+17
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+45
+</td>
+<td style="text-align:left;">
+Bulkley
+</td>
+<td style="text-align:right;">
+325
+</td>
+<td style="text-align:right;">
+80.4
+</td>
+<td style="text-align:right;">
+24
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+46
+</td>
+<td style="text-align:left;">
+Stellako
+</td>
+<td style="text-align:right;">
+454
+</td>
+<td style="text-align:right;">
+60.1
+</td>
+<td style="text-align:right;">
+63
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+47
+</td>
+<td style="text-align:left;">
+Endako
+</td>
+<td style="text-align:right;">
+314
+</td>
+<td style="text-align:right;">
+83.1
+</td>
+<td style="text-align:right;">
+80
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+48
+</td>
+<td style="text-align:left;">
+Stuart
+</td>
+<td style="text-align:right;">
+344
+</td>
+<td style="text-align:right;">
+91.8
+</td>
+<td style="text-align:right;">
+54
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+49
+</td>
+<td style="text-align:left;">
+Salmon
+</td>
+<td style="text-align:right;">
+213
+</td>
+<td style="text-align:right;">
+88.6
+</td>
+<td style="text-align:right;">
+57
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+50
+</td>
+<td style="text-align:left;">
+Bowron
+</td>
+<td style="text-align:right;">
+361
+</td>
+<td style="text-align:right;">
+77.2
+</td>
+<td style="text-align:right;">
+29
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="section level3">
+<h3 id="both-directions">Both directions<a class="anchor" aria-label="anchor" href="#both-directions"></a>
+</h3>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">42</span><span class="op">)</span></span>
+<span><span class="va">both_df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  Row <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">30</span>,</span>
+<span>  Site <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="va">sites</span>, <span class="fl">3</span><span class="op">)</span>,</span>
+<span>  Plugs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fl">100</span><span class="op">:</span><span class="fl">500</span>, <span class="fl">30</span>, replace <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>  Survival <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="fl">30</span>, <span class="fl">60</span>, <span class="fl">98</span><span class="op">)</span>, <span class="fl">1</span><span class="op">)</span>,</span>
+<span>  Height_cm <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="fl">30</span>, <span class="fl">15</span>, <span class="fl">85</span><span class="op">)</span>, <span class="fl">0</span><span class="op">)</span>,</span>
+<span>  BEC_Zone <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"SBSdw3"</span>,<span class="st">"SBSmk1"</span>,<span class="st">"SBSdk"</span>,<span class="st">"SBSwk1"</span>,<span class="st">"SBSmc2"</span>,</span>
+<span>                    <span class="st">"SBSdw1"</span>,<span class="st">"SBSwk3"</span>,<span class="st">"SBSdk"</span>,<span class="st">"SBSmw"</span>,<span class="st">"SBSdw2"</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span>,</span>
+<span>  Elevation <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fl">400</span><span class="op">:</span><span class="fl">900</span>, <span class="fl">30</span>, replace <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>  Lat <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="fl">30</span>, <span class="fl">53</span>, <span class="fl">56</span><span class="op">)</span>, <span class="fl">4</span><span class="op">)</span>,</span>
+<span>  Lon <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="fl">30</span>, <span class="op">-</span><span class="fl">128</span>, <span class="op">-</span><span class="fl">122</span><span class="op">)</span>, <span class="fl">4</span><span class="op">)</span>,</span>
+<span>  Source <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Local"</span>,<span class="st">"Transfer"</span><span class="op">)</span>, <span class="fl">15</span><span class="op">)</span>,</span>
+<span>  Soil <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Silty clay"</span>,<span class="st">"Sandy loam"</span>,<span class="st">"Clay loam"</span>,<span class="st">"Silt loam"</span>,<span class="st">"Gravel"</span><span class="op">)</span>, <span class="fl">6</span><span class="op">)</span>,</span>
+<span>  Moisture <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Subhygric"</span>,<span class="st">"Mesic"</span>,<span class="st">"Hygric"</span>,<span class="st">"Subxeric"</span>,<span class="st">"Mesic"</span><span class="op">)</span>, <span class="fl">6</span><span class="op">)</span>,</span>
+<span>  Fish <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Yes"</span>,<span class="st">"Yes"</span>,<span class="st">"No"</span>,<span class="st">"Yes"</span>,<span class="st">"No"</span><span class="op">)</span>, <span class="fl">6</span><span class="op">)</span>,</span>
+<span>  Permit <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Approved"</span>,<span class="st">"In review"</span>,<span class="st">"Not submitted"</span>,<span class="st">"Approved"</span>,<span class="st">"Pending"</span><span class="op">)</span>, <span class="fl">6</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="fu"><a href="../reference/mc_scroll.html">mc_scroll</a></span><span class="op">(</span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">both_df</span>, format <span class="op">=</span> <span class="st">"html"</span><span class="op">)</span>, direction <span class="op">=</span> <span class="st">"both"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<div style="overflow: auto; max-height: 400px; max-width: 100%;">
+<table class="table">
+<thead><tr>
+<th style="text-align:right;">
+Row
+</th>
+<th style="text-align:left;">
+Site
+</th>
+<th style="text-align:right;">
+Plugs
+</th>
+<th style="text-align:right;">
+Survival
+</th>
+<th style="text-align:right;">
+Height_cm
+</th>
+<th style="text-align:left;">
+BEC_Zone
+</th>
+<th style="text-align:right;">
+Elevation
+</th>
+<th style="text-align:right;">
+Lat
+</th>
+<th style="text-align:right;">
+Lon
+</th>
+<th style="text-align:left;">
+Source
+</th>
+<th style="text-align:left;">
+Soil
+</th>
+<th style="text-align:left;">
+Moisture
+</th>
+<th style="text-align:left;">
+Fish
+</th>
+<th style="text-align:left;">
+Permit
+</th>
+</tr></thead>
+<tbody>
+<tr>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:left;">
+Nechako
+</td>
+<td style="text-align:right;">
+148
+</td>
+<td style="text-align:right;">
+60.3
+</td>
+<td style="text-align:right;">
+34
+</td>
+<td style="text-align:left;">
+SBSdw3
+</td>
+<td style="text-align:right;">
+724
+</td>
+<td style="text-align:right;">
+55.7576
+</td>
+<td style="text-align:right;">
+-126.8728
+</td>
+<td style="text-align:left;">
+Local
+</td>
+<td style="text-align:left;">
+Silty clay
+</td>
+<td style="text-align:left;">
+Subhygric
+</td>
+<td style="text-align:left;">
+Yes
+</td>
+<td style="text-align:left;">
+Approved
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:left;">
+Mackenzie
+</td>
+<td style="text-align:right;">
+420
+</td>
+<td style="text-align:right;">
+67.9
+</td>
+<td style="text-align:right;">
+73
+</td>
+<td style="text-align:left;">
+SBSmk1
+</td>
+<td style="text-align:right;">
+875
+</td>
+<td style="text-align:right;">
+55.8877
+</td>
+<td style="text-align:right;">
+-127.8255
+</td>
+<td style="text-align:left;">
+Transfer
+</td>
+<td style="text-align:left;">
+Sandy loam
+</td>
+<td style="text-align:left;">
+Mesic
+</td>
+<td style="text-align:left;">
+Yes
+</td>
+<td style="text-align:left;">
+In review
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+3
+</td>
+<td style="text-align:left;">
+Skeena
+</td>
+<td style="text-align:right;">
+252
+</td>
+<td style="text-align:right;">
+94.5
+</td>
+<td style="text-align:right;">
+64
+</td>
+<td style="text-align:left;">
+SBSdk
+</td>
+<td style="text-align:right;">
+517
+</td>
+<td style="text-align:right;">
+53.7006
+</td>
+<td style="text-align:right;">
+-127.1857
+</td>
+<td style="text-align:left;">
+Local
+</td>
+<td style="text-align:left;">
+Clay loam
+</td>
+<td style="text-align:left;">
+Hygric
+</td>
+<td style="text-align:left;">
+No
+</td>
+<td style="text-align:left;">
+Not submitted
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+4
+</td>
+<td style="text-align:left;">
+Fraser
+</td>
+<td style="text-align:right;">
+173
+</td>
+<td style="text-align:right;">
+83.2
+</td>
+<td style="text-align:right;">
+32
+</td>
+<td style="text-align:left;">
+SBSwk1
+</td>
+<td style="text-align:right;">
+529
+</td>
+<td style="text-align:right;">
+55.1735
+</td>
+<td style="text-align:right;">
+-123.9190
+</td>
+<td style="text-align:left;">
+Transfer
+</td>
+<td style="text-align:left;">
+Silt loam
+</td>
+<td style="text-align:left;">
+Subxeric
+</td>
+<td style="text-align:left;">
+Yes
+</td>
+<td style="text-align:left;">
+Approved
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+5
+</td>
+<td style="text-align:left;">
+Bulkley
+</td>
+<td style="text-align:right;">
+327
+</td>
+<td style="text-align:right;">
+74.4
+</td>
+<td style="text-align:right;">
+18
+</td>
+<td style="text-align:left;">
+SBSmc2
+</td>
+<td style="text-align:right;">
+481
+</td>
+<td style="text-align:right;">
+55.7109
+</td>
+<td style="text-align:right;">
+-122.3911
+</td>
+<td style="text-align:left;">
+Local
+</td>
+<td style="text-align:left;">
+Gravel
+</td>
+<td style="text-align:left;">
+Mesic
+</td>
+<td style="text-align:left;">
+No
+</td>
+<td style="text-align:left;">
+Pending
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+6
+</td>
+<td style="text-align:left;">
+Stellako
+</td>
+<td style="text-align:right;">
+245
+</td>
+<td style="text-align:right;">
+76.6
+</td>
+<td style="text-align:right;">
+25
+</td>
+<td style="text-align:left;">
+SBSdw1
+</td>
+<td style="text-align:right;">
+807
+</td>
+<td style="text-align:right;">
+54.8104
+</td>
+<td style="text-align:right;">
+-124.6970
+</td>
+<td style="text-align:left;">
+Transfer
+</td>
+<td style="text-align:left;">
+Silty clay
+</td>
+<td style="text-align:left;">
+Subhygric
+</td>
+<td style="text-align:left;">
+Yes
+</td>
+<td style="text-align:left;">
+Approved
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+7
+</td>
+<td style="text-align:left;">
+Endako
+</td>
+<td style="text-align:right;">
+221
+</td>
+<td style="text-align:right;">
+61.4
+</td>
+<td style="text-align:right;">
+30
+</td>
+<td style="text-align:left;">
+SBSwk3
+</td>
+<td style="text-align:right;">
+768
+</td>
+<td style="text-align:right;">
+54.8945
+</td>
+<td style="text-align:right;">
+-124.3894
+</td>
+<td style="text-align:left;">
+Local
+</td>
+<td style="text-align:left;">
+Sandy loam
+</td>
+<td style="text-align:left;">
+Mesic
+</td>
+<td style="text-align:left;">
+Yes
+</td>
+<td style="text-align:left;">
+In review
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+8
+</td>
+<td style="text-align:left;">
+Stuart
+</td>
+<td style="text-align:right;">
+148
+</td>
+<td style="text-align:right;">
+97.0
+</td>
+<td style="text-align:right;">
+49
+</td>
+<td style="text-align:left;">
+SBSdk
+</td>
+<td style="text-align:right;">
+801
+</td>
+<td style="text-align:right;">
+55.8122
+</td>
+<td style="text-align:right;">
+-126.8180
+</td>
+<td style="text-align:left;">
+Transfer
+</td>
+<td style="text-align:left;">
+Clay loam
+</td>
+<td style="text-align:left;">
+Hygric
+</td>
+<td style="text-align:left;">
+No
+</td>
+<td style="text-align:left;">
+Not submitted
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+9
+</td>
+<td style="text-align:left;">
+Salmon
+</td>
+<td style="text-align:right;">
+227
+</td>
+<td style="text-align:right;">
+76.4
+</td>
+<td style="text-align:right;">
+29
+</td>
+<td style="text-align:left;">
+SBSmw
+</td>
+<td style="text-align:right;">
+724
+</td>
+<td style="text-align:right;">
+55.5514
+</td>
+<td style="text-align:right;">
+-124.7886
+</td>
+<td style="text-align:left;">
+Local
+</td>
+<td style="text-align:left;">
+Silt loam
+</td>
+<td style="text-align:left;">
+Subxeric
+</td>
+<td style="text-align:left;">
+Yes
+</td>
+<td style="text-align:left;">
+Approved
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+10
+</td>
+<td style="text-align:left;">
+Bowron
+</td>
+<td style="text-align:right;">
+402
+</td>
+<td style="text-align:right;">
+96.4
+</td>
+<td style="text-align:right;">
+65
+</td>
+<td style="text-align:left;">
+SBSdw2
+</td>
+<td style="text-align:right;">
+509
+</td>
+<td style="text-align:right;">
+54.7395
+</td>
+<td style="text-align:right;">
+-126.9227
+</td>
+<td style="text-align:left;">
+Transfer
+</td>
+<td style="text-align:left;">
+Gravel
+</td>
+<td style="text-align:left;">
+Mesic
+</td>
+<td style="text-align:left;">
+No
+</td>
+<td style="text-align:left;">
+Pending
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+11
+</td>
+<td style="text-align:left;">
+Nechako
+</td>
+<td style="text-align:right;">
+123
+</td>
+<td style="text-align:right;">
+93.7
+</td>
+<td style="text-align:right;">
+16
+</td>
+<td style="text-align:left;">
+SBSdw3
+</td>
+<td style="text-align:right;">
+759
+</td>
+<td style="text-align:right;">
+55.4642
+</td>
+<td style="text-align:right;">
+-125.2887
+</td>
+<td style="text-align:left;">
+Local
+</td>
+<td style="text-align:left;">
+Silty clay
+</td>
+<td style="text-align:left;">
+Subhygric
+</td>
+<td style="text-align:left;">
+Yes
+</td>
+<td style="text-align:left;">
+Approved
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+12
+</td>
+<td style="text-align:left;">
+Mackenzie
+</td>
+<td style="text-align:right;">
+426
+</td>
+<td style="text-align:right;">
+84.3
+</td>
+<td style="text-align:right;">
+41
+</td>
+<td style="text-align:left;">
+SBSmk1
+</td>
+<td style="text-align:right;">
+838
+</td>
+<td style="text-align:right;">
+53.3412
+</td>
+<td style="text-align:right;">
+-126.0977
+</td>
+<td style="text-align:left;">
+Transfer
+</td>
+<td style="text-align:left;">
+Sandy loam
+</td>
+<td style="text-align:left;">
+Mesic
+</td>
+<td style="text-align:left;">
+Yes
+</td>
+<td style="text-align:left;">
+In review
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+13
+</td>
+<td style="text-align:left;">
+Skeena
+</td>
+<td style="text-align:right;">
+455
+</td>
+<td style="text-align:right;">
+96.9
+</td>
+<td style="text-align:right;">
+51
+</td>
+<td style="text-align:left;">
+SBSdk
+</td>
+<td style="text-align:right;">
+695
+</td>
+<td style="text-align:right;">
+55.2935
+</td>
+<td style="text-align:right;">
+-127.3030
+</td>
+<td style="text-align:left;">
+Local
+</td>
+<td style="text-align:left;">
+Clay loam
+</td>
+<td style="text-align:left;">
+Hygric
+</td>
+<td style="text-align:left;">
+No
+</td>
+<td style="text-align:left;">
+Not submitted
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+14
+</td>
+<td style="text-align:left;">
+Fraser
+</td>
+<td style="text-align:right;">
+188
+</td>
+<td style="text-align:right;">
+83.5
+</td>
+<td style="text-align:right;">
+15
+</td>
+<td style="text-align:left;">
+SBSwk1
+</td>
+<td style="text-align:right;">
+548
+</td>
+<td style="text-align:right;">
+54.8708
+</td>
+<td style="text-align:right;">
+-126.8834
+</td>
+<td style="text-align:left;">
+Transfer
+</td>
+<td style="text-align:left;">
+Silt loam
+</td>
+<td style="text-align:left;">
+Subxeric
+</td>
+<td style="text-align:left;">
+Yes
+</td>
+<td style="text-align:left;">
+Approved
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+15
+</td>
+<td style="text-align:left;">
+Bulkley
+</td>
+<td style="text-align:right;">
+264
+</td>
+<td style="text-align:right;">
+72.7
+</td>
+<td style="text-align:right;">
+56
+</td>
+<td style="text-align:left;">
+SBSmc2
+</td>
+<td style="text-align:right;">
+883
+</td>
+<td style="text-align:right;">
+53.4453
+</td>
+<td style="text-align:right;">
+-123.6216
+</td>
+<td style="text-align:left;">
+Local
+</td>
+<td style="text-align:left;">
+Gravel
+</td>
+<td style="text-align:left;">
+Mesic
+</td>
+<td style="text-align:left;">
+No
+</td>
+<td style="text-align:left;">
+Pending
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+16
+</td>
+<td style="text-align:left;">
+Stellako
+</td>
+<td style="text-align:right;">
+209
+</td>
+<td style="text-align:right;">
+73.2
+</td>
+<td style="text-align:right;">
+26
+</td>
+<td style="text-align:left;">
+SBSdw1
+</td>
+<td style="text-align:right;">
+456
+</td>
+<td style="text-align:right;">
+53.2408
+</td>
+<td style="text-align:right;">
+-125.5288
+</td>
+<td style="text-align:left;">
+Transfer
+</td>
+<td style="text-align:left;">
+Silty clay
+</td>
+<td style="text-align:left;">
+Subhygric
+</td>
+<td style="text-align:left;">
+Yes
+</td>
+<td style="text-align:left;">
+Approved
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+17
+</td>
+<td style="text-align:left;">
+Endako
+</td>
+<td style="text-align:right;">
+119
+</td>
+<td style="text-align:right;">
+75.1
+</td>
+<td style="text-align:right;">
+40
+</td>
+<td style="text-align:left;">
+SBSwk3
+</td>
+<td style="text-align:right;">
+499
+</td>
+<td style="text-align:right;">
+54.3922
+</td>
+<td style="text-align:right;">
+-125.5157
+</td>
+<td style="text-align:left;">
+Local
+</td>
+<td style="text-align:left;">
+Sandy loam
+</td>
+<td style="text-align:left;">
+Mesic
+</td>
+<td style="text-align:left;">
+Yes
+</td>
+<td style="text-align:left;">
+In review
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+18
+</td>
+<td style="text-align:left;">
+Stuart
+</td>
+<td style="text-align:right;">
+469
+</td>
+<td style="text-align:right;">
+89.8
+</td>
+<td style="text-align:right;">
+60
+</td>
+<td style="text-align:left;">
+SBSdk
+</td>
+<td style="text-align:right;">
+886
+</td>
+<td style="text-align:right;">
+55.3381
+</td>
+<td style="text-align:right;">
+-125.1181
+</td>
+<td style="text-align:left;">
+Transfer
+</td>
+<td style="text-align:left;">
+Clay loam
+</td>
+<td style="text-align:left;">
+Hygric
+</td>
+<td style="text-align:left;">
+No
+</td>
+<td style="text-align:left;">
+Not submitted
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+19
+</td>
+<td style="text-align:left;">
+Salmon
+</td>
+<td style="text-align:right;">
+466
+</td>
+<td style="text-align:right;">
+61.5
+</td>
+<td style="text-align:right;">
+69
+</td>
+<td style="text-align:left;">
+SBSmw
+</td>
+<td style="text-align:right;">
+697
+</td>
+<td style="text-align:right;">
+55.2006
+</td>
+<td style="text-align:right;">
+-125.4350
+</td>
+<td style="text-align:left;">
+Local
+</td>
+<td style="text-align:left;">
+Silt loam
+</td>
+<td style="text-align:left;">
+Subxeric
+</td>
+<td style="text-align:left;">
+Yes
+</td>
+<td style="text-align:left;">
+Approved
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+20
+</td>
+<td style="text-align:left;">
+Bowron
+</td>
+<td style="text-align:right;">
+486
+</td>
+<td style="text-align:right;">
+88.5
+</td>
+<td style="text-align:right;">
+54
+</td>
+<td style="text-align:left;">
+SBSdw2
+</td>
+<td style="text-align:right;">
+801
+</td>
+<td style="text-align:right;">
+55.4517
+</td>
+<td style="text-align:right;">
+-127.1811
+</td>
+<td style="text-align:left;">
+Transfer
+</td>
+<td style="text-align:left;">
+Gravel
+</td>
+<td style="text-align:left;">
+Mesic
+</td>
+<td style="text-align:left;">
+No
+</td>
+<td style="text-align:left;">
+Pending
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+21
+</td>
+<td style="text-align:left;">
+Nechako
+</td>
+<td style="text-align:right;">
+396
+</td>
+<td style="text-align:right;">
+85.7
+</td>
+<td style="text-align:right;">
+31
+</td>
+<td style="text-align:left;">
+SBSdw3
+</td>
+<td style="text-align:right;">
+490
+</td>
+<td style="text-align:right;">
+53.5105
+</td>
+<td style="text-align:right;">
+-123.0519
+</td>
+<td style="text-align:left;">
+Local
+</td>
+<td style="text-align:left;">
+Silty clay
+</td>
+<td style="text-align:left;">
+Subhygric
+</td>
+<td style="text-align:left;">
+Yes
+</td>
+<td style="text-align:left;">
+Approved
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+22
+</td>
+<td style="text-align:left;">
+Mackenzie
+</td>
+<td style="text-align:right;">
+188
+</td>
+<td style="text-align:right;">
+66.5
+</td>
+<td style="text-align:right;">
+21
+</td>
+<td style="text-align:left;">
+SBSmk1
+</td>
+<td style="text-align:right;">
+668
+</td>
+<td style="text-align:right;">
+55.8342
+</td>
+<td style="text-align:right;">
+-124.4462
+</td>
+<td style="text-align:left;">
+Transfer
+</td>
+<td style="text-align:left;">
+Sandy loam
+</td>
+<td style="text-align:left;">
+Mesic
+</td>
+<td style="text-align:left;">
+Yes
+</td>
+<td style="text-align:left;">
+In review
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+23
+</td>
+<td style="text-align:left;">
+Skeena
+</td>
+<td style="text-align:right;">
+382
+</td>
+<td style="text-align:right;">
+69.9
+</td>
+<td style="text-align:right;">
+21
+</td>
+<td style="text-align:left;">
+SBSdk
+</td>
+<td style="text-align:right;">
+580
+</td>
+<td style="text-align:right;">
+53.8809
+</td>
+<td style="text-align:right;">
+-123.2336
+</td>
+<td style="text-align:left;">
+Local
+</td>
+<td style="text-align:left;">
+Clay loam
+</td>
+<td style="text-align:left;">
+Hygric
+</td>
+<td style="text-align:left;">
+No
+</td>
+<td style="text-align:left;">
+Not submitted
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+24
+</td>
+<td style="text-align:left;">
+Fraser
+</td>
+<td style="text-align:right;">
+208
+</td>
+<td style="text-align:right;">
+79.5
+</td>
+<td style="text-align:right;">
+36
+</td>
+<td style="text-align:left;">
+SBSwk1
+</td>
+<td style="text-align:right;">
+453
+</td>
+<td style="text-align:right;">
+53.4472
+</td>
+<td style="text-align:right;">
+-123.3858
+</td>
+<td style="text-align:left;">
+Transfer
+</td>
+<td style="text-align:left;">
+Silt loam
+</td>
+<td style="text-align:left;">
+Subxeric
+</td>
+<td style="text-align:left;">
+Yes
+</td>
+<td style="text-align:left;">
+Approved
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+25
+</td>
+<td style="text-align:left;">
+Bulkley
+</td>
+<td style="text-align:right;">
+104
+</td>
+<td style="text-align:right;">
+85.7
+</td>
+<td style="text-align:right;">
+62
+</td>
+<td style="text-align:left;">
+SBSmc2
+</td>
+<td style="text-align:right;">
+738
+</td>
+<td style="text-align:right;">
+55.1581
+</td>
+<td style="text-align:right;">
+-122.4917
+</td>
+<td style="text-align:left;">
+Local
+</td>
+<td style="text-align:left;">
+Gravel
+</td>
+<td style="text-align:left;">
+Mesic
+</td>
+<td style="text-align:left;">
+No
+</td>
+<td style="text-align:left;">
+Pending
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+26
+</td>
+<td style="text-align:left;">
+Stellako
+</td>
+<td style="text-align:right;">
+311
+</td>
+<td style="text-align:right;">
+97.3
+</td>
+<td style="text-align:right;">
+15
+</td>
+<td style="text-align:left;">
+SBSdw1
+</td>
+<td style="text-align:right;">
+687
+</td>
+<td style="text-align:right;">
+53.9723
+</td>
+<td style="text-align:right;">
+-122.8242
+</td>
+<td style="text-align:left;">
+Transfer
+</td>
+<td style="text-align:left;">
+Silty clay
+</td>
+<td style="text-align:left;">
+Subhygric
+</td>
+<td style="text-align:left;">
+Yes
+</td>
+<td style="text-align:left;">
+Approved
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+27
+</td>
+<td style="text-align:left;">
+Endako
+</td>
+<td style="text-align:right;">
+447
+</td>
+<td style="text-align:right;">
+88.9
+</td>
+<td style="text-align:right;">
+30
+</td>
+<td style="text-align:left;">
+SBSwk3
+</td>
+<td style="text-align:right;">
+607
+</td>
+<td style="text-align:right;">
+55.3364
+</td>
+<td style="text-align:right;">
+-126.0981
+</td>
+<td style="text-align:left;">
+Local
+</td>
+<td style="text-align:left;">
+Sandy loam
+</td>
+<td style="text-align:left;">
+Mesic
+</td>
+<td style="text-align:left;">
+Yes
+</td>
+<td style="text-align:left;">
+In review
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+28
+</td>
+<td style="text-align:left;">
+Stuart
+</td>
+<td style="text-align:right;">
+459
+</td>
+<td style="text-align:right;">
+81.5
+</td>
+<td style="text-align:right;">
+80
+</td>
+<td style="text-align:left;">
+SBSdk
+</td>
+<td style="text-align:right;">
+645
+</td>
+<td style="text-align:right;">
+54.1833
+</td>
+<td style="text-align:right;">
+-126.4444
+</td>
+<td style="text-align:left;">
+Transfer
+</td>
+<td style="text-align:left;">
+Clay loam
+</td>
+<td style="text-align:left;">
+Hygric
+</td>
+<td style="text-align:left;">
+No
+</td>
+<td style="text-align:left;">
+Not submitted
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+29
+</td>
+<td style="text-align:left;">
+Salmon
+</td>
+<td style="text-align:right;">
+358
+</td>
+<td style="text-align:right;">
+92.3
+</td>
+<td style="text-align:right;">
+80
+</td>
+<td style="text-align:left;">
+SBSmw
+</td>
+<td style="text-align:right;">
+459
+</td>
+<td style="text-align:right;">
+55.0358
+</td>
+<td style="text-align:right;">
+-123.5464
+</td>
+<td style="text-align:left;">
+Local
+</td>
+<td style="text-align:left;">
+Silt loam
+</td>
+<td style="text-align:left;">
+Subxeric
+</td>
+<td style="text-align:left;">
+Yes
+</td>
+<td style="text-align:left;">
+Approved
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+30
+</td>
+<td style="text-align:left;">
+Bowron
+</td>
+<td style="text-align:right;">
+413
+</td>
+<td style="text-align:right;">
+67.2
+</td>
+<td style="text-align:right;">
+66
+</td>
+<td style="text-align:left;">
+SBSdw2
+</td>
+<td style="text-align:right;">
+684
+</td>
+<td style="text-align:right;">
+55.3275
+</td>
+<td style="text-align:right;">
+-123.5158
+</td>
+<td style="text-align:left;">
+Transfer
+</td>
+<td style="text-align:left;">
+Gravel
+</td>
+<td style="text-align:left;">
+Mesic
+</td>
+<td style="text-align:left;">
+No
+</td>
+<td style="text-align:left;">
+Pending
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>The default <code>max_height</code> for vertical scrolling is
+<code>"400px"</code>. Adjust with
+<code>mc_scroll(..., max_height = "600px")</code>.</p>
+</div>
 </div>
 <div class="section level2">
 <h2 id="full-workflow">Full workflow<a class="anchor" aria-label="anchor" href="#full-workflow"></a>
 </h2>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/NewGraphEnvironment/mc" class="external-link">mc</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Authenticate once per session</span></span>
 <span><span class="fu"><a href="../reference/mc_auth.html">mc_auth</a></span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Build the email</span></span>
 <span><span class="va">sites</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>  Site <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Nechako"</span>, <span class="st">"Mackenzie"</span>, <span class="st">"Skeena"</span><span class="op">)</span>,</span>
 <span>  Plugs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">4000</span>, <span class="fl">3000</span>, <span class="fl">3000</span><span class="op">)</span>,</span>
 <span>  Season <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Fall 2026"</span>, <span class="st">"Fall 2026"</span>, <span class="st">"Fall 2026"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">body</span> <span class="op">&lt;-</span> <span class="fu">mc_compose</span><span class="op">(</span></span>
+<span><span class="va">body</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/mc_compose.html">mc_compose</a></span><span class="op">(</span></span>
 <span>  <span class="st">"&lt;p&gt;Hi Brandon,&lt;/p&gt;</span></span>
 <span><span class="st">   &lt;p&gt;Here's the current planting plan:&lt;/p&gt;"</span>,</span>
 <span></span>
@@ -287,7 +2833,6 @@ consider:</p>
 <span><span class="st">   &lt;p&gt;Does this match what the nursery has available?&lt;/p&gt;"</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Draft first, send when ready</span></span>
 <span><span class="fu"><a href="../reference/mc_send.html">mc_send</a></span><span class="op">(</span>html <span class="op">=</span> <span class="va">body</span>,</span>
 <span>        to <span class="op">=</span> <span class="st">"brandon@example.com"</span>,</span>
 <span>        subject <span class="op">=</span> <span class="st">"2026 planting plan — cottonwood plugs"</span><span class="op">)</span></span></code></pre></div>

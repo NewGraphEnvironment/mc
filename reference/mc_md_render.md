@@ -8,7 +8,7 @@ signature.
 ## Usage
 
 ``` r
-mc_md_render(path, sig = TRUE)
+mc_md_render(path, sig = TRUE, sig_path = NULL)
 ```
 
 ## Arguments
@@ -19,7 +19,12 @@ mc_md_render(path, sig = TRUE)
 
 - sig:
 
-  Logical. Append the standard signature? Default `TRUE`.
+  Logical. Append a signature? Default `TRUE`.
+
+- sig_path:
+
+  Path to a custom signature HTML file. Default `NULL` uses the bundled
+  New Graph signature. Ignored when `sig = FALSE`.
 
 ## Value
 

@@ -59,8 +59,9 @@ mc_send("communications/draft.md",
 
 ## Tables in emails
 
-Need an R-generated table in your email? Use `mc_compose()` to mix
-markdown files, HTML, and kable/kableExtra objects:
+Need an R-generated table in your email? Use
+[`mc_compose()`](https://newgraphenvironment.github.io/mc/reference/mc_compose.md)
+to mix markdown files, HTML, and kable/kableExtra objects:
 
 ``` r
 df <- data.frame(Site = c("Nechako", "Mackenzie"), Plugs = c(4000, 3000))
@@ -74,20 +75,25 @@ body <- mc_compose(
 mc_send(html = body, to = "brandon@example.com", subject = "Planting plan")
 ```
 
+Large tables? Wrap in
+[`mc_scroll()`](https://newgraphenvironment.github.io/mc/reference/mc_scroll.md)
+for horizontal/vertical scrolling:
+
+``` r
+mc_compose(
+  "<p>Full dataset:</p>",
+  mc_scroll(knitr::kable(big_df, format = "html"), direction = "both")
+)
+```
+
 See
 [`vignette("tables-in-emails")`](https://newgraphenvironment.github.io/mc/articles/tables-in-emails.md)
-for kableExtra styling tips and Gmail limitations.
+for kableExtra styling and scrolling examples.
 
-## Functions
+## Reference
 
-| Function                                                                                   | What it does                                                       |
-|--------------------------------------------------------------------------------------------|--------------------------------------------------------------------|
-| [`mc_send()`](https://newgraphenvironment.github.io/mc/reference/mc_send.md)               | Draft or send an email from a markdown file                        |
-| `mc_compose()`                                                                             | Combine markdown, HTML, and kable objects into one email body      |
-| [`mc_auth()`](https://newgraphenvironment.github.io/mc/reference/mc_auth.md)               | Authenticate with Gmail                                            |
-| [`mc_md_render()`](https://newgraphenvironment.github.io/mc/reference/mc_md_render.md)     | Convert a single markdown file to HTML                             |
-| [`mc_sig()`](https://newgraphenvironment.github.io/mc/reference/mc_sig.md)                 | Return an email signature as HTML (bundled default or custom path) |
-| [`mc_thread_find()`](https://newgraphenvironment.github.io/mc/reference/mc_thread_find.md) | Search Gmail for thread IDs                                        |
+Full function documentation with examples:
+[newgraphenvironment.github.io/mc](https://newgraphenvironment.github.io/mc/)
 
 ## Threading
 
@@ -134,12 +140,16 @@ MIT
 
 - [`mc_auth()`](https://newgraphenvironment.github.io/mc/reference/mc_auth.md)
   : Authenticate with Gmail
+- [`mc_compose()`](https://newgraphenvironment.github.io/mc/reference/mc_compose.md)
+  : Compose an HTML email from mixed content
 - [`mc_md_render()`](https://newgraphenvironment.github.io/mc/reference/mc_md_render.md)
   : Render a markdown draft to HTML email body
+- [`mc_scroll()`](https://newgraphenvironment.github.io/mc/reference/mc_scroll.md)
+  : Wrap a table in a scrollable container for email
 - [`mc_send()`](https://newgraphenvironment.github.io/mc/reference/mc_send.md)
   : Send or draft an email from a markdown file
 - [`mc_sig()`](https://newgraphenvironment.github.io/mc/reference/mc_sig.md)
-  : Return the standard New Graph email signature as HTML
+  : Return an email signature as HTML
 - [`mc_thread_find()`](https://newgraphenvironment.github.io/mc/reference/mc_thread_find.md)
   : Search Gmail for thread IDs
 

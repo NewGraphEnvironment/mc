@@ -11,11 +11,13 @@ mc_send(
   to,
   subject,
   cc = NULL,
+  bcc = NULL,
   from = "al@newgraphenvironment.com",
   thread_id = NULL,
   draft = TRUE,
   test = FALSE,
   sig = TRUE,
+  sig_path = NULL,
   html = NULL
 )
 ```
@@ -38,6 +40,10 @@ mc_send(
 - cc:
 
   Optional CC recipients (character vector). Default `NULL`.
+
+- bcc:
+
+  Optional BCC recipients (character vector). Default `NULL`.
 
 - from:
 
@@ -64,6 +70,13 @@ mc_send(
   Logical. Append signature? Passed to
   [`mc_md_render()`](https://newgraphenvironment.github.io/mc/reference/mc_md_render.md).
   Default `TRUE`.
+
+- sig_path:
+
+  Path to a custom signature HTML file. Default `NULL` uses the bundled
+  New Graph signature. Passed to
+  [`mc_md_render()`](https://newgraphenvironment.github.io/mc/reference/mc_md_render.md).
+  Ignored when `sig = FALSE` or when `html` is provided.
 
 - html:
 

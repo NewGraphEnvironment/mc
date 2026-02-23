@@ -1,15 +1,21 @@
-# Return the standard New Graph email signature as HTML
+# Return an email signature as HTML
 
-Reads the signature template bundled at `inst/sig/signature.html`. Used
-by
-[`mc_md_render()`](https://newgraphenvironment.github.io/mc/reference/mc_md_render.md)
-to append the signature automatically.
+Reads a signature HTML file. Defaults to the standard New Graph
+signature bundled at `inst/sig/signature.html`. Pass a custom path to
+use a different signature.
 
 ## Usage
 
 ``` r
-mc_sig()
+mc_sig(path = NULL)
 ```
+
+## Arguments
+
+- path:
+
+  Path to a signature HTML file. Default `NULL` uses the bundled New
+  Graph signature.
 
 ## Value
 
@@ -20,5 +26,6 @@ A character string of HTML.
 ``` r
 if (FALSE) { # \dontrun{
 cat(mc_sig())
+cat(mc_sig("path/to/custom_sig.html"))
 } # }
 ```

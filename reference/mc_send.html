@@ -49,11 +49,13 @@ MIME message, and either creates a Gmail draft or sends immediately.</p>
 <span>  <span class="va">to</span>,</span>
 <span>  <span class="va">subject</span>,</span>
 <span>  cc <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  bcc <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  from <span class="op">=</span> <span class="st">"al@newgraphenvironment.com"</span>,</span>
 <span>  thread_id <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  draft <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  test <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  sig <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  sig_path <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  html <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -78,6 +80,10 @@ MIME message, and either creates a Gmail draft or sends immediately.</p>
 <dd><p>Optional CC recipients (character vector). Default <code>NULL</code>.</p></dd>
 
 
+<dt id="arg-bcc">bcc<a class="anchor" aria-label="anchor" href="#arg-bcc"></a></dt>
+<dd><p>Optional BCC recipients (character vector). Default <code>NULL</code>.</p></dd>
+
+
 <dt id="arg-from">from<a class="anchor" aria-label="anchor" href="#arg-from"></a></dt>
 <dd><p>Sender address. Default <code>"al@newgraphenvironment.com"</code>.</p></dd>
 
@@ -100,6 +106,12 @@ and ignore <code>cc</code> and <code>thread_id</code>. Default <code>FALSE</code
 <dt id="arg-sig">sig<a class="anchor" aria-label="anchor" href="#arg-sig"></a></dt>
 <dd><p>Logical. Append signature? Passed to <code><a href="mc_md_render.html">mc_md_render()</a></code>.
 Default <code>TRUE</code>.</p></dd>
+
+
+<dt id="arg-sig-path">sig_path<a class="anchor" aria-label="anchor" href="#arg-sig-path"></a></dt>
+<dd><p>Path to a custom signature HTML file. Default <code>NULL</code>
+uses the bundled New Graph signature. Passed to <code><a href="mc_md_render.html">mc_md_render()</a></code>.
+Ignored when <code>sig = FALSE</code> or when <code>html</code> is provided.</p></dd>
 
 
 <dt id="arg-html">html<a class="anchor" aria-label="anchor" href="#arg-html"></a></dt>
