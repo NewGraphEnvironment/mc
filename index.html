@@ -33,6 +33,12 @@
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto">
 <li class="nav-item"><a class="nav-link" href="reference/index.html">Reference</a></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
+<li><a class="dropdown-item" href="articles/tables-in-emails.html">Tables in Emails</a></li>
+  </ul>
+</li>
       </ul>
 <ul class="navbar-nav">
 <li class="nav-item"><form class="form-inline" role="search">
@@ -93,6 +99,22 @@
 <span>        draft <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
+<h2 id="tables-in-emails">Tables in emails<a class="anchor" aria-label="anchor" href="#tables-in-emails"></a>
+</h2>
+<p>Need an R-generated table in your email? Use <code>mc_compose()</code> to mix markdown files, HTML, and kable/kableExtra objects:</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Site <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Nechako"</span>, <span class="st">"Mackenzie"</span><span class="op">)</span>, Plugs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">4000</span>, <span class="fl">3000</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">body</span> <span class="op">&lt;-</span> <span class="fu">mc_compose</span><span class="op">(</span></span>
+<span>  <span class="st">"communications/intro.md"</span>,</span>
+<span>  <span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">df</span>, format <span class="op">=</span> <span class="st">"html"</span><span class="op">)</span>,</span>
+<span>  <span class="st">"&lt;p&gt;Let me know if this looks right.&lt;/p&gt;"</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="reference/mc_send.html">mc_send</a></span><span class="op">(</span>html <span class="op">=</span> <span class="va">body</span>, to <span class="op">=</span> <span class="st">"brandon@example.com"</span>, subject <span class="op">=</span> <span class="st">"Planting plan"</span><span class="op">)</span></span></code></pre></div>
+<p>See <code><a href="articles/tables-in-emails.html">vignette("tables-in-emails")</a></code> for kableExtra styling tips and Gmail limitations.</p>
+</div>
+<div class="section level2">
 <h2 id="functions">Functions<a class="anchor" aria-label="anchor" href="#functions"></a>
 </h2>
 <table class="table">
@@ -110,18 +132,22 @@
 <td>Draft or send an email from a markdown file</td>
 </tr>
 <tr class="even">
+<td><code>mc_compose()</code></td>
+<td>Combine markdown, HTML, and kable objects into one email body</td>
+</tr>
+<tr class="odd">
 <td><code><a href="reference/mc_auth.html">mc_auth()</a></code></td>
 <td>Authenticate with Gmail</td>
 </tr>
-<tr class="odd">
-<td><code><a href="reference/mc_md_render.html">mc_md_render()</a></code></td>
-<td>Convert markdown to HTML (strip header, inline table styles, append sig)</td>
-</tr>
 <tr class="even">
+<td><code><a href="reference/mc_md_render.html">mc_md_render()</a></code></td>
+<td>Convert a single markdown file to HTML</td>
+</tr>
+<tr class="odd">
 <td><code><a href="reference/mc_sig.html">mc_sig()</a></code></td>
 <td>Return an email signature as HTML (bundled default or custom path)</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code><a href="reference/mc_thread_find.html">mc_thread_find()</a></code></td>
 <td>Search Gmail for thread IDs</td>
 </tr>
@@ -132,7 +158,7 @@
 <h2 id="threading">Threading<a class="anchor" aria-label="anchor" href="#threading"></a>
 </h2>
 <p>Reply into an existing conversation:</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Find the thread</span></span>
 <span><span class="fu"><a href="reference/mc_thread_find.html">mc_thread_find</a></span><span class="op">(</span><span class="st">"from:brandon subject:cottonwood"</span><span class="op">)</span></span>
 <span></span>
@@ -148,7 +174,7 @@
 <h2 id="test-mode">Test mode<a class="anchor" aria-label="anchor" href="#test-mode"></a>
 </h2>
 <p>Send to yourself to preview:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="reference/mc_send.html">mc_send</a></span><span class="op">(</span><span class="st">"draft.md"</span>,</span>
 <span>        to <span class="op">=</span> <span class="st">"brandon@example.com"</span>,</span>
 <span>        subject <span class="op">=</span> <span class="st">"Cottonwood plugs"</span>,</span>
