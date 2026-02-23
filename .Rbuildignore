@@ -1,0 +1,13 @@
+^LICENSE\.md$
+^_pkgdown\.yml$
+^docs$
+^pkgdown$
+^\.github$
+^CLAUDE\.md$
+^dev$
+^planning$
+^data-raw$
+^doc$
+^Meta$
+^mc\.Rproj$
+^\.Rproj\.user$

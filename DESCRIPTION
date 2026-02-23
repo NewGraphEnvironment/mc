@@ -1,0 +1,28 @@
+Package: mc
+Title: Mail Composer - Email Composition and Delivery
+Version: 0.0.0.9000
+Authors@R:
+    person("Allan", "Irvine", , "al@newgraphenvironment.com", role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0002-3495-2128"))
+Description: Compose, draft, and send emails from markdown files via the
+    Gmail API. Strips markdown headers, converts to HTML with inline table
+    styles, appends a standard signature, and handles threading. Wraps
+    gmailr to reduce email scripts from 80 lines of boilerplate to 3.
+License: MIT + file LICENSE
+URL: https://github.com/NewGraphEnvironment/mc,
+    https://newgraphenvironment.github.io/mc/
+BugReports: https://github.com/NewGraphEnvironment/mc/issues
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.3
+Suggests:
+    knitr,
+    rmarkdown,
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+Depends:
+    R (>= 4.1)
+Imports:
+    commonmark,
+    gmailr
+VignetteBuilder: knitr
