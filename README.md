@@ -55,13 +55,34 @@ mc_send("communications/draft.md",
         draft = FALSE)
 ```
 
+## Tables in emails
+
+Need an R-generated table in your email? Use `mc_compose()` to mix markdown
+files, HTML, and kable/kableExtra objects:
+
+```r
+df <- data.frame(Site = c("Nechako", "Mackenzie"), Plugs = c(4000, 3000))
+
+body <- mc_compose(
+  "communications/intro.md",
+  knitr::kable(df, format = "html"),
+  "<p>Let me know if this looks right.</p>"
+)
+
+mc_send(html = body, to = "brandon@example.com", subject = "Planting plan")
+```
+
+See `vignette("tables-in-emails")` for kableExtra styling tips and Gmail
+limitations.
+
 ## Functions
 
 | Function | What it does |
 |----------|-------------|
 | `mc_send()` | Draft or send an email from a markdown file |
+| `mc_compose()` | Combine markdown, HTML, and kable objects into one email body |
 | `mc_auth()` | Authenticate with Gmail |
-| `mc_md_render()` | Convert markdown to HTML (strip header, inline table styles, append sig) |
+| `mc_md_render()` | Convert a single markdown file to HTML |
 | `mc_sig()` | Return an email signature as HTML (bundled default or custom path) |
 | `mc_thread_find()` | Search Gmail for thread IDs |
 

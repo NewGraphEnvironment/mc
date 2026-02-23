@@ -73,25 +73,58 @@ mc_md_render <- function(path, sig = TRUE, sig_path = NULL) {
 #' Add inline styles to HTML tables for Gmail
 #'
 #' Gmail strips `<style>` blocks so table styling must be inline.
+#' Handles bare tags (from commonmark) and tags with existing attributes
+#' (from kable/kableExtra). Merges border/padding styles with any
+#' existing inline styles rather than replacing them.
 #'
 #' @param html Character string of HTML.
 #' @return HTML with inline table styles.
 #' @noRd
 inline_table_styles <- function(html) {
+  table_css <- "border-collapse: collapse; margin: 12px 0;"
+  th_css <- "border: 1px solid #ddd; padding: 8px;"
+  td_css <- "border: 1px solid #ddd; padding: 8px;"
+
+  # Tables: bare <table> or <table with attributes
   html <- gsub(
-    "<table>",
-    '<table style="border-collapse: collapse; margin: 12px 0;">',
+    '<table>',
+    paste0('<table style="', table_css, '">'),
     html, fixed = TRUE
   )
   html <- gsub(
-    "<th>",
-    '<th style="border: 1px solid #ddd; padding: 8px; text-align: left; background-color: #f5f5f5;">',
+    '<table(\\s+(?!style)[^>]*)>',
+    paste0('<table\\1 style="', table_css, '">'),
+    html, perl = TRUE
+  )
+  html <- gsub(
+    '<table(\\s[^>]*)style="([^"]*)"',
+    paste0('<table\\1style="', table_css, ' \\2"'),
+    html, perl = TRUE
+  )
+
+  # th: prepend border/padding to existing styles
+  html <- gsub(
+    '<th>',
+    paste0('<th style="', th_css, '">'),
     html, fixed = TRUE
   )
   html <- gsub(
-    "<td>",
-    '<td style="border: 1px solid #ddd; padding: 8px;">',
+    '<th(\\s[^>]*)style="([^"]*)"',
+    paste0('<th\\1style="', th_css, ' \\2"'),
+    html, perl = TRUE
+  )
+
+  # td: prepend border/padding to existing styles
+  html <- gsub(
+    '<td>',
+    paste0('<td style="', td_css, '">'),
     html, fixed = TRUE
   )
+  html <- gsub(
+    '<td(\\s[^>]*)style="([^"]*)"',
+    paste0('<td\\1style="', td_css, ' \\2"'),
+    html, perl = TRUE
+  )
+
   html
 }
