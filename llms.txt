@@ -14,13 +14,17 @@ pak::pak("NewGraphEnvironment/mc")
 
 ## Usage
 
-Write your email in markdown:
+Write your email body in markdown. Everything above the `---` separator
+is a human-readable envelope (notes for the author) and is stripped by
+[`mc_md_render()`](https://newgraphenvironment.github.io/mc/reference/mc_md_render.md)
+before conversion. Recipients, subject, and other envelope fields are
+set as R parameters in
+[`mc_send()`](https://newgraphenvironment.github.io/mc/reference/mc_send.md).
 
 ``` markdown
 # Email to Brandon - Cottonwood
 
 **Subject:** Cottonwood plugs - 2026 planting
-
 **To:** brandon@example.com
 
 ---
@@ -30,7 +34,6 @@ Hi Brandon,
 Quick question about the cottonwood plugs.
 
 Thanks,
-
 Al
 ```
 
@@ -61,7 +64,7 @@ mc_send("communications/draft.md",
 | [`mc_send()`](https://newgraphenvironment.github.io/mc/reference/mc_send.md)               | Draft or send an email from a markdown file                              |
 | [`mc_auth()`](https://newgraphenvironment.github.io/mc/reference/mc_auth.md)               | Authenticate with Gmail                                                  |
 | [`mc_md_render()`](https://newgraphenvironment.github.io/mc/reference/mc_md_render.md)     | Convert markdown to HTML (strip header, inline table styles, append sig) |
-| [`mc_sig()`](https://newgraphenvironment.github.io/mc/reference/mc_sig.md)                 | Return the standard NGE signature as HTML                                |
+| [`mc_sig()`](https://newgraphenvironment.github.io/mc/reference/mc_sig.md)                 | Return an email signature as HTML (bundled default or custom path)       |
 | [`mc_thread_find()`](https://newgraphenvironment.github.io/mc/reference/mc_thread_find.md) | Search Gmail for thread IDs                                              |
 
 ## Threading
@@ -96,7 +99,7 @@ mc_send("draft.md",
         test = TRUE)
 ```
 
-Test mode redirects to your own address, strips CC, and ignores
+Test mode redirects to your own address, strips CC/BCC, and ignores
 `thread_id`.
 
 ## License
