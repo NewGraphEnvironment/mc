@@ -14,13 +14,15 @@ pak::pak("NewGraphEnvironment/mc")
 
 ## Usage
 
-Write your email in markdown:
+Write your email body in markdown. Everything above the `---` separator is
+a human-readable envelope (notes for the author) and is stripped by
+`mc_md_render()` before conversion. Recipients, subject, and other
+envelope fields are set as R parameters in `mc_send()`.
 
 ```markdown
 # Email to Brandon - Cottonwood
 
 **Subject:** Cottonwood plugs - 2026 planting
-
 **To:** brandon@example.com
 
 ---
@@ -30,7 +32,6 @@ Hi Brandon,
 Quick question about the cottonwood plugs.
 
 Thanks,
-
 Al
 ```
 
@@ -61,7 +62,7 @@ mc_send("communications/draft.md",
 | `mc_send()` | Draft or send an email from a markdown file |
 | `mc_auth()` | Authenticate with Gmail |
 | `mc_md_render()` | Convert markdown to HTML (strip header, inline table styles, append sig) |
-| `mc_sig()` | Return the standard NGE signature as HTML |
+| `mc_sig()` | Return an email signature as HTML (bundled default or custom path) |
 | `mc_thread_find()` | Search Gmail for thread IDs |
 
 ## Threading
@@ -96,7 +97,7 @@ mc_send("draft.md",
         test = TRUE)
 ```
 
-Test mode redirects to your own address, strips CC, and ignores `thread_id`.
+Test mode redirects to your own address, strips CC/BCC, and ignores `thread_id`.
 
 ## License
 

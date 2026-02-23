@@ -9,6 +9,7 @@
 #' @param to Recipient email address (character string or vector).
 #' @param subject Email subject line.
 #' @param cc Optional CC recipients (character vector). Default `NULL`.
+#' @param bcc Optional BCC recipients (character vector). Default `NULL`.
 #' @param from Sender address. Default `"al@newgraphenvironment.com"`.
 #' @param thread_id Gmail thread ID to reply into. Default `NULL` (new thread).
 #'   Use [mc_thread_find()] to look up thread IDs.
@@ -69,6 +70,7 @@ mc_send <- function(path = NULL,
                     to,
                     subject,
                     cc = NULL,
+                    bcc = NULL,
                     from = "al@newgraphenvironment.com",
                     thread_id = NULL,
                     draft = TRUE,
@@ -91,6 +93,7 @@ mc_send <- function(path = NULL,
   if (test) {
     to <- from
     cc <- NULL
+    bcc <- NULL
     thread_id <- NULL
     message("TEST MODE: sending to ", from)
   }
@@ -104,6 +107,9 @@ mc_send <- function(path = NULL,
 
   if (!is.null(cc)) {
     msg <- gmailr::gm_cc(msg, cc)
+  }
+  if (!is.null(bcc)) {
+    msg <- gmailr::gm_bcc(msg, bcc)
   }
 
   # Draft or send
