@@ -9,6 +9,7 @@ vignette: >
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+library(mc)
 ```
 
 ## The problem
@@ -54,7 +55,7 @@ injected automatically for Gmail compatibility.
 
 The most reliable option. Clean HTML, minimal styling, works everywhere.
 
-```{r kable-example}
+```{r kable-simple}
 df <- data.frame(
   Site = c("Nechako", "Mackenzie", "Skeena"),
   Plugs = c(4000, 3000, 3000),
@@ -72,7 +73,7 @@ For colors, bold headers, or highlighted rows, use `kableExtra::row_spec()`
 and `kableExtra::column_spec()`. These add **inline styles** that survive
 Gmail's CSS stripping.
 
-```{r kableextra-example}
+```{r kableextra-styled}
 library(kableExtra)
 
 kbl(df, format = "html") |>
@@ -86,8 +87,7 @@ kbl(df, format = "html") |>
 CSS classes in a `<style>` block that Gmail strips. Use `row_spec()` with
 explicit `background` colors instead:
 
-```{r striping-manual, eval = FALSE}
-# Manual striping that works in Gmail
+```{r striping-manual}
 kbl(df, format = "html") |>
   kable_styling(full_width = FALSE) |>
   row_spec(0, bold = TRUE, background = "#f5f5f5") |>
@@ -96,40 +96,73 @@ kbl(df, format = "html") |>
 
 ## Scrollable tables
 
-Large tables can be wrapped in a scrollable `<div>` and Gmail preserves the
-`overflow` CSS. Use `mc_scroll()` to wrap any table HTML.
+Large tables can be wrapped in a scrollable `<div>` using `mc_scroll()`.
+Gmail preserves the `overflow` CSS so these scroll in the email client.
 
-**Wide table** (horizontal scroll):
+### Wide table (horizontal scroll)
 
-```{r scroll-wide, eval = FALSE}
-wide_df <- data.frame(...)  # many columns
-
-body <- mc_compose(
-  "<p>Wide table with horizontal scroll:</p>",
-  mc_scroll(knitr::kable(wide_df, format = "html"), direction = "wide")
+```{r scroll-wide-live, results = "asis"}
+wide_df <- data.frame(
+  Site = c("Nechako", "Mackenzie", "Skeena"),
+  Plugs = c(4000, 3000, 3000),
+  Season = c("Fall 2026", "Fall 2026", "Fall 2026"),
+  Latitude = c(53.92, 55.34, 54.38),
+  Longitude = c(-124.02, -122.97, -127.17),
+  BEC_Zone = c("SBSdw3", "SBSmk1", "SBSdk"),
+  Elevation_m = c(680, 700, 520),
+  Stock = c("Local", "Transfer", "Transfer"),
+  Nursery = c("PRT Vernon", "PRT Vernon", "PRT Vernon"),
+  Crew = c("Alpine Reforestation", "TBD", "TBD"),
+  Access = c("FSR 200", "FSR 440", "Morice West"),
+  Prep = c("Complete", "Scheduled", "Not started"),
+  Soil = c("Silty clay", "Sandy loam", "Clay loam"),
+  Moisture = c("Subhygric", "Mesic", "Hygric"),
+  Permit = c("Approved", "In review", "Not submitted")
 )
+
+cat(mc_scroll(knitr::kable(wide_df, format = "html"), direction = "wide"))
 ```
 
-**Long table** (vertical scroll, capped height):
+### Long table (vertical scroll)
 
-```{r scroll-long, eval = FALSE}
-long_df <- data.frame(...)  # many rows
-
-body <- mc_compose(
-  "<p>Long table with vertical scroll:</p>",
-  mc_scroll(knitr::kable(long_df, format = "html"), direction = "long")
+```{r scroll-long-live, results = "asis"}
+set.seed(42)
+sites <- c("Nechako", "Mackenzie", "Skeena", "Fraser", "Bulkley",
+           "Stellako", "Endako", "Stuart", "Salmon", "Bowron")
+long_df <- data.frame(
+  Row = 1:50,
+  Site = rep(sites, 5),
+  Plugs = sample(100:500, 50, replace = TRUE),
+  Survival_Pct = round(runif(50, 60, 98), 1),
+  Height_cm = round(runif(50, 15, 85), 0)
 )
+
+cat(mc_scroll(knitr::kable(long_df, format = "html"), direction = "long"))
 ```
 
-**Both directions:**
+### Both directions
 
-```{r scroll-both, eval = FALSE}
-big_df <- data.frame(...)  # many rows and columns
-
-body <- mc_compose(
-  "<p>Big table scrolling both ways:</p>",
-  mc_scroll(knitr::kable(big_df, format = "html"), direction = "both")
+```{r scroll-both-live, results = "asis"}
+set.seed(42)
+both_df <- data.frame(
+  Row = 1:30,
+  Site = rep(sites, 3),
+  Plugs = sample(100:500, 30, replace = TRUE),
+  Survival = round(runif(30, 60, 98), 1),
+  Height_cm = round(runif(30, 15, 85), 0),
+  BEC_Zone = rep(c("SBSdw3","SBSmk1","SBSdk","SBSwk1","SBSmc2",
+                    "SBSdw1","SBSwk3","SBSdk","SBSmw","SBSdw2"), 3),
+  Elevation = sample(400:900, 30, replace = TRUE),
+  Lat = round(runif(30, 53, 56), 4),
+  Lon = round(runif(30, -128, -122), 4),
+  Source = rep(c("Local","Transfer"), 15),
+  Soil = rep(c("Silty clay","Sandy loam","Clay loam","Silt loam","Gravel"), 6),
+  Moisture = rep(c("Subhygric","Mesic","Hygric","Subxeric","Mesic"), 6),
+  Fish = rep(c("Yes","Yes","No","Yes","No"), 6),
+  Permit = rep(c("Approved","In review","Not submitted","Approved","Pending"), 6)
 )
+
+cat(mc_scroll(knitr::kable(both_df, format = "html"), direction = "both"))
 ```
 
 The default `max_height` for vertical scrolling is `"400px"`. Adjust with
@@ -140,10 +173,8 @@ The default `max_height` for vertical scrolling is `"400px"`. Adjust with
 ```{r full-workflow, eval = FALSE}
 library(mc)
 
-# Authenticate once per session
 mc_auth()
 
-# Build the email
 sites <- data.frame(
   Site = c("Nechako", "Mackenzie", "Skeena"),
   Plugs = c(4000, 3000, 3000),
@@ -162,7 +193,6 @@ body <- mc_compose(
    <p>Does this match what the nursery has available?</p>"
 )
 
-# Draft first, send when ready
 mc_send(html = body,
         to = "brandon@example.com",
         subject = "2026 planting plan — cottonwood plugs")
