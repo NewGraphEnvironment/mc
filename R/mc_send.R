@@ -18,6 +18,9 @@
 #'   and ignore `cc` and `thread_id`. Default `FALSE`.
 #' @param sig Logical. Append signature? Passed to [mc_md_render()].
 #'   Default `TRUE`.
+#' @param sig_path Path to a custom signature HTML file. Default `NULL`
+#'   uses the bundled New Graph signature. Passed to [mc_md_render()].
+#'   Ignored when `sig = FALSE` or when `html` is provided.
 #' @param html Optional pre-rendered HTML body. If provided, `path` is ignored
 #'   and this HTML is used directly.
 #'
@@ -71,6 +74,7 @@ mc_send <- function(path = NULL,
                     draft = TRUE,
                     test = FALSE,
                     sig = TRUE,
+                    sig_path = NULL,
                     html = NULL) {
 
   # Render HTML from markdown or use pre-rendered
@@ -78,7 +82,7 @@ mc_send <- function(path = NULL,
     if (is.null(path)) {
       stop("Provide either `path` to a markdown file or `html`.", call. = FALSE)
     }
-    body_html <- mc_md_render(path, sig = sig)
+    body_html <- mc_md_render(path, sig = sig, sig_path = sig_path)
   } else {
     body_html <- html
   }

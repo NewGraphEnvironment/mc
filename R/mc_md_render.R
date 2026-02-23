@@ -5,7 +5,9 @@
 #' styles for Gmail compatibility, and appends the New Graph signature.
 #'
 #' @param path Path to the markdown draft file.
-#' @param sig Logical. Append the standard signature? Default `TRUE`.
+#' @param sig Logical. Append a signature? Default `TRUE`.
+#' @param sig_path Path to a custom signature HTML file. Default `NULL`
+#'   uses the bundled New Graph signature. Ignored when `sig = FALSE`.
 #'
 #' @return A character string of HTML ready for [mc_send()].
 #'
@@ -39,7 +41,7 @@
 #' }
 #'
 #' @export
-mc_md_render <- function(path, sig = TRUE) {
+mc_md_render <- function(path, sig = TRUE, sig_path = NULL) {
   if (!file.exists(path)) {
     stop("File not found: ", path, call. = FALSE)
   }
@@ -58,7 +60,7 @@ mc_md_render <- function(path, sig = TRUE) {
   # Append signature
 
   if (sig) {
-    body_html <- paste0(body_html, "\n", mc_sig())
+    body_html <- paste0(body_html, "\n", mc_sig(path = sig_path))
   }
 
   body_html

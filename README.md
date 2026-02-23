@@ -1,4 +1,4 @@
-# mc
+# mc <img src="man/figures/logo.png" align="right" height="139" alt="mc hex sticker" />
 
 > Mail Composer. Three lines to draft an email.
 

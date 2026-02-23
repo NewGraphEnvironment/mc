@@ -45,6 +45,20 @@ test_that("mc_md_render appends signature by default", {
   unlink(tmp)
 })
 
+test_that("mc_md_render uses custom signature when sig_path is set", {
+  sig_tmp <- tempfile(fileext = ".html")
+  writeLines("<br>Jane Doe<br>Acme Corp", sig_tmp)
+
+  md_tmp <- tempfile(fileext = ".md")
+  writeLines(c("---", "", "Hello."), md_tmp)
+
+  html <- mc_md_render(md_tmp, sig = TRUE, sig_path = sig_tmp)
+  expect_match(html, "Jane Doe")
+  expect_false(grepl("Al Irvine", html))
+
+  unlink(c(sig_tmp, md_tmp))
+})
+
 test_that("mc_md_render errors on missing file", {
   expect_error(mc_md_render("/nonexistent/file.md"), "File not found")
 })
