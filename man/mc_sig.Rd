@@ -2,20 +2,26 @@
 % Please edit documentation in R/mc_sig.R
 \name{mc_sig}
 \alias{mc_sig}
-\title{Return the standard New Graph email signature as HTML}
+\title{Return an email signature as HTML}
 \usage{
-mc_sig()
+mc_sig(path = NULL)
+}
+\arguments{
+\item{path}{Path to a signature HTML file. Default \code{NULL} uses the
+bundled New Graph signature.}
 }
 \value{
 A character string of HTML.
 }
 \description{
-Reads the signature template bundled at \code{inst/sig/signature.html}.
-Used by \code{\link[=mc_md_render]{mc_md_render()}} to append the signature automatically.
+Reads a signature HTML file. Defaults to the standard New Graph signature
+bundled at \code{inst/sig/signature.html}. Pass a custom path to use a
+different signature.
 }
 \examples{
 \dontrun{
 cat(mc_sig())
+cat(mc_sig("path/to/custom_sig.html"))
 }
 
 }

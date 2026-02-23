@@ -94,14 +94,46 @@ kbl(df, format = "html") |>
   row_spec(seq(2, nrow(df), 2), background = "#f9f9f9")
 ```
 
-## No scrolling tables
+## Scrollable tables
 
-Gmail strips `overflow` CSS and JavaScript. Scrolling tables are not possible
-in email. If your table is too wide, consider:
+Large tables can be wrapped in a scrollable `<div>` and Gmail preserves the
+`overflow` CSS. Use `mc_scroll()` to wrap any table HTML.
 
-- Fewer columns — move detail to an attachment or linked report
-- Abbreviate headers
-- Split into multiple smaller tables
+**Wide table** (horizontal scroll):
+
+```{r scroll-wide, eval = FALSE}
+wide_df <- data.frame(...)  # many columns
+
+body <- mc_compose(
+  "<p>Wide table with horizontal scroll:</p>",
+  mc_scroll(knitr::kable(wide_df, format = "html"), direction = "wide")
+)
+```
+
+**Long table** (vertical scroll, capped height):
+
+```{r scroll-long, eval = FALSE}
+long_df <- data.frame(...)  # many rows
+
+body <- mc_compose(
+  "<p>Long table with vertical scroll:</p>",
+  mc_scroll(knitr::kable(long_df, format = "html"), direction = "long")
+)
+```
+
+**Both directions:**
+
+```{r scroll-both, eval = FALSE}
+big_df <- data.frame(...)  # many rows and columns
+
+body <- mc_compose(
+  "<p>Big table scrolling both ways:</p>",
+  mc_scroll(knitr::kable(big_df, format = "html"), direction = "both")
+)
+```
+
+The default `max_height` for vertical scrolling is `"400px"`. Adjust with
+`mc_scroll(..., max_height = "600px")`.
 
 ## Full workflow
 

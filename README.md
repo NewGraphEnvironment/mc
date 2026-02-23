@@ -72,19 +72,20 @@ body <- mc_compose(
 mc_send(html = body, to = "brandon@example.com", subject = "Planting plan")
 ```
 
-See `vignette("tables-in-emails")` for kableExtra styling tips and Gmail
-limitations.
+Large tables? Wrap in `mc_scroll()` for horizontal/vertical scrolling:
 
-## Functions
+```r
+mc_compose(
+  "<p>Full dataset:</p>",
+  mc_scroll(knitr::kable(big_df, format = "html"), direction = "both")
+)
+```
 
-| Function | What it does |
-|----------|-------------|
-| `mc_send()` | Draft or send an email from a markdown file |
-| `mc_compose()` | Combine markdown, HTML, and kable objects into one email body |
-| `mc_auth()` | Authenticate with Gmail |
-| `mc_md_render()` | Convert a single markdown file to HTML |
-| `mc_sig()` | Return an email signature as HTML (bundled default or custom path) |
-| `mc_thread_find()` | Search Gmail for thread IDs |
+See `vignette("tables-in-emails")` for kableExtra styling and scrolling examples.
+
+## Reference
+
+Full function documentation with examples: [newgraphenvironment.github.io/mc](https://newgraphenvironment.github.io/mc/)
 
 ## Threading
 

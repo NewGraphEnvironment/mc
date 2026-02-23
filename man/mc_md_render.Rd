@@ -4,12 +4,15 @@
 \alias{mc_md_render}
 \title{Render a markdown draft to HTML email body}
 \usage{
-mc_md_render(path, sig = TRUE)
+mc_md_render(path, sig = TRUE, sig_path = NULL)
 }
 \arguments{
 \item{path}{Path to the markdown draft file.}
 
-\item{sig}{Logical. Append the standard signature? Default \code{TRUE}.}
+\item{sig}{Logical. Append a signature? Default \code{TRUE}.}
+
+\item{sig_path}{Path to a custom signature HTML file. Default \code{NULL}
+uses the bundled New Graph signature. Ignored when \code{sig = FALSE}.}
 }
 \value{
 A character string of HTML ready for \code{\link[=mc_send]{mc_send()}}.

@@ -9,11 +9,13 @@ mc_send(
   to,
   subject,
   cc = NULL,
+  bcc = NULL,
   from = "al@newgraphenvironment.com",
   thread_id = NULL,
   draft = TRUE,
   test = FALSE,
   sig = TRUE,
+  sig_path = NULL,
   html = NULL
 )
 }
@@ -25,6 +27,8 @@ mc_send(
 \item{subject}{Email subject line.}
 
 \item{cc}{Optional CC recipients (character vector). Default \code{NULL}.}
+
+\item{bcc}{Optional BCC recipients (character vector). Default \code{NULL}.}
 
 \item{from}{Sender address. Default \code{"al@newgraphenvironment.com"}.}
 
@@ -39,6 +43,10 @@ and ignore \code{cc} and \code{thread_id}. Default \code{FALSE}.}
 
 \item{sig}{Logical. Append signature? Passed to \code{\link[=mc_md_render]{mc_md_render()}}.
 Default \code{TRUE}.}
+
+\item{sig_path}{Path to a custom signature HTML file. Default \code{NULL}
+uses the bundled New Graph signature. Passed to \code{\link[=mc_md_render]{mc_md_render()}}.
+Ignored when \code{sig = FALSE} or when \code{html} is provided.}
 
 \item{html}{Optional pre-rendered HTML body. If provided, \code{path} is ignored
 and this HTML is used directly.}

@@ -19,13 +19,13 @@
 #'   [mc_send()].
 #'
 #' @details
-#' Gmail cannot render scrolling tables or CSS-class-based styling.
 #' For tables that look good in email:
 #' - Use [knitr::kable()] for clean, simple tables
 #' - Use `kableExtra::row_spec()` and `kableExtra::column_spec()` for
 #'   inline styling (colors, bold, backgrounds)
 #' - Avoid `bootstrap_options` like `"striped"` — the CSS classes are
 #'   stripped by Gmail
+#' - Wrap large tables in [mc_scroll()] for horizontal/vertical scrolling
 #'
 #' `mc_compose()` automatically adds border and padding inline styles
 #' to all `<table>`, `<th>`, and `<td>` elements for Gmail compatibility.
