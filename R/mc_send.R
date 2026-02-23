@@ -79,6 +79,19 @@ mc_send <- function(path = NULL,
                     sig_path = NULL,
                     html = NULL) {
 
+  chk::chk_null_or(path, vld = chk::vld_string)
+  chk::chk_character(to)
+  chk::chk_string(subject)
+  chk::chk_null_or(cc, vld = chk::vld_character)
+  chk::chk_null_or(bcc, vld = chk::vld_character)
+  chk::chk_string(from)
+  chk::chk_null_or(thread_id, vld = chk::vld_string)
+  chk::chk_flag(draft)
+  chk::chk_flag(test)
+  chk::chk_flag(sig)
+  chk::chk_null_or(sig_path, vld = chk::vld_string)
+  chk::chk_null_or(html, vld = chk::vld_string)
+
   # Render HTML from markdown or use pre-rendered
   if (is.null(html)) {
     if (is.null(path)) {

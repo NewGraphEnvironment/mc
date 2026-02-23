@@ -17,6 +17,7 @@
 #'
 #' @export
 mc_sig <- function(path = NULL) {
+  chk::chk_null_or(path, vld = chk::vld_string)
   if (is.null(path)) {
     path <- system.file("sig", "signature.html", package = "mc")
     if (path == "") {

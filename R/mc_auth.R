@@ -15,6 +15,7 @@
 #'
 #' @export
 mc_auth <- function(email = "al@newgraphenvironment.com") {
+  chk::chk_string(email)
   gmailr::gm_auth(email = email)
   invisible(NULL)
 }

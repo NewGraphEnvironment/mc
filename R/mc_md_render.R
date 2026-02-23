@@ -42,6 +42,9 @@
 #'
 #' @export
 mc_md_render <- function(path, sig = TRUE, sig_path = NULL) {
+  chk::chk_string(path)
+  chk::chk_flag(sig)
+  chk::chk_null_or(sig_path, vld = chk::vld_string)
   if (!file.exists(path)) {
     stop("File not found: ", path, call. = FALSE)
   }

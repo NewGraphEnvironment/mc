@@ -19,6 +19,8 @@
 #'
 #' @export
 mc_thread_find <- function(query, n = 5) {
+  chk::chk_string(query)
+  chk::chk_whole_number(n)
   results <- gmailr::gm_messages(search = query, num_results = n)
   ids <- gmailr::gm_id(results)
 
