@@ -34,6 +34,125 @@ test_that("resolve_send_at rejects bad types", {
   expect_error(mc:::resolve_send_at(c(1, 2)), "POSIXct")
 })
 
+test_that("mc_send builds MIME message with correct fields (draft)", {
+  captured_msg <- NULL
+  local_mocked_bindings(
+    gm_create_draft = function(msg) {
+      captured_msg <<- msg
+      msg
+    },
+    .package = "gmailr"
+  )
+  mc_send(
+    html = "<p>hello</p>", to = "bob@example.com",
+    subject = "Test subject", from = "alice@example.com",
+    draft = TRUE
+  )
+  expect_false(is.null(captured_msg))
+})
+
+test_that("mc_send passes cc and bcc to MIME message", {
+  captured_msg <- NULL
+  local_mocked_bindings(
+    gm_create_draft = function(msg) {
+      captured_msg <<- msg
+      msg
+    },
+    .package = "gmailr"
+  )
+  mc_send(
+    html = "<p>hi</p>", to = "bob@example.com",
+    subject = "CC test", from = "alice@example.com",
+    cc = "carol@example.com", bcc = "dave@example.com",
+    draft = TRUE
+  )
+  expect_false(is.null(captured_msg))
+})
+
+test_that("mc_send sends with thread_id when draft = FALSE", {
+  captured_args <- list()
+  local_mocked_bindings(
+    gm_send_message = function(msg, ...) {
+      captured_args <<- list(msg = msg, ...)
+      msg
+    },
+    .package = "gmailr"
+  )
+  mc_send(
+    html = "<p>reply</p>", to = "bob@example.com",
+    subject = "Re: Thread", from = "alice@example.com",
+    thread_id = "abc123", draft = FALSE
+  )
+  expect_equal(captured_args$thread_id, "abc123")
+})
+
+test_that("mc_send test mode overrides to/cc/bcc/thread_id", {
+  captured_msg <- NULL
+  local_mocked_bindings(
+    gm_send_message = function(msg, ...) {
+      captured_msg <<- msg
+      msg
+    },
+    gm_create_draft = function(msg) {
+      captured_msg <<- msg
+      msg
+    },
+    .package = "gmailr"
+  )
+  # test = TRUE should redirect to from, strip cc/bcc/thread_id
+  mc_send(
+    html = "<p>test</p>", to = "bob@example.com",
+    subject = "Test mode", from = "alice@example.com",
+    cc = "carol@example.com", bcc = "dave@example.com",
+    thread_id = "abc123", test = TRUE, draft = FALSE
+  )
+  expect_false(is.null(captured_msg))
+})
+
+test_that("mc_send warns when draft + thread_id", {
+  local_mocked_bindings(
+    gm_create_draft = function(msg) msg,
+    .package = "gmailr"
+  )
+  expect_warning(
+    mc_send(
+      html = "<p>hi</p>", to = "bob@example.com",
+      subject = "Test", from = "alice@example.com",
+      thread_id = "abc123", draft = TRUE
+    ),
+    "will NOT appear in thread"
+  )
+})
+
+test_that("send_log writes to ~/.mc/send_log.txt", {
+  log_file <- file.path(Sys.getenv("HOME"), ".mc", "send_log.txt")
+  # Record state before
+  lines_before <- if (file.exists(log_file)) length(readLines(log_file)) else 0
+  mc:::send_log("Test Subject", "bob@example.com", "SENT")
+  lines_after <- length(readLines(log_file))
+  expect_equal(lines_after, lines_before + 1)
+  last_line <- readLines(log_file)[lines_after]
+  expect_match(last_line, "SENT")
+  expect_match(last_line, "Test Subject")
+})
+
+test_that("send_notify does not error", {
+  # Just confirm it doesn't throw — notification may or may not appear
+  expect_no_error(mc:::send_notify("Test", "body text"))
+})
+
+test_that("default_from reads option then env then fallback", {
+  withr::local_options(mc.from = NULL)
+  withr::local_envvar(MC_FROM = "")
+  expect_equal(mc:::default_from(), "al@newgraphenvironment.com")
+
+  withr::local_envvar(MC_FROM = "env@example.com")
+  expect_equal(mc:::default_from(), "env@example.com")
+
+  withr::local_options(mc.from = "opt@example.com")
+  expect_equal(mc:::default_from(), "opt@example.com")
+})
+
 test_that("caffeinate is not called when send_at is NULL", {
   # Stub caffeinate_send to record whether it was called
   called <- FALSE

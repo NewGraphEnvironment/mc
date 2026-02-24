@@ -62,6 +62,23 @@ test_that("mc_compose errors on bad types", {
   expect_error(mc_compose(sig = "yes"))
 })
 
+test_that("mc_compose errors on non-existent .md file", {
+  expect_error(
+    mc_compose("nonexistent_file.md", sig = FALSE),
+    "File not found"
+  )
+})
+
+test_that("strip_md_header removes content above ---", {
+  md <- "# Header\n\n**To:** bob\n\n---\n\nBody text."
+  expect_equal(mc:::strip_md_header(md), "Body text.")
+})
+
+test_that("strip_md_header returns unchanged when no ---", {
+  md <- "Just a paragraph."
+  expect_equal(mc:::strip_md_header(md), "Just a paragraph.")
+})
+
 test_that("mc_compose mixes md file, kable, and HTML", {
   md_tmp <- tempfile(fileext = ".md")
   writeLines(c("---", "", "Opening paragraph."), md_tmp)

@@ -4,11 +4,12 @@
 \alias{mc_auth}
 \title{Authenticate with Gmail}
 \usage{
-mc_auth(email = "al@newgraphenvironment.com")
+mc_auth(email = default_from())
 }
 \arguments{
 \item{email}{Email address to authenticate as.
-Default \code{"al@newgraphenvironment.com"}.}
+Default uses \code{getOption("mc.from")}, then the \code{MC_FROM} environment
+variable, then \code{"al@newgraphenvironment.com"}.}
 }
 \value{
 Invisible \code{NULL}. Called for side effect of authenticating.
@@ -20,6 +21,9 @@ email address. Call once per session before \code{\link[=mc_send]{mc_send()}}.
 \examples{
 \dontrun{
 mc_auth()
+
+# Set globally in .Rprofile to avoid passing email every time:
+options(mc.from = "you@example.com")
 }
 
 }

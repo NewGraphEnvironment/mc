@@ -243,3 +243,6 @@ On macOS, `caffeinate` prevents the machine from sleeping until the email
 sends. The laptop lid can be closed as long as power is connected. If the
 machine does sleep through the send window, a 5-minute grace period applies
 — past that the send is skipped to prevent stale emails firing.
+
+All scheduled send outcomes (sent, skipped, failed) are logged to
+`~/.mc/send_log.txt` and trigger a macOS desktop notification.

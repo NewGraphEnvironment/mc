@@ -54,7 +54,7 @@ mc_md_render <- function(path, sig = TRUE, sig_path = NULL) {
   raw <- paste(readLines(path, warn = FALSE), collapse = "\n")
 
   # Strip header: everything up to and including the --- separator
-  body_md <- sub("^[\\s\\S]*?---\\s*\\n", "", raw, perl = TRUE)
+  body_md <- strip_md_header(raw)
 
   # Convert markdown to HTML
   body_html <- commonmark::markdown_html(body_md, extensions = TRUE)
@@ -69,6 +69,22 @@ mc_md_render <- function(path, sig = TRUE, sig_path = NULL) {
   }
 
   body_html
+}
+
+
+#' Strip the header above the first `---` separator in markdown
+#'
+#' Used by both [mc_md_render()] and `resolve_part()` in [mc_compose()].
+#' If no `---` is found, the full text is returned unchanged.
+#' @param md Character string of raw markdown.
+#' @return Markdown with header stripped.
+#' @noRd
+strip_md_header <- function(md) {
+  if (grepl("---", md, fixed = TRUE)) {
+    sub("^[\\s\\S]*?---\\s*\\n", "", md, perl = TRUE)
+  } else {
+    md
+  }
 }
 
 
