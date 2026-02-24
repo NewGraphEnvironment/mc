@@ -51,6 +51,18 @@
 #' `test = TRUE` sends to yourself, strips CC, and ignores `thread_id`
 #' to prevent accidental sends to real threads during development.
 #'
+#' ## Scheduled send
+#'
+#' `send_at` runs a background R process on your machine that sleeps
+#' then sends. This requires your computer to stay awake:
+#'
+#' - **Laptop awake** — sends on time
+#' - **Laptop asleep (lid closed)** — timer pauses, sends when you
+#'   wake the machine (later than scheduled)
+#' - **Laptop powered off** — process dies, email never sends
+#'
+#' Best for short delays while you keep working, not overnight scheduling.
+#'
 #' @examples
 #' \dontrun{
 #' # Create a draft (safe default)

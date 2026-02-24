@@ -86,6 +86,20 @@ directly into the thread via \code{gm_send_message(thread_id = ...)}.
 \code{test = TRUE} sends to yourself, strips CC, and ignores \code{thread_id}
 to prevent accidental sends to real threads during development.
 }
+
+\subsection{Scheduled send}{
+
+\code{send_at} runs a background R process on your machine that sleeps
+then sends. This requires your computer to stay awake:
+\itemize{
+\item \strong{Laptop awake} — sends on time
+\item \strong{Laptop asleep (lid closed)} — timer pauses, sends when you
+wake the machine (later than scheduled)
+\item \strong{Laptop powered off} — process dies, email never sends
+}
+
+Best for short delays while you keep working, not overnight scheduling.
+}
 }
 \examples{
 \dontrun{
