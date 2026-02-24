@@ -280,8 +280,6 @@ with `mc_scroll(..., max_height = "600px")`.
 ``` r
 library(mc)
 
-mc_auth()
-
 sites <- data.frame(
   Site = c("Nechako", "Mackenzie", "Skeena"),
   Plugs = c(4000, 3000, 3000),
@@ -304,3 +302,55 @@ mc_send(html = body,
         to = "brandon@example.com",
         subject = "2026 planting plan — cottonwood plugs")
 ```
+
+## Scheduled send
+
+Use `send_at` to send an email later. This works with
+[`mc_compose()`](https://newgraphenvironment.github.io/mc/reference/mc_compose.md)
+and
+[`mc_scroll()`](https://newgraphenvironment.github.io/mc/reference/mc_scroll.md)
+— build the body now, send it when you want.
+
+``` r
+library(mc)
+
+sites <- data.frame(
+  Site = c("Nechako", "Mackenzie", "Skeena"),
+  Plugs = c(4000, 3000, 3000),
+  Season = c("Fall 2026", "Fall 2026", "Fall 2026")
+)
+
+body <- mc_compose(
+  "<p>Hi Brandon,</p>
+   <p>Here's the planting plan with a scrollable table:</p>",
+  mc_scroll(
+    kableExtra::kbl(sites, format = "html") |>
+      kableExtra::kable_styling(full_width = FALSE) |>
+      kableExtra::row_spec(0, bold = TRUE, background = "#f5f5f5"),
+    direction = "both"
+  ),
+  "<p>Let me know if the numbers look right.</p>"
+)
+
+# Send in 30 minutes
+proc <- mc_send(html = body,
+                to = "brandon@example.com",
+                subject = "2026 planting plan",
+                send_at = 30)
+
+# Or at a specific time
+mc_send(html = body,
+        to = "brandon@example.com",
+        subject = "2026 planting plan",
+        send_at = as.POSIXct("2026-02-24 09:00:00"))
+
+# Check or cancel
+proc$is_alive()
+proc$kill()
+```
+
+On macOS, `caffeinate` prevents the machine from sleeping until the
+email sends. The laptop lid can be closed as long as power is connected.
+If the machine does sleep through the send window, a 5-minute grace
+period applies — past that the send is skipped to prevent stale emails
+firing.

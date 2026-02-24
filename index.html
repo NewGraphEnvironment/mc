@@ -145,10 +145,32 @@
 <p><strong>Note:</strong> <code>gm_create_draft()</code> does not support <code>thread_id</code>. Drafts are always standalone. Use <code>draft = FALSE</code> to send directly into a thread, or send the draft manually from the Gmail UI (Gmail will match by subject line if it starts with “Re:”).</p>
 </div>
 <div class="section level2">
+<h2 id="scheduled-send">Scheduled send<a class="anchor" aria-label="anchor" href="#scheduled-send"></a>
+</h2>
+<p>Send an email later with <code>send_at</code> — either minutes from now or a specific time:</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Send in 10 minutes</span></span>
+<span><span class="va">proc</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/mc_send.html">mc_send</a></span><span class="op">(</span><span class="st">"draft.md"</span>,</span>
+<span>                to <span class="op">=</span> <span class="st">"brandon@example.com"</span>,</span>
+<span>                subject <span class="op">=</span> <span class="st">"Cottonwood plugs"</span>,</span>
+<span>                send_at <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Send at a specific time</span></span>
+<span><span class="fu"><a href="reference/mc_send.html">mc_send</a></span><span class="op">(</span><span class="st">"draft.md"</span>,</span>
+<span>        to <span class="op">=</span> <span class="st">"brandon@example.com"</span>,</span>
+<span>        subject <span class="op">=</span> <span class="st">"Cottonwood plugs"</span>,</span>
+<span>        send_at <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.POSIXlt.html" class="external-link">as.POSIXct</a></span><span class="op">(</span><span class="st">"2026-02-24 09:11:00"</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Check status or cancel</span></span>
+<span><span class="va">proc</span><span class="op">$</span><span class="fu">is_alive</span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="va">proc</span><span class="op">$</span><span class="fu">kill</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<p>On macOS, <code>caffeinate</code> keeps the machine awake until the email sends. The laptop lid can be closed as long as power is connected. If the machine sleeps through the send window (e.g., power loss), a 5-minute grace period applies — past that, the send is skipped to prevent stale emails.</p>
+</div>
+<div class="section level2">
 <h2 id="test-mode">Test mode<a class="anchor" aria-label="anchor" href="#test-mode"></a>
 </h2>
 <p>Send to yourself to preview:</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="reference/mc_send.html">mc_send</a></span><span class="op">(</span><span class="st">"draft.md"</span>,</span>
 <span>        to <span class="op">=</span> <span class="st">"brandon@example.com"</span>,</span>
 <span>        subject <span class="op">=</span> <span class="st">"Cottonwood plugs"</span>,</span>

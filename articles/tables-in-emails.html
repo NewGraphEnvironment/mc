@@ -2813,8 +2813,6 @@ Pending
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/NewGraphEnvironment/mc" class="external-link">mc</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="../reference/mc_auth.html">mc_auth</a></span><span class="op">(</span><span class="op">)</span></span>
-<span></span>
 <span><span class="va">sites</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>  Site <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Nechako"</span>, <span class="st">"Mackenzie"</span>, <span class="st">"Skeena"</span><span class="op">)</span>,</span>
 <span>  Plugs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">4000</span>, <span class="fl">3000</span>, <span class="fl">3000</span><span class="op">)</span>,</span>
@@ -2836,6 +2834,54 @@ Pending
 <span><span class="fu"><a href="../reference/mc_send.html">mc_send</a></span><span class="op">(</span>html <span class="op">=</span> <span class="va">body</span>,</span>
 <span>        to <span class="op">=</span> <span class="st">"brandon@example.com"</span>,</span>
 <span>        subject <span class="op">=</span> <span class="st">"2026 planting plan — cottonwood plugs"</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="scheduled-send">Scheduled send<a class="anchor" aria-label="anchor" href="#scheduled-send"></a>
+</h2>
+<p>Use <code>send_at</code> to send an email later. This works with
+<code><a href="../reference/mc_compose.html">mc_compose()</a></code> and <code><a href="../reference/mc_scroll.html">mc_scroll()</a></code> — build the body
+now, send it when you want.</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/NewGraphEnvironment/mc" class="external-link">mc</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">sites</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  Site <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Nechako"</span>, <span class="st">"Mackenzie"</span>, <span class="st">"Skeena"</span><span class="op">)</span>,</span>
+<span>  Plugs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">4000</span>, <span class="fl">3000</span>, <span class="fl">3000</span><span class="op">)</span>,</span>
+<span>  Season <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Fall 2026"</span>, <span class="st">"Fall 2026"</span>, <span class="st">"Fall 2026"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">body</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/mc_compose.html">mc_compose</a></span><span class="op">(</span></span>
+<span>  <span class="st">"&lt;p&gt;Hi Brandon,&lt;/p&gt;</span></span>
+<span><span class="st">   &lt;p&gt;Here's the planting plan with a scrollable table:&lt;/p&gt;"</span>,</span>
+<span>  <span class="fu"><a href="../reference/mc_scroll.html">mc_scroll</a></span><span class="op">(</span></span>
+<span>    <span class="fu">kableExtra</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/kableExtra/man/kbl.html" class="external-link">kbl</a></span><span class="op">(</span><span class="va">sites</span>, format <span class="op">=</span> <span class="st">"html"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>      <span class="fu">kableExtra</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/kableExtra/man/kable_styling.html" class="external-link">kable_styling</a></span><span class="op">(</span>full_width <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>      <span class="fu">kableExtra</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/kableExtra/man/row_spec.html" class="external-link">row_spec</a></span><span class="op">(</span><span class="fl">0</span>, bold <span class="op">=</span> <span class="cn">TRUE</span>, background <span class="op">=</span> <span class="st">"#f5f5f5"</span><span class="op">)</span>,</span>
+<span>    direction <span class="op">=</span> <span class="st">"both"</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  <span class="st">"&lt;p&gt;Let me know if the numbers look right.&lt;/p&gt;"</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Send in 30 minutes</span></span>
+<span><span class="va">proc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/mc_send.html">mc_send</a></span><span class="op">(</span>html <span class="op">=</span> <span class="va">body</span>,</span>
+<span>                to <span class="op">=</span> <span class="st">"brandon@example.com"</span>,</span>
+<span>                subject <span class="op">=</span> <span class="st">"2026 planting plan"</span>,</span>
+<span>                send_at <span class="op">=</span> <span class="fl">30</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Or at a specific time</span></span>
+<span><span class="fu"><a href="../reference/mc_send.html">mc_send</a></span><span class="op">(</span>html <span class="op">=</span> <span class="va">body</span>,</span>
+<span>        to <span class="op">=</span> <span class="st">"brandon@example.com"</span>,</span>
+<span>        subject <span class="op">=</span> <span class="st">"2026 planting plan"</span>,</span>
+<span>        send_at <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.POSIXlt.html" class="external-link">as.POSIXct</a></span><span class="op">(</span><span class="st">"2026-02-24 09:00:00"</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Check or cancel</span></span>
+<span><span class="va">proc</span><span class="op">$</span><span class="fu">is_alive</span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="va">proc</span><span class="op">$</span><span class="fu">kill</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<p>On macOS, <code>caffeinate</code> prevents the machine from sleeping
+until the email sends. The laptop lid can be closed as long as power is
+connected. If the machine does sleep through the send window, a 5-minute
+grace period applies — past that the send is skipped to prevent stale
+emails firing.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
