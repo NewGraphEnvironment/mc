@@ -50,7 +50,12 @@ mc_thread_find <- function(query, n = 5) {
 }
 
 
-#' Null-coalescing operator
+#' Null/empty coalescing operator
+#'
+#' Like base `%||%` but also catches `length(x) == 0`.
+#' Base R added `%||%` in 4.4.0; this version is safe on R >= 4.1
+#' because user-defined infix operators mask the base version within
+#' the package namespace without a NOTE.
 #' @noRd
 `%||%` <- function(x, y) if (is.null(x) || length(x) == 0) y else x
 

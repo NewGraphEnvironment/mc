@@ -150,16 +150,16 @@ both_df <- data.frame(
   Plugs = sample(100:500, 30, replace = TRUE),
   Survival = round(runif(30, 60, 98), 1),
   Height_cm = round(runif(30, 15, 85), 0),
-  BEC_Zone = rep(c("SBSdw3","SBSmk1","SBSdk","SBSwk1","SBSmc2",
-                    "SBSdw1","SBSwk3","SBSdk","SBSmw","SBSdw2"), 3),
+  BEC_Zone = rep(c("SBSdw3", "SBSmk1", "SBSdk", "SBSwk1", "SBSmc2",
+                   "SBSdw1", "SBSwk3", "SBSdk", "SBSmw", "SBSdw2"), 3),
   Elevation = sample(400:900, 30, replace = TRUE),
   Lat = round(runif(30, 53, 56), 4),
   Lon = round(runif(30, -128, -122), 4),
-  Source = rep(c("Local","Transfer"), 15),
-  Soil = rep(c("Silty clay","Sandy loam","Clay loam","Silt loam","Gravel"), 6),
-  Moisture = rep(c("Subhygric","Mesic","Hygric","Subxeric","Mesic"), 6),
-  Fish = rep(c("Yes","Yes","No","Yes","No"), 6),
-  Permit = rep(c("Approved","In review","Not submitted","Approved","Pending"), 6)
+  Source = rep(c("Local", "Transfer"), 15),
+  Soil = rep(c("Silty clay", "Sandy loam", "Clay loam", "Silt loam", "Gravel"), 6),
+  Moisture = rep(c("Subhygric", "Mesic", "Hygric", "Subxeric", "Mesic"), 6),
+  Fish = rep(c("Yes", "Yes", "No", "Yes", "No"), 6),
+  Permit = rep(c("Approved", "In review", "Not submitted", "Approved", "Pending"), 6)
 )
 
 cat(mc_scroll(knitr::kable(both_df, format = "html"), direction = "both"))

@@ -14,7 +14,10 @@ library(hexSticker)
 # Read package name from DESCRIPTION so this script is copy-paste across repos
 package_name <- read.dcf("DESCRIPTION", fields = "Package")[[1]]
 
-logo_url <- "https://raw.githubusercontent.com/NewGraphEnvironment/new_graphiti/main/assets/logos/logo_newgraph/WHITE/PNG/nge-icon_white.png"
+logo_url <- paste0(
+  "https://raw.githubusercontent.com/NewGraphEnvironment/",
+  "new_graphiti/main/assets/logos/logo_newgraph/WHITE/PNG/nge-icon_white.png"
+)
 logo_file <- "data-raw/nge-icon_white.png"
 output_file <- "man/figures/logo.png"
 
