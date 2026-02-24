@@ -8,14 +8,15 @@ with the default New Graph email address. Call once per session before
 ## Usage
 
 ``` r
-mc_auth(email = "al@newgraphenvironment.com")
+mc_auth(email = default_from())
 ```
 
 ## Arguments
 
 - email:
 
-  Email address to authenticate as. Default
+  Email address to authenticate as. Default uses `getOption("mc.from")`,
+  then the `MC_FROM` environment variable, then
   `"al@newgraphenvironment.com"`.
 
 ## Value
@@ -27,5 +28,8 @@ Invisible `NULL`. Called for side effect of authenticating.
 ``` r
 if (FALSE) { # \dontrun{
 mc_auth()
+
+# Set globally in .Rprofile to avoid passing email every time:
+options(mc.from = "you@example.com")
 } # }
 ```

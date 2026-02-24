@@ -12,6 +12,24 @@ boilerplate that every email script repeats.
 pak::pak("NewGraphEnvironment/mc")
 ```
 
+## Setup
+
+Set your default sender address in `~/.Rprofile`:
+
+``` r
+options(mc.from = "you@example.com")
+```
+
+Or via environment variable in `~/.Renviron`:
+
+    MC_FROM=you@example.com
+
+Then authenticate once per machine:
+
+``` r
+mc_auth()
+```
+
 ## Usage
 
 Write your email body in markdown. Everything above the `---` separator
@@ -151,6 +169,9 @@ The laptop lid can be closed as long as power is connected. If the
 machine sleeps through the send window (e.g., power loss), a 5-minute
 grace period applies — past that, the send is skipped to prevent stale
 emails.
+
+Outcomes are logged to `~/.mc/send_log.txt` and trigger a macOS desktop
+notification on success, skip, or failure.
 
 ## Test mode
 

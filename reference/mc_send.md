@@ -12,7 +12,7 @@ mc_send(
   subject,
   cc = NULL,
   bcc = NULL,
-  from = "al@newgraphenvironment.com",
+  from = default_from(),
   thread_id = NULL,
   draft = TRUE,
   test = FALSE,
@@ -48,7 +48,9 @@ mc_send(
 
 - from:
 
-  Sender address. Default `"al@newgraphenvironment.com"`.
+  Sender address. Default uses `getOption("mc.from")`, then the
+  `MC_FROM` environment variable, then `"al@newgraphenvironment.com"` as
+  a final fallback.
 
 - thread_id:
 

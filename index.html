@@ -68,31 +68,43 @@
 <code class="sourceCode R"><span><span class="fu">pak</span><span class="fu">::</span><span class="fu"><a href="https://pak.r-lib.org/reference/pak.html" class="external-link">pak</a></span><span class="op">(</span><span class="st">"NewGraphEnvironment/mc"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
+<h2 id="setup">Setup<a class="anchor" aria-label="anchor" href="#setup"></a>
+</h2>
+<p>Set your default sender address in <code>~/.Rprofile</code>:</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>mc.from <span class="op">=</span> <span class="st">"you@example.com"</span><span class="op">)</span></span></code></pre></div>
+<p>Or via environment variable in <code>~/.Renviron</code>:</p>
+<pre><code><span><span class="va">MC_FROM</span><span class="op">=</span><span class="va">you</span><span class="op">@</span><span class="va">example.com</span></span></code></pre>
+<p>Then authenticate once per machine:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="reference/mc_auth.html">mc_auth</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level2">
 <h2 id="usage">Usage<a class="anchor" aria-label="anchor" href="#usage"></a>
 </h2>
 <p>Write your email body in markdown. Everything above the <code>---</code> separator is a human-readable envelope (notes for the author) and is stripped by <code><a href="reference/mc_md_render.html">mc_md_render()</a></code> before conversion. Recipients, subject, and other envelope fields are set as R parameters in <code><a href="reference/mc_send.html">mc_send()</a></code>.</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode markdown"><code class="sourceCode markdown"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="fu"># Email to Brandon - Cottonwood</span></span>
-<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a></span>
-<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a>**Subject:** Cottonwood plugs - 2026 planting</span>
-<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a>**To:** brandon@example.com</span>
-<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a></span>
-<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a>---</span>
-<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a></span>
-<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a>Hi Brandon,</span>
-<span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a></span>
-<span id="cb2-10"><a href="#cb2-10" tabindex="-1"></a>Quick question about the cottonwood plugs.</span>
-<span id="cb2-11"><a href="#cb2-11" tabindex="-1"></a></span>
-<span id="cb2-12"><a href="#cb2-12" tabindex="-1"></a>Thanks,</span>
-<span id="cb2-13"><a href="#cb2-13" tabindex="-1"></a>Al</span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode markdown"><code class="sourceCode markdown"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="fu"># Email to Brandon - Cottonwood</span></span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a></span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>**Subject:** Cottonwood plugs - 2026 planting</span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a>**To:** brandon@example.com</span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a></span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a>---</span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a></span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a>Hi Brandon,</span>
+<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a></span>
+<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a>Quick question about the cottonwood plugs.</span>
+<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a></span>
+<span id="cb5-12"><a href="#cb5-12" tabindex="-1"></a>Thanks,</span>
+<span id="cb5-13"><a href="#cb5-13" tabindex="-1"></a>Al</span></code></pre></div>
 <p>Send it in three lines:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/NewGraphEnvironment/mc" class="external-link">mc</a></span><span class="op">)</span></span>
 <span><span class="fu"><a href="reference/mc_send.html">mc_send</a></span><span class="op">(</span><span class="st">"communications/draft.md"</span>,</span>
 <span>        to <span class="op">=</span> <span class="st">"brandon@example.com"</span>,</span>
 <span>        subject <span class="op">=</span> <span class="st">"Cottonwood plugs - 2026 planting"</span><span class="op">)</span></span></code></pre></div>
 <p>That creates a Gmail draft with HTML formatting and the standard signature appended. Authentication happens automatically via cached OAuth tokens (run <code><a href="reference/mc_auth.html">mc_auth()</a></code> once per machine to set up).</p>
 <p>When you’re ready to send for real:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="reference/mc_send.html">mc_send</a></span><span class="op">(</span><span class="st">"communications/draft.md"</span>,</span>
 <span>        to <span class="op">=</span> <span class="st">"brandon@example.com"</span>,</span>
 <span>        subject <span class="op">=</span> <span class="st">"Cottonwood plugs"</span>,</span>
@@ -102,7 +114,7 @@
 <h2 id="tables-in-emails">Tables in emails<a class="anchor" aria-label="anchor" href="#tables-in-emails"></a>
 </h2>
 <p>Need an R-generated table in your email? Use <code><a href="reference/mc_compose.html">mc_compose()</a></code> to mix markdown files, HTML, and kable/kableExtra objects:</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Site <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Nechako"</span>, <span class="st">"Mackenzie"</span><span class="op">)</span>, Plugs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">4000</span>, <span class="fl">3000</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">body</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/mc_compose.html">mc_compose</a></span><span class="op">(</span></span>
@@ -113,7 +125,7 @@
 <span></span>
 <span><span class="fu"><a href="reference/mc_send.html">mc_send</a></span><span class="op">(</span>html <span class="op">=</span> <span class="va">body</span>, to <span class="op">=</span> <span class="st">"brandon@example.com"</span>, subject <span class="op">=</span> <span class="st">"Planting plan"</span><span class="op">)</span></span></code></pre></div>
 <p>Large tables? Wrap in <code><a href="reference/mc_scroll.html">mc_scroll()</a></code> for horizontal/vertical scrolling:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="reference/mc_compose.html">mc_compose</a></span><span class="op">(</span></span>
 <span>  <span class="st">"&lt;p&gt;Full dataset:&lt;/p&gt;"</span>,</span>
 <span>  <span class="fu"><a href="reference/mc_scroll.html">mc_scroll</a></span><span class="op">(</span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">big_df</span>, format <span class="op">=</span> <span class="st">"html"</span><span class="op">)</span>, direction <span class="op">=</span> <span class="st">"both"</span><span class="op">)</span></span>
@@ -129,7 +141,7 @@
 <h2 id="threading">Threading<a class="anchor" aria-label="anchor" href="#threading"></a>
 </h2>
 <p>Reply into an existing conversation:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Find the thread</span></span>
 <span><span class="fu"><a href="reference/mc_thread_find.html">mc_thread_find</a></span><span class="op">(</span><span class="st">"from:brandon subject:cottonwood"</span><span class="op">)</span></span>
 <span></span>
@@ -148,7 +160,7 @@
 <h2 id="scheduled-send">Scheduled send<a class="anchor" aria-label="anchor" href="#scheduled-send"></a>
 </h2>
 <p>Send an email later with <code>send_at</code> — either minutes from now or a specific time:</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Send in 10 minutes</span></span>
 <span><span class="va">proc</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/mc_send.html">mc_send</a></span><span class="op">(</span><span class="st">"draft.md"</span>,</span>
 <span>                to <span class="op">=</span> <span class="st">"brandon@example.com"</span>,</span>
@@ -165,12 +177,13 @@
 <span><span class="va">proc</span><span class="op">$</span><span class="fu">is_alive</span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">proc</span><span class="op">$</span><span class="fu">kill</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <p>On macOS, <code>caffeinate</code> keeps the machine awake until the email sends. The laptop lid can be closed as long as power is connected. If the machine sleeps through the send window (e.g., power loss), a 5-minute grace period applies — past that, the send is skipped to prevent stale emails.</p>
+<p>Outcomes are logged to <code>~/.mc/send_log.txt</code> and trigger a macOS desktop notification on success, skip, or failure.</p>
 </div>
 <div class="section level2">
 <h2 id="test-mode">Test mode<a class="anchor" aria-label="anchor" href="#test-mode"></a>
 </h2>
 <p>Send to yourself to preview:</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="reference/mc_send.html">mc_send</a></span><span class="op">(</span><span class="st">"draft.md"</span>,</span>
 <span>        to <span class="op">=</span> <span class="st">"brandon@example.com"</span>,</span>
 <span>        subject <span class="op">=</span> <span class="st">"Cottonwood plugs"</span>,</span>
