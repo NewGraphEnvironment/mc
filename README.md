@@ -113,6 +113,33 @@ standalone. Use `draft = FALSE` to send directly into a thread, or send the
 draft manually from the Gmail UI (Gmail will match by subject line if it
 starts with "Re:").
 
+## Scheduled send
+
+Send an email later with `send_at` — either minutes from now or a specific time:
+
+```r
+# Send in 10 minutes
+proc <- mc_send("draft.md",
+                to = "brandon@example.com",
+                subject = "Cottonwood plugs",
+                send_at = 10)
+
+# Send at a specific time
+mc_send("draft.md",
+        to = "brandon@example.com",
+        subject = "Cottonwood plugs",
+        send_at = as.POSIXct("2026-02-24 09:11:00"))
+
+# Check status or cancel
+proc$is_alive()
+proc$kill()
+```
+
+On macOS, `caffeinate` keeps the machine awake until the email sends. The
+laptop lid can be closed as long as power is connected. If the machine
+sleeps through the send window (e.g., power loss), a 5-minute grace period
+applies — past that, the send is skipped to prevent stale emails.
+
 ## Test mode
 
 Send to yourself to preview:
