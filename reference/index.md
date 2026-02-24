@@ -16,3 +16,5 @@
   : Return an email signature as HTML
 - [`mc_thread_find()`](https://newgraphenvironment.github.io/mc/reference/mc_thread_find.md)
   : Search Gmail for thread IDs
+- [`mc_thread_read()`](https://newgraphenvironment.github.io/mc/reference/mc_thread_read.md)
+  : Read all messages in a Gmail thread

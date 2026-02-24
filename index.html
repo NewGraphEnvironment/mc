@@ -87,11 +87,11 @@
 <p>Send it in three lines:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/NewGraphEnvironment/mc" class="external-link">mc</a></span><span class="op">)</span></span>
-<span><span class="fu"><a href="reference/mc_auth.html">mc_auth</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu"><a href="reference/mc_send.html">mc_send</a></span><span class="op">(</span><span class="st">"communications/draft.md"</span>,</span>
 <span>        to <span class="op">=</span> <span class="st">"brandon@example.com"</span>,</span>
 <span>        subject <span class="op">=</span> <span class="st">"Cottonwood plugs - 2026 planting"</span><span class="op">)</span></span></code></pre></div>
-<p>That creates a Gmail draft with HTML formatting and the standard signature appended. When you’re ready to send for real:</p>
+<p>That creates a Gmail draft with HTML formatting and the standard signature appended. Authentication happens automatically via cached OAuth tokens (run <code><a href="reference/mc_auth.html">mc_auth()</a></code> once per machine to set up).</p>
+<p>When you’re ready to send for real:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="reference/mc_send.html">mc_send</a></span><span class="op">(</span><span class="st">"communications/draft.md"</span>,</span>
 <span>        to <span class="op">=</span> <span class="st">"brandon@example.com"</span>,</span>
@@ -132,6 +132,9 @@
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Find the thread</span></span>
 <span><span class="fu"><a href="reference/mc_thread_find.html">mc_thread_find</a></span><span class="op">(</span><span class="st">"from:brandon subject:cottonwood"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Read the conversation to review context</span></span>
+<span><span class="fu"><a href="reference/mc_thread_read.html">mc_thread_read</a></span><span class="op">(</span><span class="st">"19c05f0a98188c91"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Send into it</span></span>
 <span><span class="fu"><a href="reference/mc_send.html">mc_send</a></span><span class="op">(</span><span class="st">"draft.md"</span>,</span>

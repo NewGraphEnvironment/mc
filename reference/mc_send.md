@@ -18,7 +18,8 @@ mc_send(
   test = FALSE,
   sig = TRUE,
   sig_path = NULL,
-  html = NULL
+  html = NULL,
+  send_at = NULL
 )
 ```
 
@@ -83,9 +84,22 @@ mc_send(
   Optional pre-rendered HTML body. If provided, `path` is ignored and
   this HTML is used directly.
 
+- send_at:
+
+  Schedule the email for later. Either a `POSIXct` datetime or a numeric
+  number of minutes from now. Default `NULL` (send/draft immediately).
+  When set, `draft` is forced to `FALSE` and the email is sent in a
+  background R process via
+  [`callr::r_bg()`](https://callr.r-lib.org/reference/r_bg.html).
+  Requires the **callr** package.
+
 ## Value
 
-Invisible `NULL`. Prints status message.
+When `send_at` is `NULL`, invisible `NULL`. When `send_at` is set,
+returns the
+[`callr::r_bg()`](https://callr.r-lib.org/reference/r_bg.html) process
+handle invisibly. Use `$is_alive()` to check status or `$kill()` to
+cancel.
 
 ## Details
 
@@ -106,6 +120,20 @@ directly into the thread via `gm_send_message(thread_id = ...)`.
 
 `test = TRUE` sends to yourself, strips CC, and ignores `thread_id` to
 prevent accidental sends to real threads during development.
+
+### Scheduled send
+
+`send_at` runs a background R process on your machine that sleeps then
+sends. This requires your computer to stay awake:
+
+- **Laptop awake** — sends on time
+
+- **Laptop asleep (lid closed)** — timer pauses, sends when you wake the
+  machine (later than scheduled)
+
+- **Laptop powered off** — process dies, email never sends
+
+Best for short delays while you keep working, not overnight scheduling.
 
 ## Examples
 
@@ -128,5 +156,19 @@ mc_send("communications/draft.md",
         to = "brandon@example.com",
         subject = "Cottonwood plugs",
         test = TRUE)
+
+# Send in 10 minutes
+proc <- mc_send("communications/draft.md",
+                to = "brandon@example.com",
+                subject = "Cottonwood plugs",
+                send_at = 10)
+proc$is_alive()  # check if still waiting
+proc$kill()      # cancel
+
+# Send at a specific time
+mc_send("communications/draft.md",
+        to = "brandon@example.com",
+        subject = "Cottonwood plugs",
+        send_at = as.POSIXct("2026-02-24 09:11:00"))
 } # }
 ```
