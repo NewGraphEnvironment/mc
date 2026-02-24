@@ -16,7 +16,8 @@ mc_send(
   test = FALSE,
   sig = TRUE,
   sig_path = NULL,
-  html = NULL
+  html = NULL,
+  send_at = NULL
 )
 }
 \arguments{
@@ -50,9 +51,17 @@ Ignored when \code{sig = FALSE} or when \code{html} is provided.}
 
 \item{html}{Optional pre-rendered HTML body. If provided, \code{path} is ignored
 and this HTML is used directly.}
+
+\item{send_at}{Schedule the email for later. Either a \code{POSIXct} datetime
+or a numeric number of minutes from now. Default \code{NULL} (send/draft
+immediately). When set, \code{draft} is forced to \code{FALSE} and the email is
+sent in a background R process via \code{\link[callr:r_bg]{callr::r_bg()}}. Requires the
+\strong{callr} package.}
 }
 \value{
-Invisible \code{NULL}. Prints status message.
+When \code{send_at} is \code{NULL}, invisible \code{NULL}. When \code{send_at} is set,
+returns the \code{\link[callr:r_bg]{callr::r_bg()}} process handle invisibly. Use \verb{$is_alive()}
+to check status or \verb{$kill()} to cancel.
 }
 \description{
 The main function. Reads a markdown draft, renders to HTML, builds a
@@ -97,6 +106,20 @@ mc_send("communications/draft.md",
         to = "brandon@example.com",
         subject = "Cottonwood plugs",
         test = TRUE)
+
+# Send in 10 minutes
+proc <- mc_send("communications/draft.md",
+                to = "brandon@example.com",
+                subject = "Cottonwood plugs",
+                send_at = 10)
+proc$is_alive()  # check if still waiting
+proc$kill()      # cancel
+
+# Send at a specific time
+mc_send("communications/draft.md",
+        to = "brandon@example.com",
+        subject = "Cottonwood plugs",
+        send_at = as.POSIXct("2026-02-24 09:11:00"))
 }
 
 }
