@@ -96,12 +96,12 @@ resolve_part <- function(part) {
   }
 
   # Markdown file — render it
-  if (grepl("\\.md$", part, ignore.case = TRUE) && file.exists(part)) {
-    raw <- paste(readLines(part, warn = FALSE), collapse = "\n")
-    # Strip header above --- if present
-    if (grepl("---", raw, fixed = TRUE)) {
-      raw <- sub("^[\\s\\S]*?---\\s*\\n", "", raw, perl = TRUE)
+  if (grepl("\\.md$", part, ignore.case = TRUE)) {
+    if (!file.exists(part)) {
+      stop("File not found: ", part, call. = FALSE)
     }
+    raw <- paste(readLines(part, warn = FALSE), collapse = "\n")
+    raw <- strip_md_header(raw)
     return(commonmark::markdown_html(raw, extensions = TRUE))
   }
 

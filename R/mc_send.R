@@ -10,7 +10,9 @@
 #' @param subject Email subject line.
 #' @param cc Optional CC recipients (character vector). Default `NULL`.
 #' @param bcc Optional BCC recipients (character vector). Default `NULL`.
-#' @param from Sender address. Default `"al@newgraphenvironment.com"`.
+#' @param from Sender address. Default uses `getOption("mc.from")`,
+#'   then the `MC_FROM` environment variable, then
+#'   `"al@newgraphenvironment.com"` as a final fallback.
 #' @param thread_id Gmail thread ID to reply into. Default `NULL` (new thread).
 #'   Use [mc_thread_find()] to look up thread IDs.
 #' @param draft Logical. If `TRUE` (default), create a Gmail draft.
@@ -110,7 +112,7 @@ mc_send <- function(path = NULL,
                     subject,
                     cc = NULL,
                     bcc = NULL,
-                    from = "al@newgraphenvironment.com",
+                    from = default_from(),
                     thread_id = NULL,
                     draft = TRUE,
                     test = FALSE,
@@ -154,20 +156,39 @@ mc_send <- function(path = NULL,
         # Check if we missed the window (machine was asleep)
         late <- as.numeric(difftime(Sys.time(), target_time, units = "secs"))
         if (late > grace_secs) {
-          stop(
+          msg <- paste0(
             "Scheduled send SKIPPED. Machine woke ",
             round(late / 60, 1), " min past target time ",
             format(target_time, "%H:%M:%S"),
-            ". Draft not sent to protect against stale context.",
-            call. = FALSE
+            ". Draft not sent to protect against stale context."
           )
+          mc:::send_log(subject, to, "SKIPPED", msg)
+          mc:::send_notify(paste0("SKIPPED: ", subject), msg)
+          stop(msg, call. = FALSE)
         }
-        mc::mc_send(
-          path = path, to = to, subject = subject,
-          cc = cc, bcc = bcc, from = from,
-          thread_id = thread_id, draft = FALSE,
-          test = test, sig = sig, sig_path = sig_path,
-          html = html, send_at = NULL
+        tryCatch(
+          {
+            mc::mc_send(
+              path = path, to = to, subject = subject,
+              cc = cc, bcc = bcc, from = from,
+              thread_id = thread_id, draft = FALSE,
+              test = test, sig = sig, sig_path = sig_path,
+              html = html, send_at = NULL
+            )
+            mc:::send_log(subject, to, "SENT")
+            mc:::send_notify(
+              paste0("Sent: ", subject),
+              paste0("To: ", paste(to, collapse = ", "))
+            )
+          },
+          error = function(e) {
+            mc:::send_log(subject, to, "FAILED", conditionMessage(e))
+            mc:::send_notify(
+              paste0("FAILED: ", subject),
+              conditionMessage(e)
+            )
+            stop(e)
+          }
         )
       },
       args = list(
@@ -256,6 +277,48 @@ caffeinate_send <- function(proc) {
   system2("caffeinate", args = c("-i", "-w", pid), wait = FALSE,
           stdout = FALSE, stderr = FALSE)
   message("caffeinate active (PID ", pid, ") — machine will stay awake")
+  invisible(NULL)
+}
+
+
+#' Log a scheduled send outcome to ~/.mc/send_log.txt
+#'
+#' Appends one line per event. Creates the directory if needed.
+#' @param subject Email subject.
+#' @param to Recipient(s).
+#' @param status One of "SENT", "SKIPPED", "FAILED".
+#' @param detail Optional detail message.
+#' @noRd
+send_log <- function(subject, to, status, detail = "") {
+  log_dir <- file.path(Sys.getenv("HOME"), ".mc")
+  if (!dir.exists(log_dir)) dir.create(log_dir, recursive = TRUE)
+  line <- paste0(
+    format(Sys.time(), "%Y-%m-%d %H:%M:%S"), " | ",
+    status, " | ",
+    "To: ", paste(to, collapse = ", "), " | ",
+    "Subject: ", subject,
+    if (nzchar(detail)) paste0(" | ", detail) else ""
+  )
+  cat(line, "\n", file = file.path(log_dir, "send_log.txt"), append = TRUE)
+}
+
+
+#' Show a macOS desktop notification for scheduled send outcomes
+#'
+#' Uses `osascript` to display a notification. No-op on non-macOS systems.
+#' @param title Notification title.
+#' @param body Notification body.
+#' @noRd
+send_notify <- function(title, body) {
+  if (Sys.info()[["sysname"]] != "Darwin") return(invisible(NULL))
+  script <- paste0(
+    'display notification "', gsub('"', '\\\\"', body),
+    '" with title "mc" subtitle "', gsub('"', '\\\\"', title), '"'
+  )
+  tryCatch(
+    system2("osascript", args = c("-e", script), stdout = FALSE, stderr = FALSE),
+    error = function(e) NULL
+  )
   invisible(NULL)
 }
 
