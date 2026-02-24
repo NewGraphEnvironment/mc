@@ -40,6 +40,8 @@
 #' cat(html)
 #' }
 #'
+#' @importFrom chk chk_string chk_flag chk_null_or vld_string
+#' @importFrom commonmark markdown_html
 #' @export
 mc_md_render <- function(path, sig = TRUE, sig_path = NULL) {
   chk::chk_string(path)

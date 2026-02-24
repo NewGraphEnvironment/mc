@@ -13,6 +13,8 @@
 #' mc_auth()
 #' }
 #'
+#' @importFrom chk chk_string
+#' @importFrom gmailr gm_auth
 #' @export
 mc_auth <- function(email = "al@newgraphenvironment.com") {
   chk::chk_string(email)

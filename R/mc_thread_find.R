@@ -17,6 +17,8 @@
 #' mc_thread_find("from:brandon newer_than:7d")
 #' }
 #'
+#' @importFrom chk chk_string chk_whole_number
+#' @importFrom gmailr gm_messages gm_id gm_message
 #' @export
 mc_thread_find <- function(query, n = 5) {
   chk::chk_string(query)
@@ -67,6 +69,9 @@ mc_thread_find <- function(query, n = 5) {
 #' mc_thread_read("19adb18351867c34")
 #' }
 #'
+#' @importFrom chk chk_string
+#' @importFrom gmailr gm_thread
+#' @importFrom jsonlite base64url_dec
 #' @export
 mc_thread_read <- function(thread_id) {
   chk::chk_string(thread_id)

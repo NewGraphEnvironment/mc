@@ -100,6 +100,10 @@
 #'         send_at = as.POSIXct("2026-02-24 09:11:00"))
 #' }
 #'
+#' @importFrom chk chk_null_or chk_character chk_string chk_flag vld_string
+#'   vld_character
+#' @importFrom gmailr gm_mime gm_to gm_from gm_subject gm_html_body gm_cc
+#'   gm_bcc gm_create_draft gm_send_message
 #' @export
 mc_send <- function(path = NULL,
                     to,

@@ -28,6 +28,7 @@
 #' )
 #' }
 #'
+#' @importFrom chk chk_string
 #' @export
 mc_scroll <- function(table, direction = "both", max_height = "400px") {
   chk::chk_string(direction)

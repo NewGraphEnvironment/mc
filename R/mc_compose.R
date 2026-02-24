@@ -50,6 +50,8 @@
 #' )
 #' }
 #'
+#' @importFrom chk chk_flag chk_null_or vld_string
+#' @importFrom commonmark markdown_html
 #' @export
 mc_compose <- function(..., sig = TRUE, sig_path = NULL) {
   chk::chk_flag(sig)

@@ -38,7 +38,9 @@ test_that("caffeinate is not called when send_at is NULL", {
   # Stub caffeinate_send to record whether it was called
   called <- FALSE
   local_mocked_bindings(
-    caffeinate_send = function(proc) { called <<- TRUE },
+    caffeinate_send = function(proc) {
+      called <<- TRUE
+    },
     .package = "mc"
   )
   # Normal send (send_at = NULL) should never hit caffeinate_send

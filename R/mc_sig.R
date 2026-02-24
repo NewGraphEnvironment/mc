@@ -15,6 +15,7 @@
 #' cat(mc_sig("path/to/custom_sig.html"))
 #' }
 #'
+#' @importFrom chk chk_null_or vld_string
 #' @export
 mc_sig <- function(path = NULL) {
   chk::chk_null_or(path, vld = chk::vld_string)
