@@ -33,3 +33,21 @@ test_that("resolve_send_at rejects bad types", {
   expect_error(mc:::resolve_send_at(TRUE), "POSIXct")
   expect_error(mc:::resolve_send_at(c(1, 2)), "POSIXct")
 })
+
+test_that("caffeinate is not called when send_at is NULL", {
+  # Stub caffeinate_send to record whether it was called
+  called <- FALSE
+  local_mocked_bindings(
+    caffeinate_send = function(proc) { called <<- TRUE },
+    .package = "mc"
+  )
+  # Normal send (send_at = NULL) should never hit caffeinate_send
+  # Use html to skip file read, will error at gmailr but that's after
+  # the send_at check
+  tryCatch(
+    mc_send(html = "<p>test</p>", to = "test@test.com",
+            subject = "test", send_at = NULL),
+    error = function(e) NULL
+  )
+  expect_false(called)
+})
