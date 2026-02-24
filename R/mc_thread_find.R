@@ -38,10 +38,68 @@ mc_thread_find <- function(query, n = 5) {
   rows <- lapply(ids, function(msg_id) {
     msg <- gmailr::gm_message(msg_id)
     data.frame(
-      thread_id = gmailr::gm_thread_id(msg) %||% NA_character_,
+      thread_id = msg$threadId %||% NA_character_,
       from = extract_header(msg, "From"),
       subject = extract_header(msg, "Subject"),
       date = extract_header(msg, "Date"),
+      stringsAsFactors = FALSE
+    )
+  })
+
+  do.call(rbind, rows)
+}
+
+
+#' Read all messages in a Gmail thread
+#'
+#' Fetches a thread by ID and returns each message's sender, date, subject,
+#' and plain-text body. Useful for reviewing a conversation before composing
+#' a follow-up with [mc_send()].
+#'
+#' @param thread_id Gmail thread ID (from [mc_thread_find()]).
+#'
+#' @return A data frame with columns `from`, `date`, `subject`, and `body`,
+#'   ordered oldest to newest.
+#'
+#' @examples
+#' \dontrun{
+#' mc_thread_find("from:brandon subject:cottonwood")
+#' mc_thread_read("19adb18351867c34")
+#' }
+#'
+#' @export
+mc_thread_read <- function(thread_id) {
+  chk::chk_string(thread_id)
+
+  thread <- gmailr::gm_thread(id = thread_id)
+  msgs <- thread$messages
+
+  if (is.null(msgs) || length(msgs) == 0) {
+    message("No messages in thread: ", thread_id)
+    return(data.frame(
+      from = character(0),
+      date = character(0),
+      subject = character(0),
+      body = character(0),
+      stringsAsFactors = FALSE
+    ))
+  }
+
+  rows <- lapply(msgs, function(msg) {
+    body <- extract_body(msg$payload, "text/plain")
+    if (!nzchar(body)) {
+      body_html <- extract_body(msg$payload, "text/html")
+      if (nzchar(body_html)) {
+        body <- gsub("<[^>]+>", " ", body_html)
+        body <- gsub("[ \t]+", " ", body)
+        body <- trimws(body)
+      }
+    }
+    data.frame(
+      from = extract_header(msg, "From"),
+      date = extract_header(msg, "Date"),
+      subject = extract_header(msg, "Subject"),
+      body = body,
       stringsAsFactors = FALSE
     )
   })
@@ -58,6 +116,31 @@ mc_thread_find <- function(query, n = 5) {
 #' the package namespace without a NOTE.
 #' @noRd
 `%||%` <- function(x, y) if (is.null(x) || length(x) == 0) y else x
+
+
+#' Extract body text from a MIME payload, recursing into nested parts
+#'
+#' Gmail wraps replies in nested multipart structures that `gm_body()`
+#' can miss. This walks the tree to find the first part matching `mime_type`.
+#' @param payload A message payload (list with `mimeType`, `body`, `parts`).
+#' @param mime_type MIME type to extract (e.g., `"text/plain"`).
+#' @return Character string (decoded body) or `""` if not found.
+#' @noRd
+extract_body <- function(payload, mime_type) {
+  if (is.null(payload)) return("")
+  # Leaf node with matching type
+
+  if (identical(payload$mimeType, mime_type) &&
+        !is.null(payload$body$data) && payload$body$size > 0) {
+    return(rawToChar(jsonlite::base64url_dec(payload$body$data)))
+  }
+  # Recurse into parts
+  for (part in payload$parts) {
+    result <- extract_body(part, mime_type)
+    if (nzchar(result)) return(result)
+  }
+  ""
+}
 
 
 #' Extract a header value from a gmailr message

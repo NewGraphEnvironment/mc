@@ -26,5 +26,6 @@ Depends:
 Imports:
     chk,
     commonmark,
-    gmailr
+    gmailr,
+    jsonlite
 VignetteBuilder: knitr

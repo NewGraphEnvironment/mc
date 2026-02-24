@@ -39,14 +39,16 @@ Send it in three lines:
 
 ```r
 library(mc)
-mc_auth()
 mc_send("communications/draft.md",
         to = "brandon@example.com",
         subject = "Cottonwood plugs - 2026 planting")
 ```
 
 That creates a Gmail draft with HTML formatting and the standard signature
-appended. When you're ready to send for real:
+appended. Authentication happens automatically via cached OAuth tokens
+(run `mc_auth()` once per machine to set up).
+
+When you're ready to send for real:
 
 ```r
 mc_send("communications/draft.md",
@@ -94,6 +96,9 @@ Reply into an existing conversation:
 ```r
 # Find the thread
 mc_thread_find("from:brandon subject:cottonwood")
+
+# Read the conversation to review context
+mc_thread_read("19c05f0a98188c91")
 
 # Send into it
 mc_send("draft.md",
