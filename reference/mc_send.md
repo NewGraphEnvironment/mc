@@ -123,17 +123,18 @@ prevent accidental sends to real threads during development.
 
 ### Scheduled send
 
-`send_at` runs a background R process on your machine that sleeps then
-sends. This requires your computer to stay awake:
+`send_at` runs a background R process on your machine. On macOS,
+`caffeinate` is used to prevent idle sleep so the machine stays awake
+until the email sends. The laptop lid can be closed as long as power is
+connected.
 
-- **Laptop awake** — sends on time
-
-- **Laptop asleep (lid closed)** — timer pauses, sends when you wake the
-  machine (later than scheduled)
+- **Laptop powered on** — sends on time (caffeinate prevents sleep)
 
 - **Laptop powered off** — process dies, email never sends
 
-Best for short delays while you keep working, not overnight scheduling.
+If caffeinate is bypassed and the machine sleeps through the send
+window, a 5-minute grace period applies. Past that, the send is
+**skipped** to prevent stale emails firing unexpectedly.
 
 ## Examples
 
