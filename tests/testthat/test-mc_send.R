@@ -5,15 +5,18 @@ test_that("mc_send errors without path or html", {
   )
 })
 
-test_that("resolve_send_at converts minutes to seconds", {
-  delay <- mc:::resolve_send_at(5)
-  expect_equal(delay, 300)
+test_that("resolve_send_at converts minutes to future POSIXct", {
+  target <- mc:::resolve_send_at(5)
+  expect_s3_class(target, "POSIXct")
+  delay <- as.numeric(difftime(target, Sys.time(), units = "secs"))
+  expect_true(delay > 290 && delay <= 300)
 })
 
-test_that("resolve_send_at converts POSIXct to seconds", {
+test_that("resolve_send_at passes through future POSIXct", {
   future <- Sys.time() + 120
-  delay <- mc:::resolve_send_at(future)
-  expect_true(delay > 0 && delay <= 120)
+  target <- mc:::resolve_send_at(future)
+  expect_s3_class(target, "POSIXct")
+  expect_equal(as.numeric(target), as.numeric(future))
 })
 
 test_that("resolve_send_at rejects past times", {

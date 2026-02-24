@@ -53,15 +53,17 @@
 #'
 #' ## Scheduled send
 #'
-#' `send_at` runs a background R process on your machine that sleeps
-#' then sends. This requires your computer to stay awake:
+#' `send_at` runs a background R process on your machine. On macOS,
+#' `caffeinate` is used to prevent idle sleep so the machine stays awake
+#' until the email sends. The laptop lid can be closed as long as power
+#' is connected.
 #'
-#' - **Laptop awake** — sends on time
-#' - **Laptop asleep (lid closed)** — timer pauses, sends when you
-#'   wake the machine (later than scheduled)
+#' - **Laptop powered on** — sends on time (caffeinate prevents sleep)
 #' - **Laptop powered off** — process dies, email never sends
 #'
-#' Best for short delays while you keep working, not overnight scheduling.
+#' If caffeinate is bypassed and the machine sleeps through the send
+#' window, a 5-minute grace period applies. Past that, the send is
+#' **skipped** to prevent stale emails firing unexpectedly.
 #'
 #' @examples
 #' \dontrun{
@@ -132,17 +134,30 @@ mc_send <- function(path = NULL,
       stop("The callr package is required for send_at. Install with pak::pak('callr').",
            call. = FALSE)
     }
-    delay_secs <- resolve_send_at(send_at)
-    send_time <- Sys.time() + delay_secs
+    send_time <- resolve_send_at(send_at)
+    delay_min <- as.numeric(difftime(send_time, Sys.time(), units = "mins"))
     message(
       "Scheduled to send at ", format(send_time, "%Y-%m-%d %H:%M:%S"),
-      " (", round(delay_secs / 60, 1), " min from now)",
+      " (", round(delay_min, 1), " min from now)",
       "\nTo: ", paste(to, collapse = ", ")
     )
     proc <- callr::r_bg(
-      function(delay, path, to, subject, cc, bcc, from,
-               thread_id, test, sig, sig_path, html) {
-        Sys.sleep(delay)
+      function(target_time, grace_secs, path, to, subject, cc, bcc,
+               from, thread_id, test, sig, sig_path, html) {
+        # Sleep until target time
+        delay <- as.numeric(difftime(target_time, Sys.time(), units = "secs"))
+        if (delay > 0) Sys.sleep(delay)
+        # Check if we missed the window (machine was asleep)
+        late <- as.numeric(difftime(Sys.time(), target_time, units = "secs"))
+        if (late > grace_secs) {
+          stop(
+            "Scheduled send SKIPPED. Machine woke ",
+            round(late / 60, 1), " min past target time ",
+            format(target_time, "%H:%M:%S"),
+            ". Draft not sent to protect against stale context.",
+            call. = FALSE
+          )
+        }
         mc::mc_send(
           path = path, to = to, subject = subject,
           cc = cc, bcc = bcc, from = from,
@@ -152,13 +167,16 @@ mc_send <- function(path = NULL,
         )
       },
       args = list(
-        delay = delay_secs, path = path, to = to,
+        target_time = send_time, grace_secs = 300,
+        path = path, to = to,
         subject = subject, cc = cc, bcc = bcc, from = from,
         thread_id = thread_id, test = test, sig = sig,
         sig_path = sig_path, html = html
       ),
       package = "mc"
     )
+    # Prevent idle sleep on macOS until the send process exits
+    caffeinate_send(proc)
     return(invisible(proc))
   }
 
@@ -222,23 +240,39 @@ mc_send <- function(path = NULL,
 }
 
 
-#' Convert send_at value to delay in seconds
+#' Prevent idle sleep on macOS while a scheduled send is waiting
+#'
+#' Runs `caffeinate -i -w <pid>` in the background. Caffeinate exits
+#' automatically when the target process exits. No-op on non-macOS systems.
+#' @param proc A callr process handle.
+#' @noRd
+caffeinate_send <- function(proc) {
+  if (Sys.info()[["sysname"]] != "Darwin") return(invisible(NULL))
+  pid <- proc$get_pid()
+  system2("caffeinate", args = c("-i", "-w", pid), wait = FALSE,
+          stdout = FALSE, stderr = FALSE)
+  message("caffeinate active (PID ", pid, ") — machine will stay awake")
+  invisible(NULL)
+}
+
+
+#' Convert send_at value to a target POSIXct time
 #' @param send_at POSIXct datetime or numeric minutes from now.
-#' @return Numeric delay in seconds.
+#' @return POSIXct target time.
 #' @noRd
 resolve_send_at <- function(send_at) {
   if (inherits(send_at, "POSIXct")) {
-    delay <- as.numeric(difftime(send_at, Sys.time(), units = "secs"))
+    target <- send_at
   } else if (is.numeric(send_at) && length(send_at) == 1) {
-    delay <- send_at * 60
+    target <- Sys.time() + send_at * 60
   } else {
     stop(
       "`send_at` must be a POSIXct datetime or numeric minutes from now.",
       call. = FALSE
     )
   }
-  if (delay <= 0) {
+  if (target <= Sys.time()) {
     stop("`send_at` must be in the future.", call. = FALSE)
   }
-  delay
+  target
 }
