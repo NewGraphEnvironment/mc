@@ -29,16 +29,29 @@ test_meta <- sprintf(
 
 env <- new.env(parent = emptyenv())
 
-# Trash all test messages after the run (sent-to-self creates duplicate IDs)
+# Trash test messages after the run.
+# Safeguards against trashing unrelated mail:
+#   1. newer_than:1h — only messages from the last hour
+#   2. Subject verified — each message's subject must contain the exact test_tag
+#      (Gmail search is fuzzy/tokenized; this confirms the match)
+#   3. test_tag includes timestamp to the second — collisions near-impossible
 withr::defer({
   Sys.sleep(5)
   for (label in c("", " in:sent", " in:drafts", " in:inbox")) {
     results <- gmailr::gm_messages(
-      search = paste0("subject:", test_tag, label),
+      search = paste0("subject:", test_tag, " newer_than:1h", label),
       num_results = 20
     )
     for (id in gmailr::gm_id(results)) {
-      tryCatch(gmailr::gm_trash_message(id), error = function(e) NULL)
+      tryCatch({
+        msg <- gmailr::gm_message(id)
+        subj <- msg$payload$headers |>
+          vapply(\(h) if (h$name == "Subject") h$value else NA_character_, character(1))
+        subj <- subj[!is.na(subj)][1]
+        if (!is.na(subj) && grepl(test_tag, subj, fixed = TRUE)) {
+          gmailr::gm_trash_message(id)
+        }
+      }, error = function(e) NULL)
     }
   }
 }, envir = parent.frame())
