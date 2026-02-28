@@ -24,6 +24,8 @@
 #' @param sig_path Path to a custom signature HTML file. Default `NULL`
 #'   uses the bundled New Graph signature. Passed to [mc_md_render()].
 #'   Ignored when `sig = FALSE` or when `html` is provided.
+#' @param attachments Optional character vector of file paths to attach.
+#'   Each file is attached via [gmailr::gm_attach_file()]. Default `NULL`.
 #' @param html Optional pre-rendered HTML body. If provided, `path` is ignored
 #'   and this HTML is used directly.
 #' @param send_at Schedule the email for later. Either a `POSIXct` datetime
@@ -100,12 +102,18 @@
 #'         to = "brandon@example.com",
 #'         subject = "Cottonwood plugs",
 #'         send_at = as.POSIXct("2026-02-24 09:11:00"))
+#'
+#' # Attach files
+#' mc_send("communications/draft.md",
+#'         to = "brandon@example.com",
+#'         subject = "Planting plan",
+#'         attachments = c("data/plan.xlsx", "fig/map.pdf"))
 #' }
 #'
 #' @importFrom chk chk_null_or chk_character chk_string chk_flag vld_string
 #'   vld_character
 #' @importFrom gmailr gm_mime gm_to gm_from gm_subject gm_html_body gm_cc
-#'   gm_bcc gm_create_draft gm_send_message
+#'   gm_bcc gm_create_draft gm_send_message gm_attach_file
 #' @export
 mc_send <- function(path = NULL,
                     to,
@@ -118,6 +126,7 @@ mc_send <- function(path = NULL,
                     test = FALSE,
                     sig = TRUE,
                     sig_path = NULL,
+                    attachments = NULL,
                     html = NULL,
                     send_at = NULL) {
 
@@ -132,7 +141,20 @@ mc_send <- function(path = NULL,
   chk::chk_flag(test)
   chk::chk_flag(sig)
   chk::chk_null_or(sig_path, vld = chk::vld_string)
+  chk::chk_null_or(attachments, vld = chk::vld_character)
   chk::chk_null_or(html, vld = chk::vld_string)
+
+  # Validate attachment files exist
+  if (!is.null(attachments)) {
+    missing <- attachments[!file.exists(attachments)]
+    if (length(missing) > 0) {
+      stop(
+        "Attachment file(s) not found: ",
+        paste(missing, collapse = ", "),
+        call. = FALSE
+      )
+    }
+  }
 
   # Scheduled send — defer to background process
   if (!is.null(send_at)) {
@@ -149,7 +171,7 @@ mc_send <- function(path = NULL,
     )
     proc <- callr::r_bg(
       function(target_time, grace_secs, path, to, subject, cc, bcc,
-               from, thread_id, test, sig, sig_path, html) {
+               from, thread_id, test, sig, sig_path, attachments, html) {
         # Sleep until target time
         delay <- as.numeric(difftime(target_time, Sys.time(), units = "secs"))
         if (delay > 0) Sys.sleep(delay)
@@ -173,7 +195,7 @@ mc_send <- function(path = NULL,
               cc = cc, bcc = bcc, from = from,
               thread_id = thread_id, draft = FALSE,
               test = test, sig = sig, sig_path = sig_path,
-              html = html, send_at = NULL
+              attachments = attachments, html = html, send_at = NULL
             )
             mc:::send_log(subject, to, "SENT")
             mc:::send_notify(
@@ -196,7 +218,7 @@ mc_send <- function(path = NULL,
         path = path, to = to,
         subject = subject, cc = cc, bcc = bcc, from = from,
         thread_id = thread_id, test = test, sig = sig,
-        sig_path = sig_path, html = html
+        sig_path = sig_path, attachments = attachments, html = html
       ),
       package = "mc"
     )
@@ -236,6 +258,11 @@ mc_send <- function(path = NULL,
   }
   if (!is.null(bcc)) {
     msg <- gmailr::gm_bcc(msg, bcc)
+  }
+  if (!is.null(attachments)) {
+    for (file_path in attachments) {
+      msg <- gmailr::gm_attach_file(msg, file_path)
+    }
   }
 
   # Draft or send
