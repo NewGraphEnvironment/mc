@@ -16,6 +16,7 @@ mc_send(
   test = FALSE,
   sig = TRUE,
   sig_path = NULL,
+  attachments = NULL,
   html = NULL,
   send_at = NULL
 )
@@ -50,6 +51,9 @@ Default \code{TRUE}.}
 \item{sig_path}{Path to a custom signature HTML file. Default \code{NULL}
 uses the bundled New Graph signature. Passed to \code{\link[=mc_md_render]{mc_md_render()}}.
 Ignored when \code{sig = FALSE} or when \code{html} is provided.}
+
+\item{attachments}{Optional character vector of file paths to attach.
+Each file is attached via \code{\link[gmailr:gm_mime]{gmailr::gm_attach_file()}}. Default \code{NULL}.}
 
 \item{html}{Optional pre-rendered HTML body. If provided, \code{path} is ignored
 and this HTML is used directly.}
@@ -138,6 +142,12 @@ mc_send("communications/draft.md",
         to = "brandon@example.com",
         subject = "Cottonwood plugs",
         send_at = as.POSIXct("2026-02-24 09:11:00"))
+
+# Attach files
+mc_send("communications/draft.md",
+        to = "brandon@example.com",
+        subject = "Planting plan",
+        attachments = c("data/plan.xlsx", "fig/map.pdf"))
 }
 
 }

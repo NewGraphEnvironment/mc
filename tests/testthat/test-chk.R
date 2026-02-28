@@ -24,6 +24,8 @@ test_that("mc_send rejects bad types", {
   expect_error(mc_send(path = "f.md", to = "a@b.com", subject = "hi", cc = 123))
   expect_error(mc_send(path = "f.md", to = "a@b.com", subject = "hi", bcc = 123))
   expect_error(mc_send(path = "f.md", to = "a@b.com", subject = "hi", thread_id = 123))
+  expect_error(mc_send(path = "f.md", to = "a@b.com", subject = "hi", attachments = 123))
+  expect_error(mc_send(path = "f.md", to = "a@b.com", subject = "hi", attachments = TRUE))
 })
 
 test_that("mc_thread_find rejects bad types", {

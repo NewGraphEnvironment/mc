@@ -153,6 +153,73 @@ test_that("default_from reads option then env then fallback", {
   expect_equal(mc:::default_from(), "opt@example.com")
 })
 
+test_that("mc_send attaches files to MIME message", {
+  captured_msg <- NULL
+  local_mocked_bindings(
+    gm_create_draft = function(msg) {
+      captured_msg <<- msg
+      msg
+    },
+    .package = "gmailr"
+  )
+
+  tmp1 <- tempfile(fileext = ".csv")
+  tmp2 <- tempfile(fileext = ".pdf")
+  writeLines("a,b\n1,2", tmp1)
+  writeBin(charToRaw("fake pdf"), tmp2)
+
+  mc_send(
+    html = "<p>hello</p>", to = "bob@example.com",
+    subject = "Attachment test", from = "alice@example.com",
+    attachments = c(tmp1, tmp2),
+    draft = TRUE
+  )
+  expect_false(is.null(captured_msg))
+  unlink(c(tmp1, tmp2))
+})
+
+test_that("mc_send errors on missing attachment file", {
+  expect_error(
+    mc_send(
+      html = "<p>hi</p>", to = "bob@example.com",
+      subject = "Test", from = "alice@example.com",
+      attachments = "/nonexistent/file.pdf"
+    ),
+    "Attachment file.*not found"
+  )
+})
+
+test_that("mc_send errors on mix of valid and missing attachments", {
+  tmp <- tempfile(fileext = ".csv")
+  writeLines("a,b", tmp)
+  expect_error(
+    mc_send(
+      html = "<p>hi</p>", to = "bob@example.com",
+      subject = "Test", from = "alice@example.com",
+      attachments = c(tmp, "/nonexistent/file.pdf")
+    ),
+    "not found"
+  )
+  unlink(tmp)
+})
+
+test_that("mc_send works without attachments (NULL default)", {
+  captured_msg <- NULL
+  local_mocked_bindings(
+    gm_create_draft = function(msg) {
+      captured_msg <<- msg
+      msg
+    },
+    .package = "gmailr"
+  )
+  mc_send(
+    html = "<p>no attachments</p>", to = "bob@example.com",
+    subject = "No attach", from = "alice@example.com",
+    draft = TRUE
+  )
+  expect_false(is.null(captured_msg))
+})
+
 test_that("caffeinate is not called when send_at is NULL", {
   # Stub caffeinate_send to record whether it was called
   called <- FALSE
