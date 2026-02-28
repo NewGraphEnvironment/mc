@@ -18,6 +18,7 @@ mc_send(
   test = FALSE,
   sig = TRUE,
   sig_path = NULL,
+  attachments = NULL,
   html = NULL,
   send_at = NULL
 )
@@ -80,6 +81,13 @@ mc_send(
   New Graph signature. Passed to
   [`mc_md_render()`](https://newgraphenvironment.github.io/mc/reference/mc_md_render.md).
   Ignored when `sig = FALSE` or when `html` is provided.
+
+- attachments:
+
+  Optional character vector of file paths to attach. Each file is
+  attached via
+  [`gmailr::gm_attach_file()`](https://gmailr.r-lib.org/reference/gm_mime.html).
+  Default `NULL`.
 
 - html:
 
@@ -173,5 +181,11 @@ mc_send("communications/draft.md",
         to = "brandon@example.com",
         subject = "Cottonwood plugs",
         send_at = as.POSIXct("2026-02-24 09:11:00"))
+
+# Attach files
+mc_send("communications/draft.md",
+        to = "brandon@example.com",
+        subject = "Planting plan",
+        attachments = c("data/plan.xlsx", "fig/map.pdf"))
 } # }
 ```

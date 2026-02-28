@@ -57,6 +57,7 @@ MIME message, and either creates a Gmail draft or sends immediately.</p>
 <span>  test <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  sig <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  sig_path <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  attachments <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  html <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  send_at <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -116,6 +117,11 @@ Default <code>TRUE</code>.</p></dd>
 <dd><p>Path to a custom signature HTML file. Default <code>NULL</code>
 uses the bundled New Graph signature. Passed to <code><a href="mc_md_render.html">mc_md_render()</a></code>.
 Ignored when <code>sig = FALSE</code> or when <code>html</code> is provided.</p></dd>
+
+
+<dt id="arg-attachments">attachments<a class="anchor" aria-label="anchor" href="#arg-attachments"></a></dt>
+<dd><p>Optional character vector of file paths to attach.
+Each file is attached via <code><a href="https://gmailr.r-lib.org/reference/gm_mime.html" class="external-link">gmailr::gm_attach_file()</a></code>. Default <code>NULL</code>.</p></dd>
 
 
 <dt id="arg-html">html<a class="anchor" aria-label="anchor" href="#arg-html"></a></dt>
@@ -210,6 +216,12 @@ window, a 5-minute grace period applies. Past that, the send is
 <span class="r-in"><span>        to <span class="op">=</span> <span class="st">"brandon@example.com"</span>,</span></span>
 <span class="r-in"><span>        subject <span class="op">=</span> <span class="st">"Cottonwood plugs"</span>,</span></span>
 <span class="r-in"><span>        send_at <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.POSIXlt.html" class="external-link">as.POSIXct</a></span><span class="op">(</span><span class="st">"2026-02-24 09:11:00"</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Attach files</span></span></span>
+<span class="r-in"><span><span class="fu">mc_send</span><span class="op">(</span><span class="st">"communications/draft.md"</span>,</span></span>
+<span class="r-in"><span>        to <span class="op">=</span> <span class="st">"brandon@example.com"</span>,</span></span>
+<span class="r-in"><span>        subject <span class="op">=</span> <span class="st">"Planting plan"</span>,</span></span>
+<span class="r-in"><span>        attachments <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"data/plan.xlsx"</span>, <span class="st">"fig/map.pdf"</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
