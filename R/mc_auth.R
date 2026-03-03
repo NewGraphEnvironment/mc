@@ -5,7 +5,7 @@
 #'
 #' @param email Email address to authenticate as.
 #'   Default uses `getOption("mc.from")`, then the `MC_FROM` environment
-#'   variable, then `"al@newgraphenvironment.com"`.
+#'   variable. Errors if neither is set.
 #'
 #' @return Invisible `NULL`. Called for side effect of authenticating.
 #'
@@ -29,8 +29,8 @@ mc_auth <- function(email = default_from()) {
 
 #' Get the default sender address
 #'
-#' Checks `getOption("mc.from")`, then `MC_FROM` env var, then falls back
-#' to `"al@newgraphenvironment.com"`.
+#' Checks `getOption("mc.from")`, then `MC_FROM` env var.
+#' Errors if neither is set.
 #' @return Character string.
 #' @noRd
 default_from <- function() {
@@ -38,5 +38,9 @@ default_from <- function() {
   if (!is.null(from)) return(from)
   env <- Sys.getenv("MC_FROM", unset = "")
   if (nzchar(env)) return(env)
-  "al@newgraphenvironment.com"
+  stop(
+    "No default email found. Set options(mc.from = \"you@example.com\") ",
+    "in .Rprofile or set the MC_FROM environment variable.",
+    call. = FALSE
+  )
 }

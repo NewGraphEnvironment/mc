@@ -9,7 +9,7 @@ mc_auth(email = default_from())
 \arguments{
 \item{email}{Email address to authenticate as.
 Default uses \code{getOption("mc.from")}, then the \code{MC_FROM} environment
-variable, then \code{"al@newgraphenvironment.com"}.}
+variable. Errors if neither is set.}
 }
 \value{
 Invisible \code{NULL}. Called for side effect of authenticating.

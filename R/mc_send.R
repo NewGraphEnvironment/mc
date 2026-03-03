@@ -11,8 +11,7 @@
 #' @param cc Optional CC recipients (character vector). Default `NULL`.
 #' @param bcc Optional BCC recipients (character vector). Default `NULL`.
 #' @param from Sender address. Default uses `getOption("mc.from")`,
-#'   then the `MC_FROM` environment variable, then
-#'   `"al@newgraphenvironment.com"` as a final fallback.
+#'   then the `MC_FROM` environment variable. Errors if neither is set.
 #' @param thread_id Gmail thread ID to reply into. Default `NULL` (new thread).
 #'   Use [mc_thread_find()] to look up thread IDs.
 #' @param draft Logical. If `TRUE` (default), create a Gmail draft.

@@ -33,8 +33,7 @@ mc_send(
 \item{bcc}{Optional BCC recipients (character vector). Default \code{NULL}.}
 
 \item{from}{Sender address. Default uses \code{getOption("mc.from")},
-then the \code{MC_FROM} environment variable, then
-\code{"al@newgraphenvironment.com"} as a final fallback.}
+then the \code{MC_FROM} environment variable. Errors if neither is set.}
 
 \item{thread_id}{Gmail thread ID to reply into. Default \code{NULL} (new thread).
 Use \code{\link[=mc_thread_find]{mc_thread_find()}} to look up thread IDs.}

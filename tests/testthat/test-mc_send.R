@@ -141,10 +141,10 @@ test_that("send_notify does not error", {
   expect_no_error(mc:::send_notify("Test", "body text"))
 })
 
-test_that("default_from reads option then env then fallback", {
+test_that("default_from reads option then env then errors", {
   withr::local_options(mc.from = NULL)
   withr::local_envvar(MC_FROM = "")
-  expect_equal(mc:::default_from(), "al@newgraphenvironment.com")
+  expect_error(mc:::default_from(), "No default email found")
 
   withr::local_envvar(MC_FROM = "env@example.com")
   expect_equal(mc:::default_from(), "env@example.com")
