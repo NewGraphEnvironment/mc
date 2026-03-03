@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">mc</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -36,6 +36,12 @@
     </div>
 
     <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.2.0" id="mc-020">mc 0.2.0<a class="anchor" aria-label="anchor" href="#mc-020"></a></h2>
+<ul><li>Add <code>attachments</code> parameter to <code><a href="../reference/mc_send.html">mc_send()</a></code> for file attachments.</li>
+<li>Remove hardcoded fallback email from <code>default_from()</code> — now errors if <code>options(mc.from)</code> and <code>MC_FROM</code> env var are both unset.</li>
+<li>Update CLAUDE.md with latest soul conventions.</li>
+</ul></div>
+    <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.1.0" id="mc-010">mc 0.1.0<a class="anchor" aria-label="anchor" href="#mc-010"></a></h2>
 <ul><li>First stable release: compose, draft, and send emails from markdown via Gmail API.</li>
 <li>Core functions: <code><a href="../reference/mc_send.html">mc_send()</a></code>, <code><a href="../reference/mc_compose.html">mc_compose()</a></code>, <code><a href="../reference/mc_md_render.html">mc_md_render()</a></code>, <code><a href="../reference/mc_scroll.html">mc_scroll()</a></code>, <code><a href="../reference/mc_sig.html">mc_sig()</a></code>.</li>
@@ -43,7 +49,8 @@
 <li>Scheduled send with <code>send_at</code> and macOS <code>caffeinate</code> integration.</li>
 <li>Test mode redirects to sender for safe previewing.</li>
 </ul></div>
-  </main></div>
+  </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
+    </nav></aside></div>
 
 
     <footer><div class="pkgdown-footer-left">

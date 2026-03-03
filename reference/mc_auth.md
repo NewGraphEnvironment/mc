@@ -16,8 +16,7 @@ mc_auth(email = default_from())
 - email:
 
   Email address to authenticate as. Default uses `getOption("mc.from")`,
-  then the `MC_FROM` environment variable, then
-  `"al@newgraphenvironment.com"`.
+  then the `MC_FROM` environment variable. Errors if neither is set.
 
 ## Value
 

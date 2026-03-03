@@ -1,5 +1,14 @@
 # Changelog
 
+## mc 0.2.0
+
+- Add `attachments` parameter to
+  [`mc_send()`](https://newgraphenvironment.github.io/mc/reference/mc_send.md)
+  for file attachments.
+- Remove hardcoded fallback email from `default_from()` — now errors if
+  `options(mc.from)` and `MC_FROM` env var are both unset.
+- Update CLAUDE.md with latest soul conventions.
+
 ## mc 0.1.0
 
 - First stable release: compose, draft, and send emails from markdown

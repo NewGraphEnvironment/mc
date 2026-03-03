@@ -50,8 +50,7 @@ mc_send(
 - from:
 
   Sender address. Default uses `getOption("mc.from")`, then the
-  `MC_FROM` environment variable, then `"al@newgraphenvironment.com"` as
-  a final fallback.
+  `MC_FROM` environment variable. Errors if neither is set.
 
 - thread_id:
 

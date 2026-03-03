@@ -9,7 +9,7 @@ MIME message, and either creates a Gmail draft or sends immediately."><meta prop
 
     <a class="navbar-brand me-2" href="../index.html">mc</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -89,8 +89,7 @@ MIME message, and either creates a Gmail draft or sends immediately.</p>
 
 <dt id="arg-from">from<a class="anchor" aria-label="anchor" href="#arg-from"></a></dt>
 <dd><p>Sender address. Default uses <code>getOption("mc.from")</code>,
-then the <code>MC_FROM</code> environment variable, then
-<code>"al@newgraphenvironment.com"</code> as a final fallback.</p></dd>
+then the <code>MC_FROM</code> environment variable. Errors if neither is set.</p></dd>
 
 
 <dt id="arg-thread-id">thread_id<a class="anchor" aria-label="anchor" href="#arg-thread-id"></a></dt>
