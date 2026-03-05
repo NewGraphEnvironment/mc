@@ -3,6 +3,106 @@ test_that("mc_thread_read rejects bad types", {
   expect_error(mc_thread_read(thread_id = NULL))
 })
 
+test_that("mc_thread_read rejects bad drafts param", {
+  expect_error(mc_thread_read(thread_id = "abc", drafts = "yes"))
+  expect_error(mc_thread_read(thread_id = "abc", drafts = 1))
+})
+
+test_that("mc_thread_read without drafts has no status column", {
+  # Mock gm_thread to return one message
+  mock_msg <- list(
+    payload = list(
+      mimeType = "text/plain",
+      body = list(
+        size = 5,
+        data = jsonlite::base64url_enc(charToRaw("Hello"))
+      ),
+      headers = list(
+        list(name = "From", value = "test@test.com"),
+        list(name = "Date", value = "Mon, 1 Jan 2026 00:00:00 +0000"),
+        list(name = "Subject", value = "Test")
+      )
+    )
+  )
+  mockery::stub(mc_thread_read, "gmailr::gm_thread",
+    list(messages = list(mock_msg)))
+  result <- mc_thread_read("fake_id")
+  expect_equal(names(result), c("from", "date", "subject", "body"))
+  expect_false("status" %in% names(result))
+})
+
+test_that("mc_thread_read with drafts=TRUE adds status column", {
+  mock_msg <- list(
+    payload = list(
+      mimeType = "text/plain",
+      body = list(
+        size = 5,
+        data = jsonlite::base64url_enc(charToRaw("Hello"))
+      ),
+      headers = list(
+        list(name = "From", value = "test@test.com"),
+        list(name = "Date", value = "Mon, 1 Jan 2026 00:00:00 +0000"),
+        list(name = "Subject", value = "Test")
+      )
+    )
+  )
+  mockery::stub(mc_thread_read, "gmailr::gm_thread",
+    list(messages = list(mock_msg)))
+  mockery::stub(mc_thread_read, "fetch_thread_drafts", list())
+  result <- mc_thread_read("fake_id", drafts = TRUE)
+  expect_true("status" %in% names(result))
+  expect_equal(result$status, "sent")
+})
+
+test_that("mc_thread_read with drafts=TRUE includes draft messages", {
+  mock_sent <- list(
+    payload = list(
+      mimeType = "text/plain",
+      body = list(
+        size = 4,
+        data = jsonlite::base64url_enc(charToRaw("sent"))
+      ),
+      headers = list(
+        list(name = "From", value = "al@test.com"),
+        list(name = "Date", value = "Mon, 1 Jan 2026 00:00:00 +0000"),
+        list(name = "Subject", value = "Test thread")
+      )
+    )
+  )
+  mock_draft_row <- data.frame(
+    from = "al@test.com",
+    date = "Tue, 2 Jan 2026 00:00:00 +0000",
+    subject = "Re: Test thread",
+    body = "draft reply",
+    status = "draft",
+    stringsAsFactors = FALSE
+  )
+  mockery::stub(mc_thread_read, "gmailr::gm_thread",
+    list(messages = list(mock_sent)))
+  mockery::stub(mc_thread_read, "fetch_thread_drafts", list(mock_draft_row))
+  result <- mc_thread_read("fake_id", drafts = TRUE)
+  expect_equal(nrow(result), 2)
+  expect_equal(result$status, c("sent", "draft"))
+  expect_equal(result$body, c("sent", "draft reply"))
+})
+
+test_that("mc_thread_read empty thread with drafts=FALSE returns empty df", {
+  mockery::stub(mc_thread_read, "gmailr::gm_thread",
+    list(messages = NULL))
+  result <- mc_thread_read("fake_id", drafts = FALSE)
+  expect_equal(nrow(result), 0)
+  expect_equal(names(result), c("from", "date", "subject", "body"))
+})
+
+test_that("mc_thread_read empty thread with drafts=TRUE returns empty df with status", {
+  mockery::stub(mc_thread_read, "gmailr::gm_thread",
+    list(messages = NULL))
+  mockery::stub(mc_thread_read, "fetch_thread_drafts", list())
+  result <- mc_thread_read("fake_id", drafts = TRUE)
+  expect_equal(nrow(result), 0)
+  expect_equal(names(result), c("from", "date", "subject", "body", "status"))
+})
+
 test_that("extract_body finds plain text in simple payload", {
   payload <- list(
     mimeType = "text/plain",
