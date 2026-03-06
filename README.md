@@ -120,6 +120,9 @@ mc_thread_find("from:brandon subject:cottonwood")
 # Read the conversation to review context
 mc_thread_read("19c05f0a98188c91")
 
+# Include drafts in the thread (adds a status column: "sent" / "draft")
+mc_thread_read("19c05f0a98188c91", drafts = TRUE)
+
 # Send into it
 mc_send("draft.md",
         to = "brandon@example.com",
