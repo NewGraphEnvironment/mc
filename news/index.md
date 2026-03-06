@@ -1,5 +1,12 @@
 # Changelog
 
+## mc 0.2.1
+
+- Add `drafts` parameter to
+  [`mc_thread_read()`](https://newgraphenvironment.github.io/mc/reference/mc_thread_read.md)
+  — includes draft messages with a `status` column (`"sent"` /
+  `"draft"`).
+
 ## mc 0.2.0
 
 - Add `attachments` parameter to
