@@ -4,14 +4,19 @@
 \alias{mc_thread_read}
 \title{Read all messages in a Gmail thread}
 \usage{
-mc_thread_read(thread_id)
+mc_thread_read(thread_id, drafts = FALSE)
 }
 \arguments{
 \item{thread_id}{Gmail thread ID (from \code{\link[=mc_thread_find]{mc_thread_find()}}).}
+
+\item{drafts}{Logical. If \code{TRUE}, also include draft messages in the
+output and add a \code{status} column (\code{"sent"} or \code{"draft"}).
+Default \code{FALSE} for backwards compatibility.}
 }
 \value{
 A data frame with columns \code{from}, \code{date}, \code{subject}, and \code{body},
-ordered oldest to newest.
+ordered oldest to newest. When \code{drafts = TRUE}, an additional \code{status}
+column is included.
 }
 \description{
 Fetches a thread by ID and returns each message's sender, date, subject,
@@ -22,6 +27,7 @@ a follow-up with \code{\link[=mc_send]{mc_send()}}.
 \dontrun{
 mc_thread_find("from:brandon subject:cottonwood")
 mc_thread_read("19adb18351867c34")
+mc_thread_read("19adb18351867c34", drafts = TRUE)
 }
 
 }
