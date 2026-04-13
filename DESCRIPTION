@@ -30,5 +30,6 @@ Imports:
     chk,
     commonmark,
     gmailr,
-    jsonlite
+    jsonlite,
+    yaml
 VignetteBuilder: knitr
