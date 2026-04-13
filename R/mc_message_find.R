@@ -48,7 +48,7 @@ mc_message_find <- function(query, n = 10, after = NULL, before = NULL,
   rows <- list()
 
   if (status %in% c("any", "sent")) {
-    q <- if (status == "sent") paste(query, "-in:drafts") else query
+    q <- paste(query, "-in:drafts")
     results <- gmailr::gm_messages(search = q, num_results = n)
     ids <- gmailr::gm_id(results)
     for (id in ids) {
@@ -73,7 +73,10 @@ mc_message_find <- function(query, n = 10, after = NULL, before = NULL,
   }
 
   result <- do.call(rbind, rows)
-  result[order(result$date, decreasing = TRUE), , drop = FALSE]
+  parsed <- suppressWarnings(
+    as.POSIXct(result$date, format = "%a, %d %b %Y %H:%M:%S %z", tz = "UTC")
+  )
+  result[order(parsed, decreasing = TRUE), , drop = FALSE]
 }
 
 

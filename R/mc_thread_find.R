@@ -198,16 +198,9 @@ strip_quoted <- function(text) {
   lines <- strsplit(text, "\n", fixed = TRUE)[[1]]
   keep <- !grepl("^>", lines)
   lines <- lines[keep]
-  # Drop trailing "On ... wrote:" attribution (possibly split across lines
-  # ending with ':' on the last kept line).
-  while (length(lines) > 0) {
-    last <- lines[length(lines)]
-    if (grepl("^On .* wrote:$", trimws(last)) ||
-          grepl("wrote:$", trimws(last)) && grepl("^On ", trimws(last))) {
-      lines <- lines[-length(lines)]
-    } else {
-      break
-    }
+  while (length(lines) > 0 &&
+           grepl("^On .* wrote:$", trimws(lines[length(lines)]))) {
+    lines <- lines[-length(lines)]
   }
   trimws(paste(lines, collapse = "\n"))
 }
@@ -267,7 +260,7 @@ add_date_filters <- function(query, after, before) {
     if (is.null(x)) return(NULL)
     if (inherits(x, "Date")) return(format(x, "%Y/%m/%d"))
     chk::chk_string(x, x_name = label)
-    d <- tryCatch(as.Date(x), error = function(e) NA)
+    d <- suppressWarnings(as.Date(x))
     if (is.na(d)) stop("`", label, "` must be a Date or YYYY-MM-DD string")
     format(d, "%Y/%m/%d")
   }
