@@ -1,5 +1,14 @@
 # Changelog
 
+## mc 0.2.3
+
+- [`mc_preview()`](https://newgraphenvironment.github.io/mc/reference/mc_preview.md)
+  now writes to a stable path under `tools::R_user_dir("mc","cache")`
+  instead of [`tempfile()`](https://rdrr.io/r/base/tempfile.html) so the
+  preview survives non-interactive `Rscript` sessions. `open` now
+  defaults to `TRUE` and `path` is configurable
+  ([\#22](https://github.com/NewGraphEnvironment/mc/issues/22)).
+
 ## mc 0.2.2
 
 - Add

@@ -10,7 +10,11 @@ Gmail draft.
 ## Usage
 
 ``` r
-mc_preview(html, open = interactive())
+mc_preview(
+  html,
+  path = file.path(tools::R_user_dir("mc", "cache"), "preview.html"),
+  open = TRUE
+)
 ```
 
 ## Arguments
@@ -20,15 +24,22 @@ mc_preview(html, open = interactive())
   A character string containing HTML, typically from
   [`mc_compose()`](https://newgraphenvironment.github.io/mc/reference/mc_compose.md).
 
+- path:
+
+  File path to write the preview to. Defaults to a stable location under
+  [`tools::R_user_dir()`](https://rdrr.io/r/tools/userdir.html)
+  (`mc/cache/preview.html`) so the file persists after the R session
+  exits and can be opened manually.
+
 - open:
 
-  Logical. If `TRUE` (default in interactive sessions), open the file
-  with [`utils::browseURL()`](https://rdrr.io/r/utils/browseURL.html).
-  When `FALSE`, only write the file.
+  Logical. If `TRUE` (default), open the file with
+  [`utils::browseURL()`](https://rdrr.io/r/utils/browseURL.html). When
+  `FALSE`, only write the file.
 
 ## Value
 
-The tempfile path, invisibly.
+The file path, invisibly.
 
 ## Examples
 

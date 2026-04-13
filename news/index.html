@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">mc</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.3</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,6 +35,11 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/mc/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.2.3" id="mc-023">mc 0.2.3<a class="anchor" aria-label="anchor" href="#mc-023"></a></h2>
+<ul><li>
+<code><a href="../reference/mc_preview.html">mc_preview()</a></code> now writes to a stable path under <code>tools::R_user_dir("mc","cache")</code> instead of <code><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile()</a></code> so the preview survives non-interactive <code>Rscript</code> sessions. <code>open</code> now defaults to <code>TRUE</code> and <code>path</code> is configurable (<a href="https://github.com/NewGraphEnvironment/mc/issues/22" class="external-link">#22</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.2.2" id="mc-022">mc 0.2.2<a class="anchor" aria-label="anchor" href="#mc-022"></a></h2>
 <ul><li>Add <code><a href="../reference/mc_message_find.html">mc_message_find()</a></code> for message-level Gmail search.</li>
