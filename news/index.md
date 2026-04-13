@@ -1,5 +1,19 @@
 # Changelog
 
+## mc 0.2.2
+
+- Add
+  [`mc_message_find()`](https://newgraphenvironment.github.io/mc/reference/mc_message_find.md)
+  for message-level Gmail search.
+- Add
+  [`mc_thread_body_latest()`](https://newgraphenvironment.github.io/mc/reference/mc_thread_body_latest.md)
+  — latest thread reply with quoted history stripped.
+- Add
+  [`mc_preview()`](https://newgraphenvironment.github.io/mc/reference/mc_preview.md)
+  — preview composed HTML in a browser before sending.
+- Add `after` / `before` date filters to
+  [`mc_thread_find()`](https://newgraphenvironment.github.io/mc/reference/mc_thread_find.md).
+
 ## mc 0.2.1
 
 - Add `drafts` parameter to
