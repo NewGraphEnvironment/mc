@@ -8,7 +8,7 @@ when replying into an existing conversation.
 ## Usage
 
 ``` r
-mc_thread_find(query, n = 5)
+mc_thread_find(query, n = 5, after = NULL, before = NULL)
 ```
 
 ## Arguments
@@ -22,6 +22,13 @@ mc_thread_find(query, n = 5)
 
   Maximum number of results. Default `5`.
 
+- after, before:
+
+  Optional date filters. `Date` object or character string in
+  `"YYYY-MM-DD"` form. Translated to Gmail's `after:` / `before:`
+  operators (inclusive/exclusive semantics follow Gmail's behaviour:
+  `after:` is inclusive, `before:` is exclusive).
+
 ## Value
 
 A data frame with columns `thread_id`, `from`, `subject`, and `date`,
@@ -33,5 +40,6 @@ sorted by most recent first.
 if (FALSE) { # \dontrun{
 mc_thread_find("from:brandon.geldart subject:cottonwood")
 mc_thread_find("from:brandon newer_than:7d")
+mc_thread_find("newsletter", after = Sys.Date() - 7)
 } # }
 ```
