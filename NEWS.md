@@ -1,3 +1,10 @@
+# mc 0.2.2
+
+* Add `mc_message_find()` for message-level Gmail search.
+* Add `mc_thread_body_latest()` — latest thread reply with quoted history stripped.
+* Add `mc_preview()` — preview composed HTML in a browser before sending.
+* Add `after` / `before` date filters to `mc_thread_find()`.
+
 # mc 0.2.1
 
 * Add `drafts` parameter to `mc_thread_read()` — includes draft messages
