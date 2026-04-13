@@ -7,6 +7,10 @@
 #' @param query Gmail search query. Supports the same syntax as the Gmail
 #'   search box (e.g., `"from:brandon subject:cottonwood"`).
 #' @param n Maximum number of results. Default `5`.
+#' @param after,before Optional date filters. `Date` object or character
+#'   string in `"YYYY-MM-DD"` form. Translated to Gmail's `after:` / `before:`
+#'   operators (inclusive/exclusive semantics follow Gmail's behaviour:
+#'   `after:` is inclusive, `before:` is exclusive).
 #'
 #' @return A data frame with columns `thread_id`, `from`, `subject`, and
 #'   `date`, sorted by most recent first.
@@ -15,14 +19,16 @@
 #' \dontrun{
 #' mc_thread_find("from:brandon.geldart subject:cottonwood")
 #' mc_thread_find("from:brandon newer_than:7d")
+#' mc_thread_find("newsletter", after = Sys.Date() - 7)
 #' }
 #'
 #' @importFrom chk chk_string chk_whole_number
 #' @importFrom gmailr gm_messages gm_id gm_message
 #' @export
-mc_thread_find <- function(query, n = 5) {
+mc_thread_find <- function(query, n = 5, after = NULL, before = NULL) {
   chk::chk_string(query)
   chk::chk_whole_number(n)
+  query <- add_date_filters(query, after, before)
   results <- gmailr::gm_messages(search = query, num_results = n)
   ids <- gmailr::gm_id(results)
 
@@ -175,6 +181,32 @@ fetch_thread_drafts <- function(thread_id) {
     )
   }
   rows
+}
+
+
+#' Translate `after`/`before` Date or character args into Gmail operators
+#'
+#' Appends `after:YYYY/MM/DD` / `before:YYYY/MM/DD` to a search query. Each
+#' input may be `NULL` (no filter), a `Date`, or a character string parseable
+#' as a date.
+#' @param query Existing Gmail search query string.
+#' @param after,before `Date`, character, or `NULL`.
+#' @return Query string with date operators appended.
+#' @noRd
+add_date_filters <- function(query, after, before) {
+  fmt <- function(x, label) {
+    if (is.null(x)) return(NULL)
+    if (inherits(x, "Date")) return(format(x, "%Y/%m/%d"))
+    chk::chk_string(x, x_name = label)
+    d <- tryCatch(as.Date(x), error = function(e) NA)
+    if (is.na(d)) stop("`", label, "` must be a Date or YYYY-MM-DD string")
+    format(d, "%Y/%m/%d")
+  }
+  a <- fmt(after, "after")
+  b <- fmt(before, "before")
+  parts <- c(query, if (!is.null(a)) paste0("after:", a),
+             if (!is.null(b)) paste0("before:", b))
+  paste(parts, collapse = " ")
 }
 
 
