@@ -7,6 +7,10 @@
 #' @param query Gmail search query. Supports the same syntax as the Gmail
 #'   search box (e.g., `"from:brandon subject:cottonwood"`).
 #' @param n Maximum number of results. Default `5`.
+#' @param after,before Optional date filters. `Date` object or character
+#'   string in `"YYYY-MM-DD"` form. Translated to Gmail's `after:` / `before:`
+#'   operators (inclusive/exclusive semantics follow Gmail's behaviour:
+#'   `after:` is inclusive, `before:` is exclusive).
 #'
 #' @return A data frame with columns `thread_id`, `from`, `subject`, and
 #'   `date`, sorted by most recent first.
@@ -15,14 +19,16 @@
 #' \dontrun{
 #' mc_thread_find("from:brandon.geldart subject:cottonwood")
 #' mc_thread_find("from:brandon newer_than:7d")
+#' mc_thread_find("newsletter", after = Sys.Date() - 7)
 #' }
 #'
 #' @importFrom chk chk_string chk_whole_number
 #' @importFrom gmailr gm_messages gm_id gm_message
 #' @export
-mc_thread_find <- function(query, n = 5) {
+mc_thread_find <- function(query, n = 5, after = NULL, before = NULL) {
   chk::chk_string(query)
   chk::chk_whole_number(n)
+  query <- add_date_filters(query, after, before)
   results <- gmailr::gm_messages(search = query, num_results = n)
   ids <- gmailr::gm_id(results)
 
@@ -138,6 +144,68 @@ mc_thread_read <- function(thread_id, drafts = FALSE) {
 }
 
 
+#' Return the latest top-level message body in a thread
+#'
+#' Convenience wrapper over [mc_thread_read()] that pulls the most recent
+#' message in a thread and, by default, strips quoted reply history so you
+#' get just what was actually written at the top. Useful for recording what
+#' was sent, comparing draft vs sent, or scanning thread activity.
+#'
+#' @param thread_id Gmail thread ID.
+#' @param strip_quotes Logical. If `TRUE` (default), remove lines starting
+#'   with `>` plus the `"On ... wrote:"` attribution line that Gmail inserts
+#'   above quoted history.
+#' @param status One of `"any"` (default), `"sent"`, or `"draft"`. Restricts
+#'   the pool of messages considered when selecting the latest.
+#'
+#' @return A single character string with the latest body (or `""` if none).
+#'
+#' @examples
+#' \dontrun{
+#' mc_thread_body_latest("19cd3565c3161b4b")
+#' mc_thread_body_latest("19cd3565c3161b4b", strip_quotes = FALSE)
+#' }
+#'
+#' @importFrom chk chk_string chk_flag
+#' @export
+mc_thread_body_latest <- function(thread_id, strip_quotes = TRUE,
+                                  status = c("any", "sent", "draft")) {
+  chk::chk_string(thread_id)
+  chk::chk_flag(strip_quotes)
+  status <- match.arg(status)
+
+  df <- suppressMessages(mc_thread_read(thread_id, drafts = TRUE))
+  if (nrow(df) == 0) return("")
+
+  if (status != "any") df <- df[df$status == status, , drop = FALSE]
+  if (nrow(df) == 0) return("")
+
+  body <- df$body[nrow(df)]
+  if (strip_quotes) body <- strip_quoted(body)
+  body
+}
+
+
+#' Strip quoted reply history from a plain-text email body
+#'
+#' Removes the "On ... wrote:" attribution line and the trailing block of
+#' `^>` quoted lines that Gmail (and most clients) emit.
+#' @param text Character string.
+#' @return Character string with quoted history removed and trailing whitespace trimmed.
+#' @noRd
+strip_quoted <- function(text) {
+  if (is.na(text) || !nzchar(text)) return(text)
+  lines <- strsplit(text, "\n", fixed = TRUE)[[1]]
+  keep <- !grepl("^>", lines)
+  lines <- lines[keep]
+  while (length(lines) > 0 &&
+           grepl("^On .* wrote:$", trimws(lines[length(lines)]))) {
+    lines <- lines[-length(lines)]
+  }
+  trimws(paste(lines, collapse = "\n"))
+}
+
+
 #' Fetch draft messages belonging to a specific thread
 #'
 #' Scans Gmail drafts and returns rows for any that belong to the given
@@ -175,6 +243,32 @@ fetch_thread_drafts <- function(thread_id) {
     )
   }
   rows
+}
+
+
+#' Translate `after`/`before` Date or character args into Gmail operators
+#'
+#' Appends `after:YYYY/MM/DD` / `before:YYYY/MM/DD` to a search query. Each
+#' input may be `NULL` (no filter), a `Date`, or a character string parseable
+#' as a date.
+#' @param query Existing Gmail search query string.
+#' @param after,before `Date`, character, or `NULL`.
+#' @return Query string with date operators appended.
+#' @noRd
+add_date_filters <- function(query, after, before) {
+  fmt <- function(x, label) {
+    if (is.null(x)) return(NULL)
+    if (inherits(x, "Date")) return(format(x, "%Y/%m/%d"))
+    chk::chk_string(x, x_name = label)
+    d <- suppressWarnings(as.Date(x))
+    if (is.na(d)) stop("`", label, "` must be a Date or YYYY-MM-DD string")
+    format(d, "%Y/%m/%d")
+  }
+  a <- fmt(after, "after")
+  b <- fmt(before, "before")
+  parts <- c(query, if (!is.null(a)) paste0("after:", a),
+             if (!is.null(b)) paste0("before:", b))
+  paste(parts, collapse = " ")
 }
 
 

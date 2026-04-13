@@ -4,13 +4,18 @@
 \alias{mc_thread_find}
 \title{Search Gmail for thread IDs}
 \usage{
-mc_thread_find(query, n = 5)
+mc_thread_find(query, n = 5, after = NULL, before = NULL)
 }
 \arguments{
 \item{query}{Gmail search query. Supports the same syntax as the Gmail
 search box (e.g., \code{"from:brandon subject:cottonwood"}).}
 
 \item{n}{Maximum number of results. Default \code{5}.}
+
+\item{after, before}{Optional date filters. \code{Date} object or character
+string in \code{"YYYY-MM-DD"} form. Translated to Gmail's \verb{after:} / \verb{before:}
+operators (inclusive/exclusive semantics follow Gmail's behaviour:
+\verb{after:} is inclusive, \verb{before:} is exclusive).}
 }
 \value{
 A data frame with columns \code{thread_id}, \code{from}, \code{subject}, and
@@ -25,6 +30,7 @@ an existing conversation.
 \dontrun{
 mc_thread_find("from:brandon.geldart subject:cottonwood")
 mc_thread_find("from:brandon newer_than:7d")
+mc_thread_find("newsletter", after = Sys.Date() - 7)
 }
 
 }
