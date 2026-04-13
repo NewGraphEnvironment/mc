@@ -144,6 +144,75 @@ mc_thread_read <- function(thread_id, drafts = FALSE) {
 }
 
 
+#' Return the latest top-level message body in a thread
+#'
+#' Convenience wrapper over [mc_thread_read()] that pulls the most recent
+#' message in a thread and, by default, strips quoted reply history so you
+#' get just what was actually written at the top. Useful for recording what
+#' was sent, comparing draft vs sent, or scanning thread activity.
+#'
+#' @param thread_id Gmail thread ID.
+#' @param strip_quotes Logical. If `TRUE` (default), remove lines starting
+#'   with `>` plus the `"On ... wrote:"` attribution line that Gmail inserts
+#'   above quoted history.
+#' @param status One of `"any"` (default), `"sent"`, or `"draft"`. Restricts
+#'   the pool of messages considered when selecting the latest.
+#'
+#' @return A single character string with the latest body (or `""` if none).
+#'
+#' @examples
+#' \dontrun{
+#' mc_thread_body_latest("19cd3565c3161b4b")
+#' mc_thread_body_latest("19cd3565c3161b4b", strip_quotes = FALSE)
+#' }
+#'
+#' @importFrom chk chk_string chk_flag
+#' @export
+mc_thread_body_latest <- function(thread_id, strip_quotes = TRUE,
+                                  status = c("any", "sent", "draft")) {
+  chk::chk_string(thread_id)
+  chk::chk_flag(strip_quotes)
+  status <- match.arg(status)
+
+  df <- suppressMessages(mc_thread_read(thread_id, drafts = TRUE))
+  if (nrow(df) == 0) return("")
+
+  if (status != "any") df <- df[df$status == status, , drop = FALSE]
+  if (nrow(df) == 0) return("")
+
+  body <- df$body[nrow(df)]
+  if (strip_quotes) body <- strip_quoted(body)
+  body
+}
+
+
+#' Strip quoted reply history from a plain-text email body
+#'
+#' Removes the "On ... wrote:" attribution line and the trailing block of
+#' `^>` quoted lines that Gmail (and most clients) emit.
+#' @param text Character string.
+#' @return Character string with quoted history removed and trailing whitespace trimmed.
+#' @noRd
+strip_quoted <- function(text) {
+  if (is.na(text) || !nzchar(text)) return(text)
+  lines <- strsplit(text, "\n", fixed = TRUE)[[1]]
+  keep <- !grepl("^>", lines)
+  lines <- lines[keep]
+  # Drop trailing "On ... wrote:" attribution (possibly split across lines
+  # ending with ':' on the last kept line).
+  while (length(lines) > 0) {
+    last <- lines[length(lines)]
+    if (grepl("^On .* wrote:$", trimws(last)) ||
+          grepl("wrote:$", trimws(last)) && grepl("^On ", trimws(last))) {
+      lines <- lines[-length(lines)]
+    } else {
+      break
+    }
+  }
+  trimws(paste(lines, collapse = "\n"))
+}
+
+
 #' Fetch draft messages belonging to a specific thread
 #'
 #' Scans Gmail drafts and returns rows for any that belong to the given
