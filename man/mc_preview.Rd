@@ -4,17 +4,25 @@
 \alias{mc_preview}
 \title{Preview composed HTML in a browser before sending}
 \usage{
-mc_preview(html, open = interactive())
+mc_preview(
+  html,
+  path = file.path(tools::R_user_dir("mc", "cache"), "preview.html"),
+  open = TRUE
+)
 }
 \arguments{
 \item{html}{A character string containing HTML, typically from
 \code{\link[=mc_compose]{mc_compose()}}.}
 
-\item{open}{Logical. If \code{TRUE} (default in interactive sessions), open
-the file with \code{\link[utils:browseURL]{utils::browseURL()}}. When \code{FALSE}, only write the file.}
+\item{path}{File path to write the preview to. Defaults to a stable
+location under \code{\link[tools:userdir]{tools::R_user_dir()}} (\code{mc/cache/preview.html}) so the
+file persists after the R session exits and can be opened manually.}
+
+\item{open}{Logical. If \code{TRUE} (default), open the file with
+\code{\link[utils:browseURL]{utils::browseURL()}}. When \code{FALSE}, only write the file.}
 }
 \value{
-The tempfile path, invisibly.
+The file path, invisibly.
 }
 \description{
 Writes the output of \code{\link[=mc_compose]{mc_compose()}} (or any HTML string) to a temp file

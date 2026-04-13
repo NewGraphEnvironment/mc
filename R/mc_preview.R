@@ -7,10 +7,13 @@
 #'
 #' @param html A character string containing HTML, typically from
 #'   [mc_compose()].
-#' @param open Logical. If `TRUE` (default in interactive sessions), open
-#'   the file with [utils::browseURL()]. When `FALSE`, only write the file.
+#' @param path File path to write the preview to. Defaults to a stable
+#'   location under [tools::R_user_dir()] (`mc/cache/preview.html`) so the
+#'   file persists after the R session exits and can be opened manually.
+#' @param open Logical. If `TRUE` (default), open the file with
+#'   [utils::browseURL()]. When `FALSE`, only write the file.
 #'
-#' @return The tempfile path, invisibly.
+#' @return The file path, invisibly.
 #'
 #' @examples
 #' \dontrun{
@@ -21,11 +24,16 @@
 #' @importFrom chk chk_string chk_flag
 #' @importFrom utils browseURL
 #' @export
-mc_preview <- function(html, open = interactive()) {
+mc_preview <- function(html,
+                       path = file.path(
+                         tools::R_user_dir("mc", "cache"), "preview.html"
+                       ),
+                       open = TRUE) {
   chk::chk_string(html)
+  chk::chk_string(path)
   chk::chk_flag(open)
 
-  path <- tempfile(fileext = ".html")
+  dir.create(dirname(path), showWarnings = FALSE, recursive = TRUE)
   writeLines(html, path)
   if (open) utils::browseURL(path)
   invisible(path)

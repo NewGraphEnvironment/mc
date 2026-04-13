@@ -1,3 +1,9 @@
+# mc 0.2.3
+
+* `mc_preview()` now writes to a stable path under `tools::R_user_dir("mc","cache")`
+  instead of `tempfile()` so the preview survives non-interactive `Rscript`
+  sessions. `open` now defaults to `TRUE` and `path` is configurable (#22).
+
 # mc 0.2.2
 
 * Add `mc_message_find()` for message-level Gmail search.
