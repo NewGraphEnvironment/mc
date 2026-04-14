@@ -74,17 +74,55 @@ mc_md_render <- function(path, sig = TRUE, sig_path = NULL) {
 
 #' Strip the header above the first `---` separator in markdown
 #'
+#' Handles two header styles:
+#' - YAML frontmatter: file starts with `---\n...\n---\n`. Strips through the
+#'   closing `---\n`.
+#' - Legacy compost template header: strips everything up to and including the
+#'   first `---\n`.
+#'
 #' Used by both [mc_md_render()] and `resolve_part()` in [mc_compose()].
 #' If no `---` is found, the full text is returned unchanged.
 #' @param md Character string of raw markdown.
 #' @return Markdown with header stripped.
 #' @noRd
 strip_md_header <- function(md) {
+  if (grepl("^---\\s*\\n", md, perl = TRUE)) {
+    # YAML frontmatter — strip opening `---` line through matching closing one
+    return(sub("^---\\s*\\n[\\s\\S]*?\\n---\\s*\\n", "", md, perl = TRUE))
+  }
   if (grepl("---", md, fixed = TRUE)) {
     sub("^[\\s\\S]*?---\\s*\\n", "", md, perl = TRUE)
   } else {
     md
   }
+}
+
+
+#' Parse YAML frontmatter from a markdown file
+#'
+#' Returns `list(meta = <named list>, body = <character>)`. When the file
+#' has no YAML frontmatter, `meta` is an empty list and `body` is the full
+#' file contents.
+#'
+#' @param path Path to the markdown file.
+#' @return List with `meta` (named list) and `body` (character).
+#' @noRd
+parse_frontmatter <- function(path) {
+  if (!file.exists(path)) stop("File not found: ", path, call. = FALSE)
+  raw <- paste(readLines(path, warn = FALSE), collapse = "\n")
+  m <- regmatches(
+    raw,
+    regexpr("^---\\s*\\n([\\s\\S]*?)\\n---\\s*(\\n|$)", raw, perl = TRUE)
+  )
+  if (length(m) == 0) {
+    return(list(meta = list(), body = raw))
+  }
+  yaml_block <- sub("^---\\s*\\n([\\s\\S]*?)\\n---\\s*(\\n|$)", "\\1", m,
+                    perl = TRUE)
+  meta <- yaml::yaml.load(yaml_block)
+  if (is.null(meta)) meta <- list()
+  body <- sub("^---\\s*\\n[\\s\\S]*?\\n---\\s*(\\n|$)", "", raw, perl = TRUE)
+  list(meta = meta, body = body)
 }
 
 
