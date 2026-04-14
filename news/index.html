@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">mc</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,6 +35,13 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/mc/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.2.4" id="mc-024">mc 0.2.4<a class="anchor" aria-label="anchor" href="#mc-024"></a></h2>
+<ul><li>Add YAML frontmatter support for one-file email drafts (<a href="https://github.com/NewGraphEnvironment/mc/issues/23" class="external-link">#23</a>).</li>
+<li>Add <code><a href="../reference/mc_md_meta.html">mc_md_meta()</a></code> to read frontmatter as a named list.</li>
+<li>Add <code><a href="../reference/mc_md_send.html">mc_md_send()</a></code> to dispatch to <code><a href="../reference/mc_send.html">mc_send()</a></code> from frontmatter, with an <code>override</code> arg for call-time tweaks.</li>
+<li>Add <code><a href="../reference/mc_md_index.html">mc_md_index()</a></code> to scan a directory tree of drafts and return a searchable dataframe (<code>path</code>, <code>date</code>, <code>to</code>, <code>cc</code>, <code>subject</code>, <code>thread_id</code>, <code>has_attachments</code>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.2.3" id="mc-023">mc 0.2.3<a class="anchor" aria-label="anchor" href="#mc-023"></a></h2>
 <ul><li>

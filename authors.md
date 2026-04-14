@@ -11,12 +11,12 @@ Source:
 [`DESCRIPTION`](https://github.com/NewGraphEnvironment/mc/blob/main/DESCRIPTION)
 
 Irvine A (2026). *mc: Mail Composer - Email Composition and Delivery*. R
-package version 0.2.3, <https://github.com/NewGraphEnvironment/mc>.
+package version 0.2.4, <https://github.com/NewGraphEnvironment/mc>.
 
     @Manual{,
       title = {mc: Mail Composer - Email Composition and Delivery},
       author = {Allan Irvine},
       year = {2026},
-      note = {R package version 0.2.3},
+      note = {R package version 0.2.4},
       url = {https://github.com/NewGraphEnvironment/mc},
     }

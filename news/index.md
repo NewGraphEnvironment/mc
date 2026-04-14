@@ -1,5 +1,23 @@
 # Changelog
 
+## mc 0.2.4
+
+- Add YAML frontmatter support for one-file email drafts
+  ([\#23](https://github.com/NewGraphEnvironment/mc/issues/23)).
+- Add
+  [`mc_md_meta()`](https://newgraphenvironment.github.io/mc/reference/mc_md_meta.md)
+  to read frontmatter as a named list.
+- Add
+  [`mc_md_send()`](https://newgraphenvironment.github.io/mc/reference/mc_md_send.md)
+  to dispatch to
+  [`mc_send()`](https://newgraphenvironment.github.io/mc/reference/mc_send.md)
+  from frontmatter, with an `override` arg for call-time tweaks.
+- Add
+  [`mc_md_index()`](https://newgraphenvironment.github.io/mc/reference/mc_md_index.md)
+  to scan a directory tree of drafts and return a searchable dataframe
+  (`path`, `date`, `to`, `cc`, `subject`, `thread_id`,
+  `has_attachments`).
+
 ## mc 0.2.3
 
 - [`mc_preview()`](https://newgraphenvironment.github.io/mc/reference/mc_preview.md)
