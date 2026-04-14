@@ -43,6 +43,14 @@ test_that("mc_md_send dispatches frontmatter fields to mc_send", {
   expect_equal(captured$path, p)
 })
 
+test_that("mc_md_send rejects path in override", {
+  p <- write_draft(c("---", "to: a@x.com", "subject: hi", "---", "body"))
+  expect_error(
+    mc_md_send(p, override = list(path = "/other.md")),
+    "cannot change"
+  )
+})
+
 test_that("mc_md_send override wins over frontmatter", {
   captured <- NULL
   fake_send <- function(...) {

@@ -55,7 +55,14 @@ mc_md_index <- function(dir = "communications", pattern = "_draft\\.md$",
 #' Build a one-row index data frame for a markdown draft
 #' @noRd
 index_row <- function(path) {
-  meta <- tryCatch(mc_md_meta(path), error = function(e) list())
+  meta <- tryCatch(
+    mc_md_meta(path),
+    error = function(e) {
+      warning("Could not parse frontmatter in ", path, ": ",
+              conditionMessage(e), call. = FALSE)
+      list()
+    }
+  )
   date <- parse_filename_date(basename(path))
   collapse <- function(x) {
     if (is.null(x)) return(NA_character_)

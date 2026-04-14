@@ -66,6 +66,13 @@ mc_md_send <- function(path, draft = TRUE, test = FALSE, override = list()) {
   if (!is.null(meta$sig)) args$sig <- meta$sig
   if (!is.null(meta$sig_path)) args$sig_path <- meta$sig_path
 
+  if ("path" %in% names(override)) {
+    stop(
+      "`override` cannot change `path` — frontmatter is already read from ",
+      "the original file. Call mc_md_send() on the new path instead.",
+      call. = FALSE
+    )
+  }
   for (key in names(override)) args[[key]] <- override[[key]]
 
   invisible(do.call(mc_send, args))

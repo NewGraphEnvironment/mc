@@ -45,6 +45,15 @@ test_that("mc_md_index scans and parses frontmatter", {
   expect_true(is.na(row2$date))
 })
 
+test_that("mc_md_index warns on malformed YAML", {
+  d <- tempfile(); dir.create(d)
+  writeLines(c("---", "to: [unclosed", "---", "body"),
+             file.path(d, "bad_draft.md"))
+  expect_warning(out <- mc_md_index(d), "Could not parse frontmatter")
+  expect_equal(nrow(out), 1)
+  expect_true(is.na(out$to))
+})
+
 test_that("mc_md_index respects recursive = FALSE", {
   d <- tempfile(); dir.create(d)
   sub <- file.path(d, "sub"); dir.create(sub)
