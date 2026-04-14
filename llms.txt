@@ -202,8 +202,14 @@ MIT
   : Authenticate with Gmail
 - [`mc_compose()`](https://newgraphenvironment.github.io/mc/reference/mc_compose.md)
   : Compose an HTML email from mixed content
+- [`mc_md_index()`](https://newgraphenvironment.github.io/mc/reference/mc_md_index.md)
+  : Index markdown email drafts under a directory
+- [`mc_md_meta()`](https://newgraphenvironment.github.io/mc/reference/mc_md_meta.md)
+  : Read YAML frontmatter from a markdown email draft
 - [`mc_md_render()`](https://newgraphenvironment.github.io/mc/reference/mc_md_render.md)
   : Render a markdown draft to HTML email body
+- [`mc_md_send()`](https://newgraphenvironment.github.io/mc/reference/mc_md_send.md)
+  : Send or draft an email from a markdown file with YAML frontmatter
 - [`mc_message_find()`](https://newgraphenvironment.github.io/mc/reference/mc_message_find.md)
   : Search Gmail at the message level
 - [`mc_preview()`](https://newgraphenvironment.github.io/mc/reference/mc_preview.md)
