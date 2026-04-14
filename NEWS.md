@@ -1,3 +1,13 @@
+# mc 0.2.4
+
+* Add YAML frontmatter support for one-file email drafts (#23).
+* Add `mc_md_meta()` to read frontmatter as a named list.
+* Add `mc_md_send()` to dispatch to `mc_send()` from frontmatter, with
+  an `override` arg for call-time tweaks.
+* Add `mc_md_index()` to scan a directory tree of drafts and return a
+  searchable dataframe (`path`, `date`, `to`, `cc`, `subject`,
+  `thread_id`, `has_attachments`).
+
 # mc 0.2.3
 
 * `mc_preview()` now writes to a stable path under `tools::R_user_dir("mc","cache")`
