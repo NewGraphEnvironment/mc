@@ -1,3 +1,10 @@
+# mc 0.2.5
+
+* `mc_preview()` now accepts a `.md` path in addition to an HTML string.
+  When given a path, renders the frontmatter envelope (To / Cc / Subject
+  / Thread / Attach) as a header above the body so recipient or subject
+  mistakes are visible locally (#25).
+
 # mc 0.2.4
 
 * Add YAML frontmatter support for one-file email drafts (#23).
