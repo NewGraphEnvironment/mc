@@ -1,5 +1,14 @@
 # Changelog
 
+## mc 0.2.5
+
+- [`mc_preview()`](https://newgraphenvironment.github.io/mc/reference/mc_preview.md)
+  now accepts a `.md` path in addition to an HTML string. When given a
+  path, renders the frontmatter envelope (To / Cc / Subject / Thread /
+  Attach) as a header above the body so recipient or subject mistakes
+  are visible locally
+  ([\#25](https://github.com/NewGraphEnvironment/mc/issues/25)).
+
 ## mc 0.2.4
 
 - Add YAML frontmatter support for one-file email drafts
