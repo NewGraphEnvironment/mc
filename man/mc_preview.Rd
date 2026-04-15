@@ -11,8 +11,9 @@ mc_preview(
 )
 }
 \arguments{
-\item{html}{A character string containing HTML, typically from
-\code{\link[=mc_compose]{mc_compose()}}.}
+\item{html}{Either a character string of HTML (e.g. from \code{\link[=mc_compose]{mc_compose()}})
+or a path to a \code{.md} draft file. A \code{.md} path is detected by the
+combination of \code{endsWith(x, ".md")} and \code{file.exists(x)}.}
 
 \item{path}{File path to write the preview to. Defaults to a stable
 location under \code{\link[tools:userdir]{tools::R_user_dir()}} (\code{mc/cache/preview.html}) so the
@@ -25,15 +26,25 @@ file persists after the R session exits and can be opened manually.}
 The file path, invisibly.
 }
 \description{
-Writes the output of \code{\link[=mc_compose]{mc_compose()}} (or any HTML string) to a temp file
-and opens it in the default browser. Catches markdown rendering issues
-(mis-nested links, stray backticks, unintended list formatting, signature
-layout) locally before creating a Gmail draft.
+Writes composed HTML to a local file and opens it in the default browser
+so markdown rendering issues (mis-nested links, stray backticks,
+unintended list formatting, signature layout) can be caught before
+creating a Gmail draft.
+}
+\details{
+Accepts either a raw HTML string or a path to a \code{.md} draft. When a
+\code{.md} path is passed, the frontmatter envelope (To / Cc / Subject /
+Thread / Attachments) is rendered above the body so recipient or
+subject mistakes are visible too.
 }
 \examples{
 \dontrun{
+# From raw HTML
 html <- mc_compose("communications/project/draft.md")
 mc_preview(html)
+
+# Directly from a frontmattered .md — shows envelope above body
+mc_preview("communications/20260413_cindy_newsletter_draft.md")
 }
 
 }
