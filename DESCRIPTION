@@ -1,6 +1,6 @@
 Package: mc
 Title: Mail Composer - Email Composition and Delivery
-Version: 0.2.5
+Version: 0.2.6
 Authors@R:
     person("Allan", "Irvine", , "al@newgraphenvironment.com", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-3495-2128"))
@@ -28,6 +28,7 @@ Depends:
     R (>= 4.1)
 Imports:
     chk,
+    cli,
     commonmark,
     gmailr,
     jsonlite,
