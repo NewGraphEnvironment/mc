@@ -1,5 +1,21 @@
 # Changelog
 
+## mc 0.2.6
+
+- Startup quote ritual:
+  [`library(mc)`](https://github.com/NewGraphEnvironment/mc) prints a
+  random fact-checked quote from 25 voices on attach. Italic quote, grey
+  attribution, clickable blue `source` hyperlink. Suppress via
+  `options(mc.quote_show_source = FALSE)`.
+- 99 shipped entries from MLK, JFK, Bob Marley, Kurt Cobain, Chris
+  Cornell, Robert Plant, James Hetfield, Tupac, Eminem, Ice-T, Ice Cube,
+  RZA, ODB, Method Man, DJ Premier, Vince Staples, Logic, Mike Tyson,
+  Jim Carrey, John Candy, Ronny Chieng, Jon Stewart, Stephen King,
+  Quentin Tarantino, Paul Thomas Anderson.
+- Curated via the soul `/quotes-enable` skill: parallel research agents,
+  independent fact-check pass, user review.
+- `cli` added to Imports for OSC 8 hyperlinks and styling in `R/zzz.R`.
+
 ## mc 0.2.5
 
 - [`mc_preview()`](https://newgraphenvironment.github.io/mc/reference/mc_preview.md)
