@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">mc</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.6</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.7</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,6 +35,11 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/mc/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.2.7" id="mc-027">mc 0.2.7<a class="anchor" aria-label="anchor" href="#mc-027"></a></h2>
+<ul><li>Add <code><a href="../reference/mc_thread_modify.html">mc_thread_modify()</a></code> — adds and/or removes labels on a Gmail thread in one call. Accepts user label names or Gmail system labels (INBOX, STARRED, UNREAD, IMPORTANT, TRASH, SPAM, SENT, DRAFT), so the same verb covers archive (<code>remove = "INBOX"</code>), star (<code>add = "STARRED"</code>), trash, mark-read, and project-label workflows (<a href="https://github.com/NewGraphEnvironment/mc/issues/28" class="external-link">#28</a>).</li>
+<li>Bypasses a body-encoding bug in <code><a href="https://gmailr.r-lib.org/reference/gm_modify_thread.html" class="external-link">gmailr::gm_modify_thread()</a></code> (3.0.0) by POSTing directly to <code>users.threads.modify</code>. <code>httr</code> added to Imports.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.2.6" id="mc-026">mc 0.2.6<a class="anchor" aria-label="anchor" href="#mc-026"></a></h2>
 <ul><li>Startup quote ritual: <code><a href="https://github.com/NewGraphEnvironment/mc" class="external-link">library(mc)</a></code> prints a random fact-checked quote from 25 voices on attach. Italic quote, grey attribution, clickable blue <code>source</code> hyperlink. Suppress via <code>options(mc.quote_show_source = FALSE)</code>.</li>

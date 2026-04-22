@@ -1,5 +1,20 @@
 # Changelog
 
+## mc 0.2.7
+
+- Add
+  [`mc_thread_modify()`](https://newgraphenvironment.github.io/mc/reference/mc_thread_modify.md)
+  — adds and/or removes labels on a Gmail thread in one call. Accepts
+  user label names or Gmail system labels (INBOX, STARRED, UNREAD,
+  IMPORTANT, TRASH, SPAM, SENT, DRAFT), so the same verb covers archive
+  (`remove = "INBOX"`), star (`add = "STARRED"`), trash, mark-read, and
+  project-label workflows
+  ([\#28](https://github.com/NewGraphEnvironment/mc/issues/28)).
+- Bypasses a body-encoding bug in
+  [`gmailr::gm_modify_thread()`](https://gmailr.r-lib.org/reference/gm_modify_thread.html)
+  (3.0.0) by POSTing directly to `users.threads.modify`. `httr` added to
+  Imports.
+
 ## mc 0.2.6
 
 - Startup quote ritual:

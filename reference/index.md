@@ -28,5 +28,8 @@
   : Return the latest top-level message body in a thread
 - [`mc_thread_find()`](https://newgraphenvironment.github.io/mc/reference/mc_thread_find.md)
   : Search Gmail for thread IDs
+- [`mc_thread_modify()`](https://newgraphenvironment.github.io/mc/reference/mc_thread_modify.md)
+  : Modify a Gmail thread's label state (archive, trash, star, label,
+  etc.)
 - [`mc_thread_read()`](https://newgraphenvironment.github.io/mc/reference/mc_thread_read.md)
   : Read all messages in a Gmail thread
