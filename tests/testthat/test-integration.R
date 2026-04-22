@@ -138,6 +138,57 @@ test_that("mc_send replies into the test thread", {
   )
 })
 
+test_that("mc_thread_modify adds and removes a user label", {
+  thread_id <- env$test_thread_id
+  skip_if(is.null(thread_id), "Test thread not available")
+
+  label_name <- paste0("mc-label-", format(Sys.time(), "%Y%m%d-%H%M%S"))
+  created <- gmailr::gm_create_label(label_name)
+  label_id <- created$id
+  withr::defer(
+    tryCatch(gmailr::gm_delete_label(label_id), error = function(e) NULL)
+  )
+
+  # Apply the user label
+  mc_thread_modify(thread_id, add = label_name)
+  Sys.sleep(3)
+
+  thread <- gmailr::gm_thread(id = thread_id)
+  msg_labels <- unlist(lapply(thread$messages, function(m) m$labelIds))
+  expect_true(
+    label_id %in% msg_labels,
+    info = "Label not found on thread after mc_thread_modify(add = ...)"
+  )
+
+  # Remove it
+  mc_thread_modify(thread_id, remove = label_name)
+  Sys.sleep(3)
+
+  thread <- gmailr::gm_thread(id = thread_id)
+  msg_labels <- unlist(lapply(thread$messages, function(m) m$labelIds))
+  expect_false(
+    label_id %in% msg_labels,
+    info = "Label still present after mc_thread_modify(remove = ...)"
+  )
+})
+
+test_that("mc_thread_modify passes system labels through (star/unstar)", {
+  thread_id <- env$test_thread_id
+  skip_if(is.null(thread_id), "Test thread not available")
+
+  mc_thread_modify(thread_id, add = "STARRED")
+  Sys.sleep(3)
+  thread <- gmailr::gm_thread(id = thread_id)
+  msg_labels <- unlist(lapply(thread$messages, function(m) m$labelIds))
+  expect_true("STARRED" %in% msg_labels)
+
+  mc_thread_modify(thread_id, remove = "STARRED")
+  Sys.sleep(3)
+  thread <- gmailr::gm_thread(id = thread_id)
+  msg_labels <- unlist(lapply(thread$messages, function(m) m$labelIds))
+  expect_false("STARRED" %in% msg_labels)
+})
+
 test_that("mc_compose with mc_scroll sends a table email", {
   df <- data.frame(
     Site = c("Nechako", "Mackenzie", "Skeena"),

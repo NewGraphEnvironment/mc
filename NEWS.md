@@ -1,3 +1,13 @@
+# mc 0.2.7
+
+* Add `mc_thread_modify()` — adds and/or removes labels on a Gmail thread
+  in one call. Accepts user label names or Gmail system labels (INBOX,
+  STARRED, UNREAD, IMPORTANT, TRASH, SPAM, SENT, DRAFT), so the same
+  verb covers archive (`remove = "INBOX"`), star (`add = "STARRED"`),
+  trash, mark-read, and project-label workflows (#28).
+* Bypasses a body-encoding bug in `gmailr::gm_modify_thread()` (3.0.0)
+  by POSTing directly to `users.threads.modify`. `httr` added to Imports.
+
 # mc 0.2.6
 
 - Startup quote ritual: `library(mc)` prints a random fact-checked quote from 25 voices on attach. Italic quote, grey attribution, clickable blue `source` hyperlink. Suppress via `options(mc.quote_show_source = FALSE)`.
