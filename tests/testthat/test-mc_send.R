@@ -250,6 +250,88 @@ test_that("mc_send works without attachments (NULL default)", {
   expect_false(is.null(captured_msg))
 })
 
+test_that("mc_send applies labels via mc_thread_modify on send path", {
+  modify_args <- NULL
+  local_mocked_bindings(
+    gm_send_message = function(msg, ...) list(threadId = "tid_99"),
+    .package = "gmailr"
+  )
+  local_mocked_bindings(
+    mc_thread_modify = function(thread_id, add = NULL, remove = NULL) {
+      modify_args <<- list(thread_id = thread_id, add = add, remove = remove)
+      invisible(NULL)
+    },
+    .package = "mc"
+  )
+  res <- mc_send(
+    html = "<p>x</p>", to = "bob@example.com",
+    subject = "labelled", from = "alice@example.com",
+    labels = c("project-x", "urgent"),
+    draft = FALSE
+  )
+  expect_equal(res, "tid_99")
+  expect_equal(modify_args$thread_id, "tid_99")
+  expect_equal(modify_args$add, c("project-x", "urgent"))
+  expect_null(modify_args$remove)
+})
+
+test_that("mc_send applies labels to the draft thread on draft path", {
+  modify_args <- NULL
+  local_mocked_bindings(
+    gm_create_draft = function(msg) {
+      list(message = list(threadId = "draft_tid"))
+    },
+    .package = "gmailr"
+  )
+  local_mocked_bindings(
+    mc_thread_modify = function(thread_id, add = NULL, remove = NULL) {
+      modify_args <<- list(thread_id = thread_id, add = add, remove = remove)
+      invisible(NULL)
+    },
+    .package = "mc"
+  )
+  res <- mc_send(
+    html = "<p>x</p>", to = "bob@example.com",
+    subject = "draft labelled", from = "alice@example.com",
+    labels = "project-x",
+    draft = TRUE
+  )
+  expect_equal(res, "draft_tid")
+  expect_equal(modify_args$thread_id, "draft_tid")
+  expect_equal(modify_args$add, "project-x")
+})
+
+test_that("mc_send warns when send succeeds but threadId missing and labels set", {
+  local_mocked_bindings(
+    gm_send_message = function(msg, ...) list(),
+    .package = "gmailr"
+  )
+  local_mocked_bindings(
+    mc_thread_modify = function(...) stop("should not be called"),
+    .package = "mc"
+  )
+  expect_warning(
+    mc_send(
+      html = "<p>x</p>", to = "bob@example.com",
+      subject = "no tid", from = "alice@example.com",
+      labels = "project-x",
+      draft = FALSE
+    ),
+    "did not include a threadId"
+  )
+})
+
+test_that("mc_send labels arg validation rejects non-character", {
+  expect_error(
+    mc_send(
+      html = "<p>x</p>", to = "bob@example.com",
+      subject = "x", from = "alice@example.com",
+      labels = 42
+    ),
+    "labels"
+  )
+})
+
 test_that("caffeinate is not called when send_at is NULL", {
   # Stub caffeinate_send to record whether it was called
   called <- FALSE

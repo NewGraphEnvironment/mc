@@ -20,12 +20,13 @@ Issue: https://github.com/NewGraphEnvironment/mc/issues/31
 
 ## Phase 3: labels arg in mc_send
 
-- [ ] Add `labels = NULL` arg to `mc_send()`
-- [ ] Validate: `chk::chk_null_or(labels, vld = chk::vld_character)`
-- [ ] After successful `gm_send_message()`: call `mc_thread_modify(thread_id, add = labels)`
-- [ ] After successful `gm_create_draft()` with non-null labels: emit warning ("Labels not applied to drafts. Re-apply after sending with `mc_thread_modify()`."), skip apply
-- [ ] Roxygen: document `labels` param + draft-path tradeoff
-- [ ] Commit
+- [x] Add `labels = NULL` arg to `mc_send()`
+- [x] Validate: `chk::chk_null_or(labels, vld = chk::vld_character)`
+- [x] After successful `gm_send_message()`: call `mc_thread_modify(thread_id, add = labels)`
+- [x] After successful `gm_create_draft()` with non-null labels: emit warning ("Labels not applied to drafts. Re-apply after sending with `mc_thread_modify()`."), skip apply
+- [x] Thread `labels` through scheduled-send (`send_at`) recursive call
+- [x] Roxygen: document `labels` param + draft-path tradeoff
+- [x] Commit
 
 ## Phase 4: YAML labels: in mc_md_send
 
