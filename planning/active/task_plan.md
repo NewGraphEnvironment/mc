@@ -30,10 +30,11 @@ Issue: https://github.com/NewGraphEnvironment/mc/issues/31
 
 ## Phase 4: YAML labels: in mc_md_send
 
-- [ ] `mc_md_send()` reads `meta$labels` and passes to `mc_send(labels = ...)`
-- [ ] Update `mc_md_send` roxygen to list `labels` as a recognized frontmatter field
-- [ ] Update `mc_md_meta` roxygen if it enumerates fields
-- [ ] Commit
+- [x] `mc_md_send()` reads `meta$labels` and passes to `mc_send(labels = ...)`
+- [x] Update `mc_md_send` roxygen to list `labels` as a recognized frontmatter field
+- [x] Test: labels: array in YAML reaches mc_send
+- [x] Test: NULL labels when frontmatter omits the field
+- [x] Commit
 
 ## Phase 5: tests, docs, NEWS, version bump
 
