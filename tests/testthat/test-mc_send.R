@@ -39,16 +39,17 @@ test_that("mc_send builds MIME message with correct fields (draft)", {
   local_mocked_bindings(
     gm_create_draft = function(msg) {
       captured_msg <<- msg
-      msg
+      list(message = list(threadId = "draft_thread_001"))
     },
     .package = "gmailr"
   )
-  mc_send(
+  res <- mc_send(
     html = "<p>hello</p>", to = "bob@example.com",
     subject = "Test subject", from = "alice@example.com",
     draft = TRUE
   )
   expect_false(is.null(captured_msg))
+  expect_equal(res, "draft_thread_001")
 })
 
 test_that("mc_send passes cc and bcc to MIME message", {
@@ -74,16 +75,45 @@ test_that("mc_send sends with thread_id when draft = FALSE", {
   local_mocked_bindings(
     gm_send_message = function(msg, ...) {
       captured_args <<- list(msg = msg, ...)
-      msg
+      list(threadId = "abc123")
     },
     .package = "gmailr"
   )
-  mc_send(
+  res <- mc_send(
     html = "<p>reply</p>", to = "bob@example.com",
     subject = "Re: Thread", from = "alice@example.com",
     thread_id = "abc123", draft = FALSE
   )
   expect_equal(captured_args$thread_id, "abc123")
+  expect_equal(res, "abc123")
+})
+
+test_that("mc_send returns thread_id from new-thread send (no thread_id arg)", {
+  local_mocked_bindings(
+    gm_send_message = function(msg, ...) {
+      list(threadId = "newly_assigned_thread_42")
+    },
+    .package = "gmailr"
+  )
+  res <- mc_send(
+    html = "<p>fresh</p>", to = "bob@example.com",
+    subject = "Fresh thread", from = "alice@example.com",
+    draft = FALSE
+  )
+  expect_equal(res, "newly_assigned_thread_42")
+})
+
+test_that("mc_send returns NULL invisibly when gmailr response lacks threadId", {
+  local_mocked_bindings(
+    gm_send_message = function(msg, ...) list(),
+    .package = "gmailr"
+  )
+  res <- mc_send(
+    html = "<p>x</p>", to = "bob@example.com",
+    subject = "No thread id", from = "alice@example.com",
+    draft = FALSE
+  )
+  expect_null(res)
 })
 
 test_that("mc_send test mode overrides to/cc/bcc/thread_id", {

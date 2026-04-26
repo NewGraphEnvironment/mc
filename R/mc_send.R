@@ -33,7 +33,9 @@
 #'   sent in a background R process via [callr::r_bg()]. Requires the
 #'   **callr** package.
 #'
-#' @return When `send_at` is `NULL`, invisible `NULL`. When `send_at` is set,
+#' @return When `send_at` is `NULL`, the Gmail thread ID of the resulting
+#'   draft or sent message, returned invisibly. May be `NULL` if the gmailr
+#'   response did not include one (e.g. mocked tests). When `send_at` is set,
 #'   returns the [callr::r_bg()] process handle invisibly. Use `$is_alive()`
 #'   to check status or `$kill()` to cancel.
 #'
@@ -264,7 +266,7 @@ mc_send <- function(path = NULL,
     }
   }
 
-  # Draft or send
+  # Draft or send — capture thread_id from gmailr response
   if (draft) {
     if (!is.null(thread_id)) {
       warning(
@@ -275,19 +277,36 @@ mc_send <- function(path = NULL,
         call. = FALSE
       )
     }
-    gmailr::gm_create_draft(msg)
+    res <- gmailr::gm_create_draft(msg)
+    sent_thread_id <- extract_thread_id(res)
     message("Draft created in Gmail. To: ", paste(to, collapse = ", "))
   } else {
     if (!is.null(thread_id)) {
-      gmailr::gm_send_message(msg, thread_id = thread_id)
+      res <- gmailr::gm_send_message(msg, thread_id = thread_id)
       message("Sent to thread ", thread_id, ". To: ", paste(to, collapse = ", "))
     } else {
-      gmailr::gm_send_message(msg)
+      res <- gmailr::gm_send_message(msg)
       message("Sent (new thread). To: ", paste(to, collapse = ", "))
     }
+    sent_thread_id <- extract_thread_id(res)
   }
 
-  invisible(NULL)
+  invisible(sent_thread_id)
+}
+
+
+#' Pull threadId out of a gmailr draft or message resource
+#'
+#' Drafts nest the message under `$message`; sent messages have it at the top
+#' level. Returns `NULL` if no threadId is present (e.g. mocked test stubs).
+#' @noRd
+extract_thread_id <- function(res) {
+  if (is.null(res)) return(NULL)
+  if (!is.null(res$threadId)) return(res$threadId)
+  if (!is.null(res$message) && !is.null(res$message$threadId)) {
+    return(res$message$threadId)
+  }
+  NULL
 }
 
 

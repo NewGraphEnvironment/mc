@@ -10,13 +10,13 @@ Issue: https://github.com/NewGraphEnvironment/mc/issues/31
 
 ## Phase 2: mc_send returns thread_id
 
-- [ ] Capture `$threadId` from `gm_create_draft()` return value
-- [ ] Capture `$threadId` from `gm_send_message()` return value
-- [ ] Return invisibly from `mc_send()` (was `invisible(NULL)`)
-- [ ] Update existing test mocks to return objects with `$threadId` so non-NULL return assertions pass
-- [ ] Roxygen: update `@return` section
-- [ ] Run `devtools::test()` — confirm all existing tests still pass
-- [ ] Commit
+- [x] Capture `$threadId` from `gm_create_draft()` return value
+- [x] Capture `$threadId` from `gm_send_message()` return value
+- [x] Return invisibly from `mc_send()` (was `invisible(NULL)`)
+- [x] Update existing test mocks to return objects with `$threadId` so non-NULL return assertions pass
+- [x] Roxygen: update `@return` section
+- [x] Run `devtools::test()` — confirm all existing tests still pass
+- [x] Commit
 
 ## Phase 3: labels arg in mc_send
 
