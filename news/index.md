@@ -1,5 +1,32 @@
 # Changelog
 
+## mc 0.2.8
+
+- [`mc_send()`](https://newgraphenvironment.github.io/mc/reference/mc_send.md)
+  accepts a `labels` argument (character vector of Gmail label names)
+  and applies them to the resulting thread via
+  [`mc_thread_modify()`](https://newgraphenvironment.github.io/mc/reference/mc_thread_modify.md)
+  on both the draft and sent paths. Drafts get tagged so they’re
+  findable in Drafts under the project label and so the label rides
+  through when the user sends from the Gmail UI (Gmail typically keeps
+  the same thread). Unknown label names raise the existing
+  [`mc_thread_modify()`](https://newgraphenvironment.github.io/mc/reference/mc_thread_modify.md)
+  error listing available user labels
+  ([\#31](https://github.com/NewGraphEnvironment/mc/issues/31)).
+- [`mc_md_send()`](https://newgraphenvironment.github.io/mc/reference/mc_md_send.md)
+  reads `labels:` from YAML frontmatter (character vector) and passes
+  through to
+  [`mc_send()`](https://newgraphenvironment.github.io/mc/reference/mc_send.md).
+  Project tags can live in the `.md` draft alongside `to`, `subject`,
+  `cc`, `thread_id`, etc.
+  ([\#31](https://github.com/NewGraphEnvironment/mc/issues/31)).
+- [`mc_send()`](https://newgraphenvironment.github.io/mc/reference/mc_send.md)
+  now returns the Gmail thread ID of the resulting draft or sent message
+  invisibly (was `invisible(NULL)`). Lets callers chain follow-on
+  operations like
+  [`mc_thread_modify()`](https://newgraphenvironment.github.io/mc/reference/mc_thread_modify.md)
+  cleanly ([\#31](https://github.com/NewGraphEnvironment/mc/issues/31)).
+
 ## mc 0.2.7
 
 - Add

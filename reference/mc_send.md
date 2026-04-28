@@ -19,6 +19,7 @@ mc_send(
   sig = TRUE,
   sig_path = NULL,
   attachments = NULL,
+  labels = NULL,
   html = NULL,
   send_at = NULL
 )
@@ -88,6 +89,18 @@ mc_send(
   [`gmailr::gm_attach_file()`](https://gmailr.r-lib.org/reference/gm_mime.html).
   Default `NULL`.
 
+- labels:
+
+  Optional character vector of Gmail label names to apply to the
+  resulting thread. Applied via
+  [`mc_thread_modify()`](https://newgraphenvironment.github.io/mc/reference/mc_thread_modify.md)
+  after a successful draft creation or send. Labels are applied to the
+  draft's thread on the draft path; in most cases Gmail keeps the same
+  thread when the draft is sent from the UI, so labels carry over.
+  Unknown label names raise an error listing available user labels
+  (delegated to
+  [`mc_thread_modify()`](https://newgraphenvironment.github.io/mc/reference/mc_thread_modify.md)).
+
 - html:
 
   Optional pre-rendered HTML body. If provided, `path` is ignored and
@@ -104,11 +117,12 @@ mc_send(
 
 ## Value
 
-When `send_at` is `NULL`, invisible `NULL`. When `send_at` is set,
-returns the
-[`callr::r_bg()`](https://callr.r-lib.org/reference/r_bg.html) process
-handle invisibly. Use `$is_alive()` to check status or `$kill()` to
-cancel.
+When `send_at` is `NULL`, the Gmail thread ID of the resulting draft or
+sent message, returned invisibly. May be `NULL` if the gmailr response
+did not include one (e.g. mocked tests). When `send_at` is set, returns
+the [`callr::r_bg()`](https://callr.r-lib.org/reference/r_bg.html)
+process handle invisibly. Use `$is_alive()` to check status or `$kill()`
+to cancel.
 
 ## Details
 

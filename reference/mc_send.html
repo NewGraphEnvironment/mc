@@ -9,7 +9,7 @@ MIME message, and either creates a Gmail draft or sends immediately."><meta prop
 
     <a class="navbar-brand me-2" href="../index.html">mc</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.8</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -58,6 +58,7 @@ MIME message, and either creates a Gmail draft or sends immediately.</p>
 <span>  sig <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  sig_path <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  attachments <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  labels <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  html <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  send_at <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -123,6 +124,16 @@ Ignored when <code>sig = FALSE</code> or when <code>html</code> is provided.</p>
 Each file is attached via <code><a href="https://gmailr.r-lib.org/reference/gm_mime.html" class="external-link">gmailr::gm_attach_file()</a></code>. Default <code>NULL</code>.</p></dd>
 
 
+<dt id="arg-labels">labels<a class="anchor" aria-label="anchor" href="#arg-labels"></a></dt>
+<dd><p>Optional character vector of Gmail label names to apply
+to the resulting thread. Applied via <code><a href="mc_thread_modify.html">mc_thread_modify()</a></code> after a
+successful draft creation or send. Labels are applied to the draft's
+thread on the draft path; in most cases Gmail keeps the same thread
+when the draft is sent from the UI, so labels carry over. Unknown
+label names raise an error listing available user labels (delegated
+to <code><a href="mc_thread_modify.html">mc_thread_modify()</a></code>).</p></dd>
+
+
 <dt id="arg-html">html<a class="anchor" aria-label="anchor" href="#arg-html"></a></dt>
 <dd><p>Optional pre-rendered HTML body. If provided, <code>path</code> is ignored
 and this HTML is used directly.</p></dd>
@@ -138,7 +149,9 @@ sent in a background R process via <code><a href="https://callr.r-lib.org/refere
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>When <code>send_at</code> is <code>NULL</code>, invisible <code>NULL</code>. When <code>send_at</code> is set,
+    <p>When <code>send_at</code> is <code>NULL</code>, the Gmail thread ID of the resulting
+draft or sent message, returned invisibly. May be <code>NULL</code> if the gmailr
+response did not include one (e.g. mocked tests). When <code>send_at</code> is set,
 returns the <code><a href="https://callr.r-lib.org/reference/r_bg.html" class="external-link">callr::r_bg()</a></code> process handle invisibly. Use <code>$is_alive()</code>
 to check status or <code>$kill()</code> to cancel.</p>
     </div>

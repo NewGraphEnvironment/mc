@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">mc</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.8</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,6 +35,15 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/mc/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.2.8" id="mc-028">mc 0.2.8<a class="anchor" aria-label="anchor" href="#mc-028"></a></h2>
+<ul><li>
+<code><a href="../reference/mc_send.html">mc_send()</a></code> accepts a <code>labels</code> argument (character vector of Gmail label names) and applies them to the resulting thread via <code><a href="../reference/mc_thread_modify.html">mc_thread_modify()</a></code> on both the draft and sent paths. Drafts get tagged so they’re findable in Drafts under the project label and so the label rides through when the user sends from the Gmail UI (Gmail typically keeps the same thread). Unknown label names raise the existing <code><a href="../reference/mc_thread_modify.html">mc_thread_modify()</a></code> error listing available user labels (<a href="https://github.com/NewGraphEnvironment/mc/issues/31" class="external-link">#31</a>).</li>
+<li>
+<code><a href="../reference/mc_md_send.html">mc_md_send()</a></code> reads <code>labels:</code> from YAML frontmatter (character vector) and passes through to <code><a href="../reference/mc_send.html">mc_send()</a></code>. Project tags can live in the <code>.md</code> draft alongside <code>to</code>, <code>subject</code>, <code>cc</code>, <code>thread_id</code>, etc. (<a href="https://github.com/NewGraphEnvironment/mc/issues/31" class="external-link">#31</a>).</li>
+<li>
+<code><a href="../reference/mc_send.html">mc_send()</a></code> now returns the Gmail thread ID of the resulting draft or sent message invisibly (was <code>invisible(NULL)</code>). Lets callers chain follow-on operations like <code><a href="../reference/mc_thread_modify.html">mc_thread_modify()</a></code> cleanly (<a href="https://github.com/NewGraphEnvironment/mc/issues/31" class="external-link">#31</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.2.7" id="mc-027">mc 0.2.7<a class="anchor" aria-label="anchor" href="#mc-027"></a></h2>
 <ul><li>Add <code><a href="../reference/mc_thread_modify.html">mc_thread_modify()</a></code> — adds and/or removes labels on a Gmail thread in one call. Accepts user label names or Gmail system labels (INBOX, STARRED, UNREAD, IMPORTANT, TRASH, SPAM, SENT, DRAFT), so the same verb covers archive (<code>remove = "INBOX"</code>), star (<code>add = "STARRED"</code>), trash, mark-read, and project-label workflows (<a href="https://github.com/NewGraphEnvironment/mc/issues/28" class="external-link">#28</a>).</li>
