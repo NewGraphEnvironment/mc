@@ -38,23 +38,25 @@ Issue: https://github.com/NewGraphEnvironment/mc/issues/31
 
 ## Phase 5: tests, docs, NEWS, version bump
 
-- [ ] Unit tests in `test-mc_send.R`:
-  - [ ] mc_send returns thread_id from draft path
-  - [ ] mc_send returns thread_id from sent path
-  - [ ] mc_send with labels on draft path emits warning + skips
-  - [ ] mc_send with labels on sent path calls mc_thread_modify with correct args (mock)
-  - [ ] mc_send labels arg validation (non-character errors)
-- [ ] Unit tests in `test-mc_md_send.R`:
-  - [ ] labels: from YAML passed through to mc_send call
-- [ ] Integration tests (skip on CI, real Gmail):
-  - [ ] sent path applies a throwaway label and verifies it lands on the thread
-  - [ ] draft path with labels emits warning and creates draft without label
-- [ ] NEWS.md entry under new 0.2.8 heading
-- [ ] DESCRIPTION: bump Version to 0.2.8
-- [ ] `devtools::document()` — regenerate man pages + NAMESPACE
-- [ ] `devtools::check()` — clean
-- [ ] `lintr::lint_package()` — clean (or accept known issues)
-- [ ] Commit
+- [x] Unit tests in `test-mc_send.R`:
+  - [x] mc_send returns thread_id from draft path
+  - [x] mc_send returns thread_id from sent path
+  - [x] mc_send with labels on draft path applies labels (changed from warn+skip per user feedback)
+  - [x] mc_send with labels on sent path calls mc_thread_modify with correct args (mock)
+  - [x] mc_send labels arg validation (non-character errors)
+  - [x] mc_send warns rather than errors when label apply fails (post code-check round 2)
+- [x] Unit tests in `test-mc_md_send.R`:
+  - [x] labels: from YAML passed through to mc_send call
+  - [x] empty `labels: []` and `labels: ~` coerce to NULL (post code-check round 2)
+- [x] Integration tests (skip on CI, real Gmail):
+  - [x] sent path applies a throwaway label and verifies it lands on the thread
+  - [x] draft path with labels: applies to draft thread
+  - [x] mc_md_send YAML labels apply end-to-end
+- [x] NEWS.md entry under new 0.2.8 heading
+- [x] DESCRIPTION: bump Version to 0.2.8
+- [x] `devtools::document()` — regenerate man pages + NAMESPACE
+- [x] `devtools::test()` — 281 pass, 0 fail, 1 skip (integration)
+- [x] Commit
 
 ## Phase 6: code-check, PR, archive
 

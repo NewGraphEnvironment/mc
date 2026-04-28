@@ -189,6 +189,94 @@ test_that("mc_thread_modify passes system labels through (star/unstar)", {
   expect_false("STARRED" %in% msg_labels)
 })
 
+test_that("mc_send applies labels to a sent thread", {
+  label_name <- paste0("mc-send-label-", format(Sys.time(), "%Y%m%d-%H%M%S"))
+  created <- gmailr::gm_create_label(label_name)
+  label_id <- created$id
+  withr::defer(
+    tryCatch(gmailr::gm_delete_label(label_id), error = function(e) NULL)
+  )
+
+  thread_id <- mc_send(
+    html = paste0("<p>Labels send test: ", test_tag, "</p><pre>", test_meta, "</pre>"),
+    to = "al@newgraphenvironment.com",
+    subject = paste("Labels send", test_tag),
+    draft = FALSE,
+    test = TRUE,
+    labels = label_name,
+    sig = FALSE
+  )
+
+  Sys.sleep(5)
+
+  expect_false(is.null(thread_id), info = "mc_send did not return a thread_id")
+  thread <- gmailr::gm_thread(id = thread_id)
+  msg_labels <- unlist(lapply(thread$messages, function(m) m$labelIds))
+  expect_true(
+    label_id %in% msg_labels,
+    info = "Label not applied to sent thread"
+  )
+})
+
+test_that("mc_send applies labels to a draft thread", {
+  label_name <- paste0("mc-draft-label-", format(Sys.time(), "%Y%m%d-%H%M%S"))
+  created <- gmailr::gm_create_label(label_name)
+  label_id <- created$id
+  withr::defer(
+    tryCatch(gmailr::gm_delete_label(label_id), error = function(e) NULL)
+  )
+
+  thread_id <- mc_send(
+    html = paste0("<p>Labels draft test: ", test_tag, "</p><pre>", test_meta, "</pre>"),
+    to = "al@newgraphenvironment.com",
+    subject = paste("Labels draft", test_tag),
+    labels = label_name,
+    sig = FALSE
+  )
+
+  Sys.sleep(3)
+
+  expect_false(is.null(thread_id), info = "mc_send did not return a draft thread_id")
+  thread <- gmailr::gm_thread(id = thread_id)
+  msg_labels <- unlist(lapply(thread$messages, function(m) m$labelIds))
+  expect_true(
+    label_id %in% msg_labels,
+    info = "Label not applied to draft thread"
+  )
+})
+
+test_that("mc_md_send reads labels: from YAML and applies them", {
+  label_name <- paste0("mc-yaml-label-", format(Sys.time(), "%Y%m%d-%H%M%S"))
+  created <- gmailr::gm_create_label(label_name)
+  label_id <- created$id
+  withr::defer(
+    tryCatch(gmailr::gm_delete_label(label_id), error = function(e) NULL)
+  )
+
+  draft_path <- tempfile(fileext = ".md")
+  writeLines(c(
+    "---",
+    "to: al@newgraphenvironment.com",
+    paste0("subject: YAML labels ", test_tag),
+    paste0("labels: [", label_name, "]"),
+    "---",
+    "body"
+  ), draft_path)
+  withr::defer(unlink(draft_path))
+
+  thread_id <- mc_md_send(draft_path)
+
+  Sys.sleep(3)
+
+  expect_false(is.null(thread_id), info = "mc_md_send did not return a thread_id")
+  thread <- gmailr::gm_thread(id = thread_id)
+  msg_labels <- unlist(lapply(thread$messages, function(m) m$labelIds))
+  expect_true(
+    label_id %in% msg_labels,
+    info = "Label from YAML not applied to draft thread"
+  )
+})
+
 test_that("mc_compose with mc_scroll sends a table email", {
   df <- data.frame(
     Site = c("Nechako", "Mackenzie", "Skeena"),

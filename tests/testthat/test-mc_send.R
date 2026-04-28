@@ -321,6 +321,27 @@ test_that("mc_send warns when send succeeds but threadId missing and labels set"
   )
 })
 
+test_that("mc_send warns rather than errors when label apply fails", {
+  local_mocked_bindings(
+    gm_send_message = function(msg, ...) list(threadId = "tid_77"),
+    .package = "gmailr"
+  )
+  local_mocked_bindings(
+    mc_thread_modify = function(...) stop("unknown label X"),
+    .package = "mc"
+  )
+  expect_warning(
+    res <- mc_send(
+      html = "<p>x</p>", to = "bob@example.com",
+      subject = "x", from = "alice@example.com",
+      labels = "X",
+      draft = FALSE
+    ),
+    "Labels not applied to thread tid_77.*unknown label X"
+  )
+  expect_equal(res, "tid_77")
+})
+
 test_that("mc_send labels arg validation rejects non-character", {
   expect_error(
     mc_send(

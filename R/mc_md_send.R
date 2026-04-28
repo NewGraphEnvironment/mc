@@ -51,6 +51,12 @@ mc_md_send <- function(path, draft = TRUE, test = FALSE, override = list()) {
     )
   }
 
+  # yaml.load() returns list() for empty flow-style arrays (`labels: []`)
+  # and for explicit nulls (`labels: ~`). Coerce to NULL so chk_null_or()
+  # in mc_send accepts these as "no labels" rather than rejecting list().
+  meta_labels <- meta$labels
+  if (is.list(meta_labels) && length(meta_labels) == 0) meta_labels <- NULL
+
   args <- list(
     path = path,
     to = meta$to,
@@ -59,7 +65,7 @@ mc_md_send <- function(path, draft = TRUE, test = FALSE, override = list()) {
     bcc = meta$bcc,
     thread_id = meta$thread_id,
     attachments = meta$attachments,
-    labels = meta$labels,
+    labels = meta_labels,
     draft = draft,
     test = test
   )

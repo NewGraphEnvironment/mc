@@ -22,10 +22,10 @@ Invisibly returns whatever \code{\link[=mc_send]{mc_send()}} returns.
 }
 \description{
 One-file workflow: reads metadata (\code{to}, \code{subject}, optional \code{cc}, \code{bcc},
-\code{thread_id}, \code{attachments}, \code{from}) from the YAML frontmatter at the top
-of a markdown draft and dispatches to \code{\link[=mc_send]{mc_send()}}. Lets callers keep each
-logical email in a single \code{.md} file instead of splitting subject, body,
-and recipients across a paired \code{.R} script.
+\code{thread_id}, \code{attachments}, \code{labels}, \code{from}) from the YAML frontmatter at
+the top of a markdown draft and dispatches to \code{\link[=mc_send]{mc_send()}}. Lets callers
+keep each logical email in a single \code{.md} file instead of splitting
+subject, body, and recipients across a paired \code{.R} script.
 }
 \details{
 Required frontmatter fields: \code{to}, \code{subject}. Missing either triggers an

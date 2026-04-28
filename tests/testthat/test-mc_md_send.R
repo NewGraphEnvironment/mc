@@ -55,6 +55,27 @@ test_that("mc_md_send passes NULL labels when frontmatter omits them", {
   expect_null(captured$labels)
 })
 
+test_that("mc_md_send coerces empty labels list to NULL", {
+  captured <- NULL
+  mockery::stub(mc_md_send, "mc_send", function(...) {
+    captured <<- list(...); invisible(NULL)
+  })
+  # `labels: []` parses to list() — should pass through as NULL
+  p_empty <- write_draft(c(
+    "---", "to: a@x.com", "subject: Hi", "labels: []", "---", "body"
+  ))
+  mc_md_send(p_empty)
+  expect_null(captured$labels)
+
+  # `labels: ~` (explicit yaml null) — same outcome
+  captured <- NULL
+  p_null <- write_draft(c(
+    "---", "to: a@x.com", "subject: Hi", "labels: ~", "---", "body"
+  ))
+  mc_md_send(p_null)
+  expect_null(captured$labels)
+})
+
 test_that("mc_md_send rejects path in override", {
   p <- write_draft(c("---", "to: a@x.com", "subject: hi", "---", "body"))
   expect_error(

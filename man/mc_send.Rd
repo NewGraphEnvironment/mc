@@ -17,6 +17,7 @@ mc_send(
   sig = TRUE,
   sig_path = NULL,
   attachments = NULL,
+  labels = NULL,
   html = NULL,
   send_at = NULL
 )
@@ -54,6 +55,14 @@ Ignored when \code{sig = FALSE} or when \code{html} is provided.}
 \item{attachments}{Optional character vector of file paths to attach.
 Each file is attached via \code{\link[gmailr:gm_mime]{gmailr::gm_attach_file()}}. Default \code{NULL}.}
 
+\item{labels}{Optional character vector of Gmail label names to apply
+to the resulting thread. Applied via \code{\link[=mc_thread_modify]{mc_thread_modify()}} after a
+successful draft creation or send. Labels are applied to the draft's
+thread on the draft path; in most cases Gmail keeps the same thread
+when the draft is sent from the UI, so labels carry over. Unknown
+label names raise an error listing available user labels (delegated
+to \code{mc_thread_modify()}).}
+
 \item{html}{Optional pre-rendered HTML body. If provided, \code{path} is ignored
 and this HTML is used directly.}
 
@@ -64,7 +73,9 @@ sent in a background R process via \code{\link[callr:r_bg]{callr::r_bg()}}. Requ
 \strong{callr} package.}
 }
 \value{
-When \code{send_at} is \code{NULL}, invisible \code{NULL}. When \code{send_at} is set,
+When \code{send_at} is \code{NULL}, the Gmail thread ID of the resulting
+draft or sent message, returned invisibly. May be \code{NULL} if the gmailr
+response did not include one (e.g. mocked tests). When \code{send_at} is set,
 returns the \code{\link[callr:r_bg]{callr::r_bg()}} process handle invisibly. Use \verb{$is_alive()}
 to check status or \verb{$kill()} to cancel.
 }

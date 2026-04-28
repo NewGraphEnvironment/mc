@@ -303,7 +303,12 @@ mc_send <- function(path = NULL,
     sent_thread_id <- extract_thread_id(res)
   }
 
-  # Apply labels to the draft or sent thread
+  # Apply labels to the draft or sent thread.
+  # Wrapped in tryCatch so a label failure (unknown name, network error, auth
+  # blip) does not cascade into an error on a draft/send that already
+  # succeeded — the user would otherwise be left with a sent email but no
+  # labels and no clear recovery path. Failures degrade to a warning that
+  # surfaces the thread_id so the user can retry mc_thread_modify() manually.
   if (!is.null(labels)) {
     if (is.null(sent_thread_id)) {
       warning(
@@ -311,10 +316,24 @@ mc_send <- function(path = NULL,
         call. = FALSE
       )
     } else {
-      mc_thread_modify(sent_thread_id, add = labels)
-      message(
-        "Labels applied to thread ", sent_thread_id, ": ",
-        paste(labels, collapse = ", ")
+      thread_label_target <- if (draft) "draft thread" else "thread"
+      tryCatch(
+        {
+          mc_thread_modify(sent_thread_id, add = labels)
+          message(
+            "Labels applied to ", thread_label_target, " ", sent_thread_id,
+            ": ", paste(labels, collapse = ", ")
+          )
+        },
+        error = function(e) {
+          warning(
+            "Labels not applied to ", thread_label_target, " ",
+            sent_thread_id, ": ", conditionMessage(e),
+            "\nRetry manually with mc_thread_modify(\"", sent_thread_id,
+            "\", add = c(\"", paste(labels, collapse = "\", \""), "\")).",
+            call. = FALSE
+          )
+        }
       )
     }
   }
