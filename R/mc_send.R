@@ -25,6 +25,13 @@
 #'   Ignored when `sig = FALSE` or when `html` is provided.
 #' @param attachments Optional character vector of file paths to attach.
 #'   Each file is attached via [gmailr::gm_attach_file()]. Default `NULL`.
+#' @param labels Optional character vector of Gmail label names to apply
+#'   to the resulting thread. Applied via [mc_thread_modify()] after a
+#'   successful draft creation or send. Labels are applied to the draft's
+#'   thread on the draft path; in most cases Gmail keeps the same thread
+#'   when the draft is sent from the UI, so labels carry over. Unknown
+#'   label names raise an error listing available user labels (delegated
+#'   to `mc_thread_modify()`).
 #' @param html Optional pre-rendered HTML body. If provided, `path` is ignored
 #'   and this HTML is used directly.
 #' @param send_at Schedule the email for later. Either a `POSIXct` datetime
@@ -33,7 +40,9 @@
 #'   sent in a background R process via [callr::r_bg()]. Requires the
 #'   **callr** package.
 #'
-#' @return When `send_at` is `NULL`, invisible `NULL`. When `send_at` is set,
+#' @return When `send_at` is `NULL`, the Gmail thread ID of the resulting
+#'   draft or sent message, returned invisibly. May be `NULL` if the gmailr
+#'   response did not include one (e.g. mocked tests). When `send_at` is set,
 #'   returns the [callr::r_bg()] process handle invisibly. Use `$is_alive()`
 #'   to check status or `$kill()` to cancel.
 #'
@@ -126,6 +135,7 @@ mc_send <- function(path = NULL,
                     sig = TRUE,
                     sig_path = NULL,
                     attachments = NULL,
+                    labels = NULL,
                     html = NULL,
                     send_at = NULL) {
 
@@ -141,6 +151,7 @@ mc_send <- function(path = NULL,
   chk::chk_flag(sig)
   chk::chk_null_or(sig_path, vld = chk::vld_string)
   chk::chk_null_or(attachments, vld = chk::vld_character)
+  chk::chk_null_or(labels, vld = chk::vld_character)
   chk::chk_null_or(html, vld = chk::vld_string)
 
   # Validate attachment files exist
@@ -170,7 +181,8 @@ mc_send <- function(path = NULL,
     )
     proc <- callr::r_bg(
       function(target_time, grace_secs, path, to, subject, cc, bcc,
-               from, thread_id, test, sig, sig_path, attachments, html) {
+               from, thread_id, test, sig, sig_path, attachments, labels,
+               html) {
         # Sleep until target time
         delay <- as.numeric(difftime(target_time, Sys.time(), units = "secs"))
         if (delay > 0) Sys.sleep(delay)
@@ -194,7 +206,8 @@ mc_send <- function(path = NULL,
               cc = cc, bcc = bcc, from = from,
               thread_id = thread_id, draft = FALSE,
               test = test, sig = sig, sig_path = sig_path,
-              attachments = attachments, html = html, send_at = NULL
+              attachments = attachments, labels = labels,
+              html = html, send_at = NULL
             )
             mc:::send_log(subject, to, "SENT")
             mc:::send_notify(
@@ -217,7 +230,8 @@ mc_send <- function(path = NULL,
         path = path, to = to,
         subject = subject, cc = cc, bcc = bcc, from = from,
         thread_id = thread_id, test = test, sig = sig,
-        sig_path = sig_path, attachments = attachments, html = html
+        sig_path = sig_path, attachments = attachments, labels = labels,
+        html = html
       ),
       package = "mc"
     )
@@ -264,7 +278,7 @@ mc_send <- function(path = NULL,
     }
   }
 
-  # Draft or send
+  # Draft or send — capture thread_id from gmailr response
   if (draft) {
     if (!is.null(thread_id)) {
       warning(
@@ -275,19 +289,71 @@ mc_send <- function(path = NULL,
         call. = FALSE
       )
     }
-    gmailr::gm_create_draft(msg)
+    res <- gmailr::gm_create_draft(msg)
+    sent_thread_id <- extract_thread_id(res)
     message("Draft created in Gmail. To: ", paste(to, collapse = ", "))
   } else {
     if (!is.null(thread_id)) {
-      gmailr::gm_send_message(msg, thread_id = thread_id)
+      res <- gmailr::gm_send_message(msg, thread_id = thread_id)
       message("Sent to thread ", thread_id, ". To: ", paste(to, collapse = ", "))
     } else {
-      gmailr::gm_send_message(msg)
+      res <- gmailr::gm_send_message(msg)
       message("Sent (new thread). To: ", paste(to, collapse = ", "))
+    }
+    sent_thread_id <- extract_thread_id(res)
+  }
+
+  # Apply labels to the draft or sent thread.
+  # Wrapped in tryCatch so a label failure (unknown name, network error, auth
+  # blip) does not cascade into an error on a draft/send that already
+  # succeeded — the user would otherwise be left with a sent email but no
+  # labels and no clear recovery path. Failures degrade to a warning that
+  # surfaces the thread_id so the user can retry mc_thread_modify() manually.
+  if (!is.null(labels)) {
+    if (is.null(sent_thread_id)) {
+      warning(
+        "Labels not applied: gmailr response did not include a threadId.",
+        call. = FALSE
+      )
+    } else {
+      thread_label_target <- if (draft) "draft thread" else "thread"
+      tryCatch(
+        {
+          mc_thread_modify(sent_thread_id, add = labels)
+          message(
+            "Labels applied to ", thread_label_target, " ", sent_thread_id,
+            ": ", paste(labels, collapse = ", ")
+          )
+        },
+        error = function(e) {
+          warning(
+            "Labels not applied to ", thread_label_target, " ",
+            sent_thread_id, ": ", conditionMessage(e),
+            "\nRetry manually with mc_thread_modify(\"", sent_thread_id,
+            "\", add = c(\"", paste(labels, collapse = "\", \""), "\")).",
+            call. = FALSE
+          )
+        }
+      )
     }
   }
 
-  invisible(NULL)
+  invisible(sent_thread_id)
+}
+
+
+#' Pull threadId out of a gmailr draft or message resource
+#'
+#' Drafts nest the message under `$message`; sent messages have it at the top
+#' level. Returns `NULL` if no threadId is present (e.g. mocked test stubs).
+#' @noRd
+extract_thread_id <- function(res) {
+  if (is.null(res)) return(NULL)
+  if (!is.null(res$threadId)) return(res$threadId)
+  if (!is.null(res$message) && !is.null(res$message$threadId)) {
+    return(res$message$threadId)
+  }
+  NULL
 }
 
 

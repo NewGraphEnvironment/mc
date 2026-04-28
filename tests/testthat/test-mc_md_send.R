@@ -29,6 +29,7 @@ test_that("mc_md_send dispatches frontmatter fields to mc_send", {
     "cc: [b@x.com]",
     "thread_id: tid1",
     "attachments: [/tmp/x.pdf]",
+    "labels: [project-x, urgent]",
     "---",
     "body"
   ))
@@ -38,9 +39,41 @@ test_that("mc_md_send dispatches frontmatter fields to mc_send", {
   expect_equal(captured$cc, "b@x.com")
   expect_equal(captured$thread_id, "tid1")
   expect_equal(captured$attachments, "/tmp/x.pdf")
+  expect_equal(captured$labels, c("project-x", "urgent"))
   expect_true(captured$draft)
   expect_false(captured$test)
   expect_equal(captured$path, p)
+})
+
+test_that("mc_md_send passes NULL labels when frontmatter omits them", {
+  captured <- NULL
+  mockery::stub(mc_md_send, "mc_send", function(...) {
+    captured <<- list(...); invisible(NULL)
+  })
+  p <- write_draft(c("---", "to: a@x.com", "subject: Hi", "---", "body"))
+  mc_md_send(p)
+  expect_null(captured$labels)
+})
+
+test_that("mc_md_send coerces empty labels list to NULL", {
+  captured <- NULL
+  mockery::stub(mc_md_send, "mc_send", function(...) {
+    captured <<- list(...); invisible(NULL)
+  })
+  # `labels: []` parses to list() — should pass through as NULL
+  p_empty <- write_draft(c(
+    "---", "to: a@x.com", "subject: Hi", "labels: []", "---", "body"
+  ))
+  mc_md_send(p_empty)
+  expect_null(captured$labels)
+
+  # `labels: ~` (explicit yaml null) — same outcome
+  captured <- NULL
+  p_null <- write_draft(c(
+    "---", "to: a@x.com", "subject: Hi", "labels: ~", "---", "body"
+  ))
+  mc_md_send(p_null)
+  expect_null(captured$labels)
 })
 
 test_that("mc_md_send rejects path in override", {

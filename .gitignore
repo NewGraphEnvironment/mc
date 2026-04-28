@@ -15,7 +15,8 @@ Thumbs.db
 .claude/
 
 # Planning
-planning/active/
+# planning/active/ is tracked — atomic commits bundle code changes with
+# task_plan.md checkbox updates per soul PWF convention.
 
 # pkgdown
 docs

@@ -1,10 +1,10 @@
 #' Send or draft an email from a markdown file with YAML frontmatter
 #'
 #' One-file workflow: reads metadata (`to`, `subject`, optional `cc`, `bcc`,
-#' `thread_id`, `attachments`, `from`) from the YAML frontmatter at the top
-#' of a markdown draft and dispatches to [mc_send()]. Lets callers keep each
-#' logical email in a single `.md` file instead of splitting subject, body,
-#' and recipients across a paired `.R` script.
+#' `thread_id`, `attachments`, `labels`, `from`) from the YAML frontmatter at
+#' the top of a markdown draft and dispatches to [mc_send()]. Lets callers
+#' keep each logical email in a single `.md` file instead of splitting
+#' subject, body, and recipients across a paired `.R` script.
 #'
 #' @param path Path to the markdown draft (with YAML frontmatter).
 #' @param draft Logical. If `TRUE` (default), create a Gmail draft.
@@ -51,6 +51,12 @@ mc_md_send <- function(path, draft = TRUE, test = FALSE, override = list()) {
     )
   }
 
+  # yaml.load() returns list() for empty flow-style arrays (`labels: []`)
+  # and for explicit nulls (`labels: ~`). Coerce to NULL so chk_null_or()
+  # in mc_send accepts these as "no labels" rather than rejecting list().
+  meta_labels <- meta$labels
+  if (is.list(meta_labels) && length(meta_labels) == 0) meta_labels <- NULL
+
   args <- list(
     path = path,
     to = meta$to,
@@ -59,6 +65,7 @@ mc_md_send <- function(path, draft = TRUE, test = FALSE, override = list()) {
     bcc = meta$bcc,
     thread_id = meta$thread_id,
     attachments = meta$attachments,
+    labels = meta_labels,
     draft = draft,
     test = test
   )
