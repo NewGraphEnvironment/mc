@@ -9,7 +9,7 @@ archive (`remove = "INBOX"`), star (`add = "STARRED"`), trash
 ## Usage
 
 ``` r
-mc_thread_modify(thread_id, add = NULL, remove = NULL)
+mc_thread_modify(thread_id, add = NULL, remove = NULL, create_missing = FALSE)
 ```
 
 ## Arguments
@@ -27,6 +27,14 @@ mc_thread_modify(thread_id, add = NULL, remove = NULL)
 
   Character vector of label names to remove. `NULL` for none.
 
+- create_missing:
+
+  Logical. When `TRUE`, calls
+  [`mc_label_ensure()`](https://newgraphenvironment.github.io/mc/reference/mc_label_ensure.md)
+  on `add` before resolving names — any user label in `add` that doesn't
+  yet exist is created. Defaults `FALSE` (strict: errors on unknown
+  labels) so existing callers keep their typo guard.
+
 ## Value
 
 Invisibly returns the gmailr response.
@@ -41,6 +49,13 @@ interpretation wins — almost always what's intended.
 
 At least one of `add` or `remove` must be non-`NULL`. The `gm_labels()`
 call is skipped entirely when every input is a system label.
+
+Set `create_missing = TRUE` when applying labels from a YAML-driven
+workflow (e.g. via
+[`mc_md_send()`](https://newgraphenvironment.github.io/mc/reference/mc_md_send.md))
+so new project tags don't error on first use. See
+[`mc_label_ensure()`](https://newgraphenvironment.github.io/mc/reference/mc_label_ensure.md)
+for the underlying primitive.
 
 ## Examples
 

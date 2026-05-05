@@ -20,6 +20,7 @@ mc_send(
   sig_path = NULL,
   attachments = NULL,
   labels = NULL,
+  labels_create = TRUE,
   html = NULL,
   send_at = NULL
 )
@@ -97,9 +98,15 @@ mc_send(
   after a successful draft creation or send. Labels are applied to the
   draft's thread on the draft path; in most cases Gmail keeps the same
   thread when the draft is sent from the UI, so labels carry over.
-  Unknown label names raise an error listing available user labels
-  (delegated to
-  [`mc_thread_modify()`](https://newgraphenvironment.github.io/mc/reference/mc_thread_modify.md)).
+
+- labels_create:
+
+  Logical. When `TRUE` (default), missing user labels in `labels` are
+  auto-created via
+  [`mc_label_ensure()`](https://newgraphenvironment.github.io/mc/reference/mc_label_ensure.md)
+  before being applied — supports tag-as-you-go in YAML-driven drafts.
+  Set `FALSE` to keep typo-guard behavior (errors on unknown labels,
+  downgraded to a warning per the existing label tryCatch).
 
 - html:
 

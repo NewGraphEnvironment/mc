@@ -15,7 +15,7 @@ archive (remove = "INBOX"), star (add = "STARRED"), trash
 
     <a class="navbar-brand me-2" href="../index.html">mc</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.8</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.9</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -54,7 +54,7 @@ archive (<code>remove = "INBOX"</code>), star (<code>add = "STARRED"</code>), tr
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">mc_thread_modify</span><span class="op">(</span><span class="va">thread_id</span>, add <span class="op">=</span> <span class="cn">NULL</span>, remove <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">mc_thread_modify</span><span class="op">(</span><span class="va">thread_id</span>, add <span class="op">=</span> <span class="cn">NULL</span>, remove <span class="op">=</span> <span class="cn">NULL</span>, create_missing <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -72,6 +72,13 @@ archive (<code>remove = "INBOX"</code>), star (<code>add = "STARRED"</code>), tr
 <dt id="arg-remove">remove<a class="anchor" aria-label="anchor" href="#arg-remove"></a></dt>
 <dd><p>Character vector of label names to remove. <code>NULL</code> for none.</p></dd>
 
+
+<dt id="arg-create-missing">create_missing<a class="anchor" aria-label="anchor" href="#arg-create-missing"></a></dt>
+<dd><p>Logical. When <code>TRUE</code>, calls <code><a href="mc_label_ensure.html">mc_label_ensure()</a></code> on
+<code>add</code> before resolving names — any user label in <code>add</code> that doesn't yet
+exist is created. Defaults <code>FALSE</code> (strict: errors on unknown labels)
+so existing callers keep their typo guard.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
@@ -86,6 +93,9 @@ label's name collides with a system label ID (e.g. a user label named
 intended.</p>
 <p>At least one of <code>add</code> or <code>remove</code> must be non-<code>NULL</code>. The <code>gm_labels()</code>
 call is skipped entirely when every input is a system label.</p>
+<p>Set <code>create_missing = TRUE</code> when applying labels from a YAML-driven
+workflow (e.g. via <code><a href="mc_md_send.html">mc_md_send()</a></code>) so new project tags don't error on
+first use. See <code><a href="mc_label_ensure.html">mc_label_ensure()</a></code> for the underlying primitive.</p>
     </div>
 
     <div class="section level2">

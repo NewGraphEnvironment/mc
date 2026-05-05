@@ -6,6 +6,8 @@
   : Authenticate with Gmail
 - [`mc_compose()`](https://newgraphenvironment.github.io/mc/reference/mc_compose.md)
   : Compose an HTML email from mixed content
+- [`mc_label_ensure()`](https://newgraphenvironment.github.io/mc/reference/mc_label_ensure.md)
+  : Ensure Gmail user labels exist (create any missing)
 - [`mc_md_index()`](https://newgraphenvironment.github.io/mc/reference/mc_md_index.md)
   : Index markdown email drafts under a directory
 - [`mc_md_meta()`](https://newgraphenvironment.github.io/mc/reference/mc_md_meta.md)
