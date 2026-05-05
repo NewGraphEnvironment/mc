@@ -66,13 +66,13 @@ Reuses internal helpers `fetch_user_labels()` and `system_labels()` from `R/mc_t
 
 ## Phase 4: Docs polish + release prep
 
-- [ ] Update `@details` for `mc_send()` to mention `labels_create` (one short line).
-- [ ] Update `@details` for `mc_thread_modify()` to cross-ref `mc_label_ensure()` and `create_missing`.
-- [ ] Add `# mc 0.2.9` block at top of `NEWS.md` — concise bullets covering the three additions.
-- [ ] `DESCRIPTION` Version: `0.2.8` → `0.2.9`.
-- [ ] Full `devtools::document()`, `devtools::test()`, `lintr::lint_package()` clean.
-- [ ] `/code-check` on staged diff.
-- [ ] Atomic commit including checkbox flips.
+- [x] Update `@details` / `@param labels_create` for `mc_send()` (done inline in Phase 3).
+- [x] Update `@details` / `@param create_missing` for `mc_thread_modify()` to cross-ref `mc_label_ensure()` (done inline in Phase 2).
+- [x] Add `# mc 0.2.9` block at top of `NEWS.md` — bullets cover the new primitive, the `create_missing` flag, the `labels_create` default, and the case-insensitive system-label fix.
+- [x] `DESCRIPTION` Version: `0.2.8` → `0.2.9`.
+- [x] Full `devtools::document()`, `devtools::test()` (302 pass, 0 fail), `lintr::lint_package()` clean for changed files.
+- [x] `/code-check` on staged diff.
+- [x] Atomic commit including checkbox flips.
 
 ## Validation
 
