@@ -18,17 +18,18 @@ Reuses internal helpers `fetch_user_labels()` and `system_labels()` from `R/mc_t
 
 ## Phase 1: `mc_label_ensure()` primitive + unit tests
 
-- [ ] Create `R/mc_label_ensure.R` — exported function, signature `mc_label_ensure(names)`, validates with `chk::chk_character()`, fetches existing user labels via `fetch_user_labels()`, computes missing (excluding system labels via `system_labels()`), iterates `gmailr::gm_create_label(nm)`, returns `invisible(names)`.
-- [ ] Roxygen: `@importFrom gmailr gm_create_label`, `@export`, `@examples \dontrun{...}`.
-- [ ] `tests/testthat/test-mc_label_ensure.R`:
+- [x] Create `R/mc_label_ensure.R` — exported function, signature `mc_label_ensure(names)`, validates with `chk::chk_character()`, fetches existing user labels via `fetch_user_labels()`, computes missing (excluding system labels via `system_labels()`), iterates `gmailr::gm_create_label(nm)`, returns `invisible(names)`.
+- [x] Roxygen: `@importFrom gmailr gm_create_label`, `@export`, `@examples \dontrun{...}`.
+- [x] `tests/testthat/test-mc_label_ensure.R`:
   - rejects non-character input
   - no-op when all labels exist (mocked `gm_labels`, no `gm_create_label` calls)
   - creates only missing names (mocked, verify `gm_create_label` called with exactly the missing set)
   - skips system labels (e.g. `STARRED` not "created")
   - returns `invisible(names)`
-- [ ] `devtools::document()`, `devtools::test()`, `lintr::lint_package()` clean.
-- [ ] `/code-check` on staged diff.
-- [ ] Atomic commit including checkbox flips.
+  - no-ops on empty input without fetching labels
+- [x] `devtools::document()`, `devtools::test()` (289 pass, 0 fail), `lintr::lint_package()` clean.
+- [x] `/code-check` on staged diff.
+- [x] Atomic commit including checkbox flips.
 
 ## Phase 2: `create_missing` flag on `mc_thread_modify()`
 

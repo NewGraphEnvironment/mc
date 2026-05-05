@@ -6,4 +6,5 @@
 - Phases approved by user: 4 phases (primitive → flag → send wiring → release prep).
 - Created branch `33-auto-create-missing-labels` off `main`.
 - Scaffolded PWF baseline (task_plan.md, findings.md, progress.md).
-- Next: start Phase 1 — `mc_label_ensure()` primitive + unit tests.
+- Phase 1 complete: `mc_label_ensure()` primitive + 6 unit tests (8 expectations). Full suite 289 pass / 0 fail / 0 warn. Lint clean.
+- Next: Phase 2 — `create_missing` flag on `mc_thread_modify()`.
