@@ -178,3 +178,85 @@ test_that("system_labels returns expected IDs", {
   sys <- mc:::system_labels()
   expect_true(all(c("INBOX", "STARRED", "UNREAD", "TRASH", "SPAM") %in% sys))
 })
+
+test_that("mc_thread_modify rejects bad create_missing", {
+  expect_error(mc_thread_modify("t", add = "x", create_missing = "yes"))
+  expect_error(mc_thread_modify("t", add = "x", create_missing = c(TRUE, FALSE)))
+})
+
+test_that("mc_thread_modify default create_missing=FALSE errors on unknown label", {
+  local_mocked_bindings(
+    gm_labels = function(...) list(labels = list()),
+    .package = "gmailr"
+  )
+  expect_error(
+    mc_thread_modify("abc", add = "brand-new-label"),
+    "Label\\(s\\) not found"
+  )
+})
+
+test_that("mc_thread_modify create_missing=TRUE calls ensure and applies", {
+  ensured <- NULL
+  captured <- NULL
+  local_mocked_bindings(
+    gmail_modify_thread = function(thread_id, add_ids, remove_ids) {
+      captured <<- list(add = add_ids, remove = remove_ids)
+      NULL
+    },
+    mc_label_ensure = function(label_names) {
+      ensured <<- label_names
+      invisible(label_names)
+    }
+  )
+  # gm_labels mock returns the label as if mc_label_ensure had created it
+  # (mc_label_ensure is mocked above to record the call only).
+  local_mocked_bindings(
+    gm_labels = function(...) {
+      list(labels = list(
+        list(id = "Label_NEW", name = "brand-new-label", type = "user")
+      ))
+    },
+    .package = "gmailr"
+  )
+
+  mc_thread_modify("abc", add = "brand-new-label", create_missing = TRUE)
+
+  expect_equal(ensured, "brand-new-label")
+  expect_equal(captured$add, "Label_NEW")
+})
+
+test_that("mc_thread_modify create_missing=TRUE skips ensure when add is NULL", {
+  ensured <- "not-touched"
+  captured <- NULL
+  local_mocked_bindings(
+    gmail_modify_thread = function(thread_id, add_ids, remove_ids) {
+      captured <<- list(add = add_ids, remove = remove_ids)
+      NULL
+    },
+    mc_label_ensure = function(label_names) {
+      ensured <<- label_names
+      invisible(label_names)
+    }
+  )
+
+  mc_thread_modify("abc", remove = "INBOX", create_missing = TRUE)
+
+  expect_equal(ensured, "not-touched")
+  expect_null(captured$add)
+  expect_equal(captured$remove, "INBOX")
+})
+
+test_that("mc_thread_modify matches system labels case-insensitively", {
+  captured <- NULL
+  local_mocked_bindings(
+    gmail_modify_thread = function(thread_id, add_ids, remove_ids) {
+      captured <<- list(add = add_ids, remove = remove_ids)
+      NULL
+    }
+  )
+  # All inputs are system-label names in mixed case
+  mc_thread_modify("abc", add = c("Starred", "inbox"), remove = "Unread")
+  # Normalized to canonical uppercase IDs Gmail expects
+  expect_equal(captured$add, c("STARRED", "INBOX"))
+  expect_equal(captured$remove, "UNREAD")
+})

@@ -33,14 +33,16 @@ Reuses internal helpers `fetch_user_labels()` and `system_labels()` from `R/mc_t
 
 ## Phase 2: `create_missing` flag on `mc_thread_modify()`
 
-- [ ] Add `create_missing = FALSE` parameter to `mc_thread_modify()`. Validate with `chk::chk_flag()`.
-- [ ] When `create_missing = TRUE` and `add` is non-NULL, call `mc_label_ensure(add)` before `fetch_user_labels()` so freshly-created labels are visible to the resolver.
-- [ ] New tests in `test-mc_thread_modify.R`:
+- [x] Add `create_missing = FALSE` parameter to `mc_thread_modify()`. Validate with `chk::chk_flag()`.
+- [x] When `create_missing = TRUE` and `add` is non-NULL, call `mc_label_ensure(add)` before `fetch_user_labels()` so freshly-created labels are visible to the resolver.
+- [x] New tests in `test-mc_thread_modify.R`:
+  - rejects bad `create_missing` (non-flag)
   - `create_missing = FALSE` (default) errors on unknown — back-compat preserved
-  - `create_missing = TRUE` succeeds on unknown name (mock `mc_label_ensure` + second `gm_labels` mock returns the new label)
-- [ ] `devtools::document()`, `devtools::test()`, `lintr::lint_package()` clean.
-- [ ] `/code-check` on staged diff.
-- [ ] Atomic commit including checkbox flips.
+  - `create_missing = TRUE` calls `mc_label_ensure(add)` and applies resolved IDs
+  - `create_missing = TRUE` with `add = NULL` skips ensure
+- [x] `devtools::document()`, `devtools::test()` (297 pass, 0 fail), `lintr::lint_package()` clean.
+- [x] `/code-check` on staged diff.
+- [x] Atomic commit including checkbox flips.
 
 ## Phase 3: `labels_create` in `mc_send()` + integration test
 
