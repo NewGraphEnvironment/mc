@@ -9,6 +9,7 @@ boilerplate that every email script repeats.
 ## Installation
 
 ``` r
+
 pak::pak("NewGraphEnvironment/mc")
 ```
 
@@ -17,6 +18,7 @@ pak::pak("NewGraphEnvironment/mc")
 Set your default sender address in `~/.Rprofile`:
 
 ``` r
+
 options(mc.from = "you@example.com")
 ```
 
@@ -27,6 +29,7 @@ Or via environment variable in `~/.Renviron`:
 Then authenticate once per machine:
 
 ``` r
+
 mc_auth()
 ```
 
@@ -58,6 +61,7 @@ Al
 Send it in three lines:
 
 ``` r
+
 library(mc)
 mc_send("communications/draft.md",
         to = "brandon@example.com",
@@ -73,6 +77,7 @@ once per machine to set up).
 When you’re ready to send for real:
 
 ``` r
+
 mc_send("communications/draft.md",
         to = "brandon@example.com",
         subject = "Cottonwood plugs",
@@ -86,6 +91,7 @@ Need an R-generated table in your email? Use
 to mix markdown files, HTML, and kable/kableExtra objects:
 
 ``` r
+
 df <- data.frame(Site = c("Nechako", "Mackenzie"), Plugs = c(4000, 3000))
 
 body <- mc_compose(
@@ -102,6 +108,7 @@ Large tables? Wrap in
 for horizontal/vertical scrolling:
 
 ``` r
+
 mc_compose(
   "<p>Full dataset:</p>",
   mc_scroll(knitr::kable(big_df, format = "html"), direction = "both")
@@ -122,6 +129,7 @@ Full function documentation with examples:
 Reply into an existing conversation:
 
 ``` r
+
 # Find the thread
 mc_thread_find("from:brandon subject:cottonwood")
 
@@ -150,6 +158,7 @@ Send an email later with `send_at` — either minutes from now or a
 specific time:
 
 ``` r
+
 # Send in 10 minutes
 proc <- mc_send("draft.md",
                 to = "brandon@example.com",
@@ -181,6 +190,7 @@ notification on success, skip, or failure.
 Send to yourself to preview:
 
 ``` r
+
 mc_send("draft.md",
         to = "brandon@example.com",
         subject = "Cottonwood plugs",

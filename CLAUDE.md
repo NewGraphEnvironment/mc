@@ -49,6 +49,7 @@ Use the `gq` package for all shared layer symbology. Never hardcode hex
 color values when a registry style exists.
 
 ``` r
+
 library(gq)
 reg <- gq_reg_main()  # load once per script — 51+ layers
 ```
@@ -58,10 +59,10 @@ reg <- gq_reg_main()  # load once per script — 51+ layers
 
 ### Translators
 
-| Target | Simple layer                                         | Classified layer                                 |
-|--------|------------------------------------------------------|--------------------------------------------------|
-| tmap   | `gq_tmap_style(layer)` → `do.call(tm_polygons, ...)` | `gq_tmap_classes(layer)` → field, values, labels |
-| mapgl  | `gq_mapgl_style(layer)` → paint properties           | `gq_mapgl_classes(layer)` → match expression     |
+| Target | Simple layer | Classified layer |
+|----|----|----|
+| tmap | `gq_tmap_style(layer)` → `do.call(tm_polygons, ...)` | `gq_tmap_classes(layer)` → field, values, labels |
+| mapgl | `gq_mapgl_style(layer)` → paint properties | `gq_mapgl_classes(layer)` → match expression |
 
 ### Custom styles
 
@@ -69,6 +70,7 @@ For project-specific layers not in the main registry, use a hand-curated
 CSV and merge:
 
 ``` r
+
 reg <- gq_reg_merge(gq_reg_main(), gq_reg_read_csv("path/to/custom.csv"))
 ```
 
@@ -76,11 +78,11 @@ Install: `pak::pak("NewGraphEnvironment/gq")`
 
 ## Map Targets
 
-| Output              | Tool                  | When                               |
-|---------------------|-----------------------|------------------------------------|
-| PDF / print figures | `tmap` v4             | Bookdown PDF, static reports       |
-| Interactive HTML    | `mapgl` (MapLibre GL) | Bookdown gitbook, memos, web pages |
-| QGIS project        | Native QML            | Field work, Mergin Maps            |
+| Output | Tool | When |
+|----|----|----|
+| PDF / print figures | `tmap` v4 | Bookdown PDF, static reports |
+| Interactive HTML | `mapgl` (MapLibre GL) | Bookdown gitbook, memos, web pages |
+| QGIS project | Native QML | Field work, Mergin Maps |
 
 ## Key Rules
 
@@ -131,6 +133,7 @@ inside them over time.
 **Pipeline:**
 
 ``` r
+
 # 1. Delineate floodplain AOI (flooded)
 valleys <- flooded::fl_valley_confine(dem, streams)
 
@@ -151,6 +154,48 @@ drift::dft_map_interactive(classified, aoi = aoi)
   vignette](https://www.newgraphenvironment.com/drift/articles/neexdzii-kwa.html)
   for a worked example (Neexdzii Kwa floodplain, 2017-2023)
 
+# CI Monitoring
+
+When this repo has GitHub Actions workflows, scan recent runs on session
+start. Catches failed pkgdown deploys, broken vignette builds, and stale
+citation regenerations that would otherwise linger until the user
+manually checks.
+
+## On Session Start
+
+``` bash
+gh run list --limit 5 --json status,conclusion,name,createdAt,databaseId \
+  --jq '.[] | select(.conclusion == "failure")'
+```
+
+If any failures since the last visit, surface to the user before
+starting other work:
+
+> Workflow `<name>` failed `<time>` ago (run `<id>`). Investigate with
+> `gh run view <id> --log-failed`. Fix or proceed with current task?
+
+User decides; do not auto-fix.
+
+## Particular Failures Worth Naming
+
+- **pkgdown** — docs site on GitHub Pages broken
+- **R-CMD-check** — package may not install
+- **Vignette / build-vignettes** — vignette docs incomplete
+- **update-citation-cff** — CITATION.cff stale
+
+## Why This Matters
+
+Without this scan, post-merge workflow failures linger until someone
+(often the user) notices a stale docs site or a missing vignette. The
+session-start sweep catches them on the first re-entry into the repo.
+
+## Pairs with `/gh-pr-merge`
+
+The skill watches workflows triggered by a fresh merge in real time —
+that’s the targeted catch. This convention is the backstop for failures
+that landed when no one was watching (merges via web UI, scheduled
+triggers, manually-triggered workflows).
+
 # Code Check Conventions
 
 Structured checklist for reviewing diffs before commit. Used by
@@ -167,6 +212,30 @@ compound over time.
 - Use `printf '%s\n' "$VAR" | command` to pipe values safely
 - Heredocs: unquoted `<<EOF` expands variables locally, `<<'EOF'` does
   not — know which you need
+- Pass-through-ssh args: `printf '%q'` escapes per-arg so workload paths
+  with spaces / quotes / metacharacters survive the local-shell →
+  ssh-argv → remote-shell round-trip. Without it,
+  `ssh host 'cmd' "$path"` joins args with spaces on remote and
+  re-parses, losing argument boundaries.
+
+### Heredoc precedence in pipelines
+
+- `cmd1 | cmd2 <<EOF` — the heredoc binds to `cmd2` (the rightmost
+  simple command). If you intended `cmd1` to receive it, put `<<EOF` on
+  cmd1 explicitly: `cmd1 <<EOF | cmd2`.
+- Symptom when wrong: ssh body silently echoed by tee/cat/etc, ssh side
+  gets empty stdin, exits 0 (or near-0) without doing anything. Caught
+  the hard way 2026-05-01 in cypher_restore-fwapg.sh.
+
+### pipefail with ssh+tee
+
+- `set -eu` does NOT propagate exit codes through pipelines.
+  `ssh ... | tee log` returns tee’s exit (always 0 for healthy tee),
+  masking ssh failure.
+- Use `set -euo pipefail` for any script that pipes a meaningful command
+  into tee/cat/grep/etc. Or check `${PIPESTATUS[0]}` explicitly.
+- Symptom when wrong: task notifications report “exit 0 / completed”
+  while remote work was actually skipped or errored.
 
 ### Paths
 
@@ -195,18 +264,81 @@ compound over time.
   parse failure
 - Check with: `perl -ne 'print "$.: $_" if /[^\x00-\x7F]/' file.yaml`
 
+### YAML flow-mapping in runcmd
+
+- Any runcmd item containing both `{` and `:` is at risk of being parsed
+  as a YAML flow-mapping (dict), not a literal string. Cloud-init’s
+  shellify hits a non-string and throws TypeError, **aborting all
+  subsequent runcmd steps silently** while `final_message` still fires.
+
+- Don’t write: `- test -s /file || { echo "FATAL: ..." }` — the `:`
+  inside braces makes YAML see a dict.
+
+- Do write: use `- |` block scalar with explicit `if/then/fi`:
+
+  ``` yaml
+  - |
+    if [ ! -s /file ]; then
+      echo "FATAL: ..." >&2
+      exit 1
+    fi
+  ```
+
+- Validate post-edit:
+  `python3 -c "import yaml; runcmd=yaml.safe_load(open('cloud-init.yaml').read().split(chr(10),1)[1])['runcmd']; print([type(x).__name__ for x in runcmd if not isinstance(x,str)] or 'all strings')"`.
+  If the output is anything other than `all strings`, the runcmd will
+  fail.
+
 ### State
 
 - `cloud-init clean` causes full re-provisioning on next boot — almost
   never what you want before snapshot
 - Use `tailscale logout` not `tailscale down` before snapshot
   (deregister vs disconnect)
+- Wipe `/var/lib/tailscale/*` before snapshot too — `tailscale logout`
+  deauthorizes server-side but local node identity blob persists in
+  tailscaled.state. Snapshot restored elsewhere inherits prior key
+  material until `tailscale up` runs again.
+- Wipe `/etc/ssh/ssh_host_*` before snapshot — otherwise droplets
+  spawned from the same image share host identity.
 
 ### Template Variables
 
 - Secrets rendered via `templatefile()` are readable at
   `169.254.169.254` metadata endpoint
 - Acceptable for ephemeral machines, document the tradeoff
+- Heredocs in runcmd that write secrets: `<<'EOF'` (quoted) prevents
+  bash from re-expanding `$X` sequences in already-substituted
+  credential strings. AWS keys rarely contain `$` but base64-padded
+  secrets might.
+
+### Repo + key install ordering
+
+- `apt-key adv --keyserver` is deprecated on Ubuntu 24.04 noble —
+  silently fails AND APT ignores resulting keyring. Use
+  `gpg --dearmor` + `signed-by=` keyring file pattern.
+- Repo .list files in `write_files:` trigger the implicit
+  `package_update` BEFORE runcmd installs the keyring → first apt-get
+  update fails with NO_PUBKEY. Put the repo line in runcmd alongside the
+  key install, not in write_files.
+
+### Cloud-init users vs DO SSH key injection
+
+- DO injects `ssh_key_ids` only into `/root/.ssh/authorized_keys`
+  (cloud-init’s `cc_ssh` module). Cloud-init `users:` block with
+  `ssh_authorized_keys: []` does NOT pick those up.
+
+- Non-root users that need SSH access must copy from root’s keys in
+  runcmd:
+
+  ``` yaml
+  - mkdir -p /home/<user>/.ssh
+  - cp /root/.ssh/authorized_keys /home/<user>/.ssh/authorized_keys
+  - chown -R <user>:<user> /home/<user>/.ssh
+  ```
+
+- Guard with `test -s /root/.ssh/authorized_keys` to fail loudly if
+  `cc_ssh` hasn’t run before runcmd (rare race).
 
 ## OpenTofu / Terraform
 
@@ -223,8 +355,105 @@ compound over time.
 - Validate resource IDs before destroy: `[ -n "$ID" ] || exit 1`
 - `tofu destroy` without `-target` destroys everything including
   reserved IPs
-- Snapshot ID extraction: use `--resource droplet` and `grep -F` for
-  exact match
+- Snapshot ID extraction by name: use
+  `awk -v n="$NAME" '$2 == n {print $1}'` (exact match on column 2).
+  `grep -F "$NAME"` is substring-match and can grab a stale snapshot
+  whose name contains the new name as a substring.
+
+## DigitalOcean
+
+### Snapshot disk-size constraint
+
+- DO snapshots include the source droplet’s disk size. New droplets from
+  a snapshot must have disk **\>=** snapshot disk. Resize **up** is
+  fine; resize **down** below the snapshot disk is impossible without
+  rebuilding.
+- Build the snapshot at the smallest droplet size you’d ever want to
+  spin from it. Sizes vs disks at writing: `g-4vcpu-16gb` = 50 GB,
+  `g-8vcpu-32gb` / `m-4vcpu-32gb` = 100 GB, `m-8vcpu-64gb` = 200 GB.
+- If your workload requires X GB RAM minimum, your snapshot floor is
+  whatever droplet has X GB AND the smallest disk class.
+
+### Reserved IP detach behavior
+
+- Targeted destroy
+  (`tofu destroy -target=module.droplet -target=...assignment...`)
+  preserves the reserved IP at \$4/mo. Full `tofu destroy` releases it
+  (next apply gets a NEW IP).
+
+### Reserved IP assignment race (rtj#55, rtj#85)
+
+- DO returns 422 “Droplet already has a pending event” when reserved IP
+  assignment fires immediately after droplet+firewall creation. The
+  droplet’s internal event queue takes time to drain.
+- **Every DO droplet module that uses a reserved IP MUST have:**
+  1.  `time_sleep` resource between droplet creation and IP assignment,
+      with `create_duration ≥ 60s` (10s and 30s have both been observed
+      to race; 60s has more headroom)
+  2.  `depends_on = [time_sleep.<name>]` on the
+      `digitalocean_reserved_ip_assignment` resource
+  3.  A retry fallback in the wrapping shell script (`up.sh` style) that
+      detects the 422 in tofu output and uses
+      `doctl compute reserved-ip-action assign <ip> <droplet-id>` to
+      recover. Tofu doesn’t retry; it leaves state half-applied
+      (assignment recorded but DO didn’t actually attach).
+- **Snapshot-based spins are MORE prone to the race** than first-boot
+  from blank Ubuntu (more startup events compete for the droplet’s event
+  queue).
+- **Audit existing modules:**
+  `grep -L 'time_sleep' env/do/*/<host>/main.tf` finds modules missing
+  the gate. As of 2026-05-02, openclaw and geoserv have no `time_sleep`
+  — they will race eventually.
+
+## Docker / Postgres
+
+### Postgis init time
+
+- `imresamu/postgis` (and similar postgis images) on first cold start
+  (empty data volume) take **5-12 min** to install all extensions —
+  varies with disk IO and noisy-neighbor lottery on cloud hosts.
+  Health-wait scripts must allow 15 min minimum, ideally with
+  hard-fail + log dump on timeout.
+
+### Tuning vs host RAM
+
+- fresh’s `docker/docker-compose.yml` defaults are tuned for a 128 GB
+  host (`shared_buffers=32GB`, `shm_size=36gb`). On smaller hosts,
+  postgres OOMs at startup with “could not map anonymous shared memory”.
+- 32 GB host floor: use the M1/cypher 32 GB-host preset
+  (`scripts/fwapg/compose.override.m1.yml`) which sets
+  `shared_buffers=8GB, shm_size=12gb`.
+- Below 32 GB: postgres can technically start with smaller
+  `shared_buffers` but fwapg work becomes painful. Don’t run fwapg
+  pipelines on \<32 GB hosts.
+
+### `search_path` is data, not config
+
+- `ALTER DATABASE <db> SET search_path TO ...` is a database-level
+  setting **stored in the postgres data dir**. Wiped with
+  `docker compose down -v`. Must be re-applied on every restore.
+- Codify in your restore script, not in cloud-init or compose env (those
+  don’t apply to db-level settings).
+
+## Tailscale
+
+### ACL “users” semantics
+
+- Tailscale SSH ACL `"users": ["autogroup:nonroot"]` for `tag:compute`
+  blocks `ssh root@<node>` over the tailnet. Use `ssh <user>@<node>` +
+  sudo for root operations.
+- For SSH-as-root from off-tailnet (regular OpenSSH on the public IP),
+  the ACL doesn’t apply — but you need the SSH key registered on the
+  node.
+
+### Reusable + ephemeral auth keys
+
+- Cypher-style ephemeral compute droplets need both flags on the auth
+  key: **Reusable** (same key works across destroy/recreate) +
+  **Ephemeral** (tailnet entries auto-clean when offline \>5 min).
+- Tag the key (e.g. `tag:compute`) at creation time. Nodes joining with
+  that key inherit the tag automatically — no `--advertise-tags` needed
+  at `tailscale up` time.
 
 ## Security
 
@@ -265,81 +494,85 @@ compound over time.
 
 ## General
 
+### Adopting Existing Config
+
+When importing config from one location into a canonical one (legacy
+`~/.bash_profile` → dotfiles repo, old script’s env → repo, another
+project’s `settings.json` → soul):
+
+- **Verify every referenced path/binary exists.** Dead PATH exports,
+  missing interpreters, stale env vars should be cut, not codified.
+  Shell paths:
+  `for p in $(echo "$PATH" | tr ':' ' '); do [ -d "$p" ] || echo "DEAD: $p"; done`
+- **Ask before dropping a reference** — it may be something the user
+  forgot to reinstall on this machine, not something to delete.
+- **Curated subset, not verbatim copy.** The diff should reflect what
+  you verified, not the whole source.
+
 ### Documentation Staleness
 
 - Moving/renaming scripts: update CLAUDE.md, READMEs, usage comments
 - New variables: update .tfvars.example
 - New workflows: update relevant README
 
-# Communications Conventions
+# NGE Feature Workflow
 
-Standards for external communications across New Graph Environment.
+For non-trivial issue-driven work, follow this checklist. Each step
+exists for a reason — skipping leads to rework, broken builds, and
+avoidable bugs that we’ve hit repeatedly.
 
-[compost](https://github.com/NewGraphEnvironment/compost) is the working
-repo for email drafts, scripts, contact management, and Gmail utilities.
-These conventions capture the universal principles; compost has the
-implementation details.
+## The Sequence
 
-## Tone
+1.  **Start with `/planning-init <N>`** — given an issue number, enters
+    plan mode for codebase exploration, presents a phase breakdown for
+    user approval, then scaffolds branch + PWF baseline with the
+    approved phases. One command replaces the manual issue → explore →
+    plan → branch → scaffold dance.
+2.  **Write robust tests first** — failing tests that reproduce the
+    issue or document the new behavior. Tests are the contract; they
+    fail until the work makes them pass.
+3.  **Name with intent** — functions, parameters, internal helpers carry
+    the naming style of the package they live in. Look at existing
+    exports as the guide; consistency over cleverness. (Per-package
+    naming convention TBD — see soul issue tracking.)
+4.  **Examples that run** — every exported function gets a runnable
+    `@examples` block. Pkgdown renders them; CI executes them. An
+    example that doesn’t run is documentation rot.
+5.  **Code-check before each commit** — `/code-check` on staged diff.
+    Catches what tests miss: edge cases, hard-coded paths, unguarded
+    variables, security issues.
+6.  **Atomic commits** — each commit bundles code change + checkbox flip
+    in `task_plan.md`. The diff and the progress live in the same
+    commit; `git log -- planning/` tells the full story.
+7.  **`/planning-archive` when complete** — moves PWF to
+    `archive/YYYY-MM-issue-N-slug/`, creates a fresh `active/`. Then
+    `/gh-pr-push` opens the PR; `/gh-pr-merge` handles the release
+    bookkeeping.
 
-Three levels. Default to casual unless context dictates otherwise.
+## When to Skip
 
-| Level           | When                                            | Style                                                 |
-|-----------------|-------------------------------------------------|-------------------------------------------------------|
-| **Casual**      | Established working relationships               | Professional but warm. Direct, concise. No slang.     |
-| **Very casual** | Close collaborators with rapport                | Colloquial OK. Light humor. Slang acceptable.         |
-| **Formal**      | New contacts, senior officials, formal requests | Full sentences, no contractions, state purpose early. |
+For one-line typo fixes, version-bump-only PRs, or trivial documentation
+edits, the full workflow is overhead. Use judgment. The threshold is
+roughly: **multi-step issue, multi-file change, or anything that
+requires scoping** → use the workflow.
 
-**Collaborative, not directive.** Acknowledge their constraints:
+## Skills That Slot In
 
-- **Avoid:** “Work these in as makes sense for your lab”
-- **Better:** “If you’re able to work these in when it fits your
-  schedule that would be really helpful”
+- `/planning-init <N>` — start
+- `/planning-update` — sync checkboxes mid-session
+- `/code-check` — before every commit
+- `/planning-archive` — when issue closes
+- `/gh-pr-push` — open the PR
+- `/gh-pr-merge` — merge with release bookkeeping
 
-## Email Workflow
+## Why This Exists
 
-Draft in markdown, convert to HTML at send time via gmailr. See compost
-for script templates, OAuth setup, and `search_gmail.R`.
-
-**File naming:** `YYYYMMDD_recipient_topic_draft.md` +
-`YYYYMMDD_recipient_topic.R`
-
-**Key gotchas** (documented in detail in compost): - Gmail strips
-`<style>` blocks — use inline styles for tables - `gm_create_draft()`
-does NOT support `thread_id` — only `gm_send_message()` can reply into
-threads. Drafts land outside the conversation. - Always use `test_mode`
-and `create_draft` variables for safe workflows
-
-## Data in Emails
-
-- **Never manually type data into tables** — generate programmatically
-  from source files
-- **Link to canonical sources** (GitHub repos, public reports) rather
-  than embedding raw data
-- **Provide both CSV and Excel** when sharing tabular data
-- **Document ID codes** — when using compressed IDs (e.g., `id_lab`),
-  include a reference sheet so recipients can decode
-
-## What Not to Expose Externally
-
-- Internal QA info (blanks, control samples, calibration data)
-- Internal tracking codes or SRED references
-- Draft status or revision history
-- Internal project management details
-
-Keep client-facing communications focused on deliverables and technical
-content.
-
-## Signature
-
-    Al Irvine B.Sc., R.P.Bio.
-    New Graph Environment Ltd.
-
-    Cell: 250-777-1518
-    Email: al@newgraphenvironment.com
-    Website: www.newgraphenvironment.com
-
-In HTML emails, use `<br>` tags between lines.
+We’ve hit snags repeatedly when half-doing this — branches that mix
+concerns, tests bolted on after, code-check skipped (and then a bug
+ships in the diff), examples that fail in pkgdown. Each step is small;
+the cumulative reliability gain is real. The convention is here so it
+becomes the default expectation, not a thing the user has to remind
+every session about.
 
 # LLM Behavioral Guidelines
 
@@ -416,16 +649,17 @@ Environment repositories.
 
 ## Ecosystem Overview
 
-Five repos form the governance and operations layer across all New Graph
+Six repos form the governance and operations layer across all New Graph
 Environment work:
 
-| Repo                                                                | Purpose                                                       | Analogy     |
-|---------------------------------------------------------------------|---------------------------------------------------------------|-------------|
-| [compass](https://github.com/NewGraphEnvironment/compass)           | Ethics, values, guiding principles                            | The “why”   |
-| [soul](https://github.com/NewGraphEnvironment/soul)                 | Standards, skills, conventions for LLM agents                 | The “how”   |
-| [compost](https://github.com/NewGraphEnvironment/compost)           | Communications templates, email workflows, contact management | The “who”   |
-| [rtj](https://github.com/NewGraphEnvironment/rtj) (formerly awshak) | Infrastructure as Code, deployment                            | The “where” |
-| [gq](https://github.com/NewGraphEnvironment/gq)                     | Cartographic style management across QGIS, tmap, leaflet, web | The “look”  |
+| Repo | Purpose | Analogy |
+|----|----|----|
+| [compass](https://github.com/NewGraphEnvironment/compass) | Ethics, values, guiding principles | The “why” |
+| [soul](https://github.com/NewGraphEnvironment/soul) | Standards, skills, conventions for LLM agents | The “how” |
+| [compost](https://github.com/NewGraphEnvironment/compost) | Communications templates, email workflows, contact management | The “who” |
+| [rtj](https://github.com/NewGraphEnvironment/rtj) (formerly awshak) | Infrastructure as Code, deployment | The “where” |
+| [gq](https://github.com/NewGraphEnvironment/gq) | Cartographic style management across QGIS, tmap, leaflet, web | The “look” |
+| [crate](https://github.com/NewGraphEnvironment/crate) | Data governance: canonical schemas, data dictionary, QC rules (scoping; normalization functions are Year 2+) | The “what” |
 
 **Adaptive management:** Conventions evolve from real project work, not
 theory. When a pattern is learned or refined during project work,
@@ -433,11 +667,40 @@ propagate it back to soul so all projects benefit. The `/claude-md-init`
 skill builds each project’s `CLAUDE.md` from soul conventions.
 
 **Cross-references:**
-[sred-2025-2026](https://github.com/NewGraphEnvironment/sred-2025-2026)
-tracks R&D activities across repos. Compost cross-cuts all projects as
-the centralized communications workflow — email drafts, contact
-registry, and tone guidelines live there and are copied to individual
-project `communications/` folders as needed.
+[sred](https://github.com/NewGraphEnvironment/sred) tracks R&D
+activities across repos. Compost is the centralized communications
+workflow — all email drafts, contact registry, and external outreach are
+authored there, not in individual project repos.
+
+## Three-Layer Repo Architecture
+
+Repos live in one of three layers, distinguished by audience and what
+context they carry:
+
+| Layer | Role | Examples |
+|----|----|----|
+| **Public — tools** | Atomic, reusable, no NGE-specific context | R packages (`mc`, `crate`, `fresh`, `drift`, `flooded`, `gq`, `link`), `bcfishpass`, `fwapg`, STAC catalogs, post-publication reports |
+| **Private — coordination** | How tools compose into NGE workflows. The competitive moat. | `compost` (uses `mc`), `rfp` (uses `fresh`/`link`/etc.), `rtj` (uses `crate`, deploys), `fish_passage_template_reporting`, all proposals (never public) |
+| **Private — governance** | Strategy, values, conventions, R&D | `soul`, `logic`, `compass`, `sred` |
+
+**Rule:** tools don’t know about each other or about NGE. Coordination
+repos know how to use tools. `mc/CLAUDE.md` does not know `compost`
+exists; `compost/CLAUDE.md` knows “for email use `mc`.”
+
+**Publication flip:** when a private repo flips public (e.g., `crate`
+once `link` requires it; reports on publication), three things happen in
+the same commit: removed from comms peer list, `comms/` directory
+purged, `CLAUDE.md` scrubbed to public-safe form. Use
+`/claude-md-init --public-clean` for the scrub.
+
+**Per-repo classification** is recorded in `.claude/visibility` (one
+line: `public` or `internal`; default `internal` if missing). Soul
+conventions carry `visibility:` frontmatter (`public-safe` or
+`internal`); `/claude-md-init` filter skips internal-only conventions
+when repo is marked public.
+
+Strategic call recorded in
+`logic/comms/soul/20260428_public_vs_internal_repo_architecture.md`.
 
 ## Issue Workflow
 
@@ -446,11 +709,12 @@ project `communications/` folders as needed.
 1.  **Check for duplicates:**
     `gh issue list --state open --search "<keywords>"` – search before
     creating
-2.  **Link to SRED:** If work involves infrastructure, R&D, tooling, or
-    performance benchmarking, add
-    `Relates to NewGraphEnvironment/sred-2025-2026#N` (match by repo
-    name in SRED issue title)
-3.  **One issue, one concern.** Keep focused.
+2.  **One issue, one concern.** Keep focused.
+
+SRED cross-refs go in **PR bodies only** (via `/gh-pr-push`), not in
+issues or commits. PRs aggregate commits and are the merge unit;
+per-issue and per-commit SRED tags add noise without adding
+traceability.
 
 ### Professional Issue Writing
 
@@ -459,6 +723,23 @@ Write issues with clear technical focus:
 - **Use normal technical language** in titles and descriptions
 - **Focus on the problem and solution** approach
 - **Add tracking links at the end** (e.g., `Relates to Owner/repo#N`)
+
+#### Client-aware tone
+
+Issues, PR descriptions, and commit messages are client-visible
+deliverables, not internal notes.
+
+Avoid in these artifacts: - Framing work as unsolicited or unpaid (“not
+assigned by a client”) - Self-justifying adjectives (“defensible”,
+“rigorous”) — show, don’t claim - Internal workflow meta (PWF refs, SRED
+xrefs, planning context) - Performative effort language (“attempts were
+unsuccessful”) — state factual current state
+
+**Integrity-preserving ≠ self-effacing.** Factual, not performatively
+humble.
+
+**Scope:** repo artifacts (issues, PRs, commits, reports). Does not
+apply to internal planning docs, CLAUDE.md, or chat.
 
 **Issue body structure:**
 
@@ -470,7 +751,6 @@ Write issues with clear technical focus:
 <approach>
 
 Relates to #<local>
-Relates to NewGraphEnvironment/sred-2025-2026#<N>
 ```
 
 ### GitHub Issue Creation - Always Use Files
@@ -520,7 +800,6 @@ Write clear, informative commit messages:
     Detailed explanation of changes and impact.
 
     Fixes #<issue> (or Relates to #<issue>)
-    Relates to NewGraphEnvironment/sred-2025-2026#<N>
 
     Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
 
@@ -565,13 +844,13 @@ Scripts and logs live together: `scripts/<module>/logs/`
 - **Milestones** = iteration boundaries (only for release/claim prep)
 - Don’t double-track unless there’s a reason
 
-| Content                                   | Project                               |
-|-------------------------------------------|---------------------------------------|
-| R&D, experiments, SRED-related            | **SRED R&D Tracking (#8)**            |
-| Data storage, sqlite, postgres, pipelines | **Data Architecture (#9)**            |
-| Fish passage field/reporting              | **Fish Passage 2025 (#6)**            |
-| Restoration planning                      | **Aquatic Restoration Planning (#5)** |
-| QGIS, Mergin, field forms                 | **Collaborative GIS (#3)**            |
+| Content | Project |
+|----|----|
+| R&D, experiments, SRED-related | **SRED R&D Tracking (#8)** |
+| Data storage, sqlite, postgres, pipelines | **Data Architecture (#9)** |
+| Fish passage field/reporting | **Fish Passage 2025 (#6)** |
+| Restoration planning | **Aquatic Restoration Planning (#5)** |
+| QGIS, Mergin, field forms | **Collaborative GIS (#3)** |
 
 # Planning Conventions
 
@@ -598,15 +877,29 @@ next steps.
     - `task_plan.md` — Phases with checkbox tasks
     - `findings.md` — Research, discoveries, technical analysis
     - `progress.md` — Session log with timestamps and commit refs
-3.  **Commit the plan** — Commit the planning files before starting
-    implementation. This is the baseline.
-4.  **Work in atomic commits** — Each commit bundles code changes WITH
+3.  **Plan-review with the Plan agent before committing the plan** —
+    After scaffolding `task_plan.md` but BEFORE the baseline commit,
+    spawn the Plan subagent
+    (`Agent({subagent_type: "Plan", prompt: "..."}`) and ask it to
+    critically review the task_plan against the issue body + actual
+    codebase. Categorize findings as Blocker / Gap / Ordering /
+    Assumption / Scope / Acceptance. Address each before committing. The
+    agent reads files fresh — it catches what you miss when you’ve been
+    thinking about the design too long. Real example: caught 21 issues
+    including hardcoded literals across 4 files not listed in the plan,
+    untested DB column mismatches, unfixable test-literal-string
+    assertions, and a baseline-cache-shadow that would have produced a
+    6-second no-op run. Cost: ~5 min agent. Saves: hours of
+    mid-implementation rework.
+4.  **Commit the plan** — After Plan-agent review + fixes. This is the
+    baseline.
+5.  **Work in atomic commits** — Each commit bundles code changes WITH
     checkbox updates in the planning files. The diff shows both what was
     done and the checkbox marking it done.
-5.  **Code check before commit** — Run `/code-check` on staged diffs
+6.  **Code check before commit** — Run `/code-check` on staged diffs
     before committing. Don’t mark a task done until the diff passes
     review.
-6.  **Archive when complete** — Move `planning/active/` to
+7.  **Archive when complete** — Move `planning/active/` to
     `planning/archive/` via `/planning-archive`. Write a README.md in
     the archive directory with a one-paragraph outcome summary and
     closing commit/PR ref — future sessions scan these to catch up fast.
@@ -696,12 +989,36 @@ NEWS.md style, pkgdown setup, test structure, hex sticker, etc.).
 ## Style
 
 - tidyverse style guide: snake_case, pipe operators (`|>` or `%>%`)
+
 - Match existing patterns in each codebase
+
 - Use `pak` for package installation (not `install.packages`)
+
 - Prefix column name vectors with `cols_` for discoverability in the
   environment pane: `cols_all`, `cols_carry`, `cols_split`,
   `cols_writable`. Same principle for other grouped vectors (`params_`,
   `tbl_`, etc.)
+
+- For SQL DDL+INSERT pairs that share a schema, use a single named
+  vector as the source of truth. Both `CREATE TABLE` and
+  `INSERT (cols) SELECT cols` derive their column lists from the same
+  `cols_*` vector. Avoids drift between table shape and write projection
+  — when columns change, you edit one place. Example:
+
+  ``` r
+
+  cols_streams <- c(
+    id_segment           = "integer NOT NULL",
+    watershed_group_code = "varchar(4) NOT NULL",
+    geom                 = "geometry(MultiLineStringZM, 3005)"
+    # …
+  )
+  # CREATE TABLE consumes both names + types
+  ddl_body <- paste(names(cols_streams), unname(cols_streams), sep = " ",
+                    collapse = ", ")
+  # INSERT consumes names only
+  proj <- paste(names(cols_streams), collapse = ", ")
+  ```
 
 ## Package Structure
 
@@ -732,7 +1049,7 @@ traceable record of what was planned, built, and verified.
 
 For new packages or major features, work on a branch and merge via PR:
 
-    main ← scaffold-branch (PR closes with "Relates to NewGraphEnvironment/sred-2025-2026#N")
+    main ← scaffold-branch (PR closes with "Relates to NewGraphEnvironment/sred#N")
 
 This gives one PR that contains all commits — a single SRED
 cross-reference covers the entire body of work. Individual commits
@@ -832,6 +1149,7 @@ warnings — every lint should be worth fixing.
 ### Recommended .lintr config
 
 ``` r
+
 linters: linters_with_defaults(
     line_length_linter(120),
     object_name_linter(styles = c("snake_case", "dotted.case")),
@@ -865,7 +1183,11 @@ exclusions: list(
       details — don’t duplicate it.
     - Don’t list every function; the pkgdown reference page is the
       single source of truth for what’s in the package.
-2.  Bump version in `DESCRIPTION` (e.g., `0.0.0.9000` → `0.1.0`)
+2.  Bump version in `DESCRIPTION` (e.g., `0.0.0.9000` → `0.1.0`) — as
+    the **final** commit of the branch, after verification numbers/tests
+    are final. Mid-branch bumps are premature and churn: additional code
+    changes end up bundled inside a “release” that already claimed the
+    version.
 3.  Commit as “Release vX.Y.Z”
 4.  Tag: `git tag vX.Y.Z && git push && git push --tags`
 
@@ -937,11 +1259,11 @@ at New Graph Environment.
 
 Three tools, different purposes. Use the right one.
 
-| Need                                                       | Tool                       | Why                                                           |
-|------------------------------------------------------------|----------------------------|---------------------------------------------------------------|
-| Search by keyword, read metadata/fulltext, semantic search | **MCP `zotero_*` tools**   | pyzotero, works with Zotero item keys                         |
-| Look up by citation key (e.g., `irvine2020ParsnipRiver`)   | **`/zotero-lookup` skill** | Citation keys are a BBT feature — pyzotero can’t resolve them |
-| Create items, attach PDFs, deduplicate                     | **`/zotero-api` skill**    | Connector API for writes, JS console for attachments          |
+| Need | Tool | Why |
+|----|----|----|
+| Search by keyword, read metadata/fulltext, semantic search | **MCP `zotero_*` tools** | pyzotero, works with Zotero item keys |
+| Look up by citation key (e.g., `irvine2020ParsnipRiver`) | **`/zotero-lookup` skill** | Citation keys are a BBT feature — pyzotero can’t resolve them |
+| Create items, attach PDFs, deduplicate | **`/zotero-api` skill** | Connector API for writes, JS console for attachments |
 
 **Citation keys vs item keys:** Citation keys (like
 `irvine2020ParsnipRiver`) come from Better BibTeX. Item keys (like
@@ -1022,6 +1344,7 @@ Zotero → rebuild report → bibliography updates.
 This is set globally in `~/.Rprofile`:
 
 ``` r
+
 # default library — NewGraphEnvironment group (libraryID 9, group 4733734)
 options(rbbt.default.library_id = 9)
 ```
@@ -1114,25 +1437,23 @@ project**:
 
 **Do not fragment work into separate claims.** Each fiscal year’s work
 is structured as iterations within this one project. Internal tracking
-(experiment numbers in `sred-2025-2026`) maps to iterations — Boast
-assembles the final narrative.
+(experiment numbers in `sred`) maps to iterations — Boast assembles the
+final narrative.
 
 ## Tagging Work for SRED
 
-### Commits
+### PRs (single enforcement point)
 
-Use `Relates to NewGraphEnvironment/sred-2025-2026#N` in commit messages
-when work is SRED-eligible.
+SRED cross-references (`Relates to NewGraphEnvironment/sred#N`) go in
+**PR body templates only** — not in issue bodies, commit messages, or
+any other surface. The `/gh-pr-push` skill is the single enforcement
+point. PRs aggregate commits and are the merge unit, so per-issue and
+per-commit SRED tags only add noise.
 
 ### Time entries (rolex)
 
-Tag hours with `sred_ref` field linking to the relevant `sred-2025-2026`
-issue number.
-
-### GitHub issues
-
-Link SRED-eligible issues to the tracking repo:
-`Relates to NewGraphEnvironment/sred-2025-2026#N`
+Tag hours with `sred_ref` field linking to the relevant `sred` issue
+number.
 
 ## What Qualifies as SRED
 
