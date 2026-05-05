@@ -18,6 +18,7 @@ mc_send(
   sig_path = NULL,
   attachments = NULL,
   labels = NULL,
+  labels_create = TRUE,
   html = NULL,
   send_at = NULL
 )
@@ -59,9 +60,13 @@ Each file is attached via \code{\link[gmailr:gm_mime]{gmailr::gm_attach_file()}}
 to the resulting thread. Applied via \code{\link[=mc_thread_modify]{mc_thread_modify()}} after a
 successful draft creation or send. Labels are applied to the draft's
 thread on the draft path; in most cases Gmail keeps the same thread
-when the draft is sent from the UI, so labels carry over. Unknown
-label names raise an error listing available user labels (delegated
-to \code{mc_thread_modify()}).}
+when the draft is sent from the UI, so labels carry over.}
+
+\item{labels_create}{Logical. When \code{TRUE} (default), missing user
+labels in \code{labels} are auto-created via \code{\link[=mc_label_ensure]{mc_label_ensure()}} before
+being applied — supports tag-as-you-go in YAML-driven drafts. Set
+\code{FALSE} to keep typo-guard behavior (errors on unknown labels,
+downgraded to a warning per the existing label tryCatch).}
 
 \item{html}{Optional pre-rendered HTML body. If provided, \code{path} is ignored
 and this HTML is used directly.}

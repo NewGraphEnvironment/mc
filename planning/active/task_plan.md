@@ -46,20 +46,23 @@ Reuses internal helpers `fetch_user_labels()` and `system_labels()` from `R/mc_t
 
 ## Phase 3: `labels_create` in `mc_send()` + integration test
 
-- [ ] Add `labels_create = TRUE` parameter to `mc_send()`. Validate with `chk::chk_flag()`.
-- [ ] Inside the labels try-catch (`R/mc_send.R:320`), pass `create_missing = labels_create` to `mc_thread_modify()`.
-- [ ] Thread `labels_create` through the scheduled-send recursive call (`R/mc_send.R:204-211`).
-- [ ] New unit tests in `test-mc_send.R`:
-  - `labels_create = TRUE` (default) calls `mc_thread_modify` with `create_missing = TRUE`
-  - `labels_create = FALSE` calls `mc_thread_modify` with `create_missing = FALSE`
-- [ ] New integration test in `test-integration.R` (gated by `MC_RUN_INTEGRATION=true`):
-  - Generate unique random label name (`mc-test-<uuid>`)
+- [x] Add `labels_create = TRUE` parameter to `mc_send()`. Validate with `chk::chk_flag()`.
+- [x] Inside the labels try-catch, pass `create_missing = labels_create` to `mc_thread_modify()`.
+- [x] Thread `labels_create` through the scheduled-send recursive call (callr `r_bg` args, inner function signature, recursive `mc::mc_send()` call).
+- [x] Update existing labels mocks in `test-mc_send.R` to accept the new `create_missing` arg passed by `mc_send()`.
+- [x] New unit tests in `test-mc_send.R`:
+  - `labels_create = TRUE` (default) → `mc_thread_modify` called with `create_missing = TRUE`
+  - `labels_create = FALSE` → `mc_thread_modify` called with `create_missing = FALSE`
+  - rejects non-flag `labels_create`
+- [x] New integration test in `test-integration.R` (gated by `MC_RUN_INTEGRATION=true`):
+  - Generates unique fresh label name (`mc-fresh-label-<timestamp>`)
+  - Asserts label does NOT exist pre-test
   - `mc_md_send()` a draft with that label in YAML
-  - Verify label exists post-send and is attached
-  - Cleanup: trash draft, delete test label
-- [ ] `devtools::document()`, `devtools::test()`, `lintr::lint_package()` clean.
-- [ ] `/code-check` on staged diff.
-- [ ] Atomic commit including checkbox flips.
+  - Verifies label exists post-test and is attached to the draft thread
+  - Cleanup via `withr::defer()`: deletes the auto-created label
+- [x] `devtools::document()`, `devtools::test()` (302 pass, 0 fail), `lintr::lint_package()` clean.
+- [x] `/code-check` on staged diff.
+- [x] Atomic commit including checkbox flips.
 
 ## Phase 4: Docs polish + release prep
 

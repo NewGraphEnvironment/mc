@@ -307,3 +307,57 @@ test_that("mc_compose with mc_scroll sends a table email", {
   ids <- gmailr::gm_id(results)
   expect_true(length(ids) > 0, info = "Table email not found")
 })
+
+test_that("mc_md_send auto-creates labels when YAML has new label name", {
+  # Use a fresh, unique label name that doesn't yet exist in Gmail.
+  fresh_label <- paste0("mc-fresh-label-", format(Sys.time(), "%Y%m%d-%H%M%S"))
+
+  # Confirm pre-state: label does NOT exist yet
+  existing_pre <- gmailr::gm_labels()$labels
+  pre_names <- vapply(existing_pre, function(l) l$name, character(1))
+  expect_false(fresh_label %in% pre_names,
+               info = "Fresh test label unexpectedly already exists")
+
+  # Cleanup defer — runs even if test fails midway
+  withr::defer({
+    # Re-fetch labels in case the test created the label
+    labels_now <- gmailr::gm_labels()$labels
+    match <- Filter(function(l) identical(l$name, fresh_label), labels_now)
+    if (length(match) > 0) {
+      tryCatch(gmailr::gm_delete_label(match[[1]]$id),
+               error = function(e) NULL)
+    }
+  })
+
+  # Build draft with new label name in YAML; mc_md_send dispatches with
+  # default labels_create = TRUE → mc_label_ensure → gm_create_label
+  draft_path <- tempfile(fileext = ".md")
+  writeLines(c(
+    "---",
+    "to: al@newgraphenvironment.com",
+    paste0("subject: YAML auto-create ", test_tag),
+    paste0("labels: [", fresh_label, "]"),
+    "---",
+    "body"
+  ), draft_path)
+  withr::defer(unlink(draft_path))
+
+  thread_id <- mc_md_send(draft_path)
+  Sys.sleep(3)
+
+  expect_false(is.null(thread_id), info = "mc_md_send did not return a thread_id")
+
+  # Label should now exist in Gmail
+  labels_post <- gmailr::gm_labels()$labels
+  post_match <- Filter(function(l) identical(l$name, fresh_label), labels_post)
+  expect_equal(length(post_match), 1L,
+               info = "Auto-created label not found in Gmail after mc_md_send")
+
+  # And it should be attached to the draft thread
+  thread <- gmailr::gm_thread(id = thread_id)
+  msg_labels <- unlist(lapply(thread$messages, function(m) m$labelIds))
+  expect_true(
+    post_match[[1]]$id %in% msg_labels,
+    info = "Auto-created label not applied to draft thread"
+  )
+})
