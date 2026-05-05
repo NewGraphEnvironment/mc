@@ -11,8 +11,9 @@
 .DS_Store
 Thumbs.db
 
-# Claude
-.claude/
+# Claude — track visibility marker, ignore per-developer settings
+.claude/*
+!.claude/visibility
 
 # Planning
 # planning/active/ is tracked — atomic commits bundle code changes with
