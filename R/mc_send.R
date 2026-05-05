@@ -29,9 +29,12 @@
 #'   to the resulting thread. Applied via [mc_thread_modify()] after a
 #'   successful draft creation or send. Labels are applied to the draft's
 #'   thread on the draft path; in most cases Gmail keeps the same thread
-#'   when the draft is sent from the UI, so labels carry over. Unknown
-#'   label names raise an error listing available user labels (delegated
-#'   to `mc_thread_modify()`).
+#'   when the draft is sent from the UI, so labels carry over.
+#' @param labels_create Logical. When `TRUE` (default), missing user
+#'   labels in `labels` are auto-created via [mc_label_ensure()] before
+#'   being applied — supports tag-as-you-go in YAML-driven drafts. Set
+#'   `FALSE` to keep typo-guard behavior (errors on unknown labels,
+#'   downgraded to a warning per the existing label tryCatch).
 #' @param html Optional pre-rendered HTML body. If provided, `path` is ignored
 #'   and this HTML is used directly.
 #' @param send_at Schedule the email for later. Either a `POSIXct` datetime
@@ -136,6 +139,7 @@ mc_send <- function(path = NULL,
                     sig_path = NULL,
                     attachments = NULL,
                     labels = NULL,
+                    labels_create = TRUE,
                     html = NULL,
                     send_at = NULL) {
 
@@ -152,6 +156,7 @@ mc_send <- function(path = NULL,
   chk::chk_null_or(sig_path, vld = chk::vld_string)
   chk::chk_null_or(attachments, vld = chk::vld_character)
   chk::chk_null_or(labels, vld = chk::vld_character)
+  chk::chk_flag(labels_create)
   chk::chk_null_or(html, vld = chk::vld_string)
 
   # Validate attachment files exist
@@ -182,7 +187,7 @@ mc_send <- function(path = NULL,
     proc <- callr::r_bg(
       function(target_time, grace_secs, path, to, subject, cc, bcc,
                from, thread_id, test, sig, sig_path, attachments, labels,
-               html) {
+               labels_create, html) {
         # Sleep until target time
         delay <- as.numeric(difftime(target_time, Sys.time(), units = "secs"))
         if (delay > 0) Sys.sleep(delay)
@@ -207,6 +212,7 @@ mc_send <- function(path = NULL,
               thread_id = thread_id, draft = FALSE,
               test = test, sig = sig, sig_path = sig_path,
               attachments = attachments, labels = labels,
+              labels_create = labels_create,
               html = html, send_at = NULL
             )
             mc:::send_log(subject, to, "SENT")
@@ -231,6 +237,7 @@ mc_send <- function(path = NULL,
         subject = subject, cc = cc, bcc = bcc, from = from,
         thread_id = thread_id, test = test, sig = sig,
         sig_path = sig_path, attachments = attachments, labels = labels,
+        labels_create = labels_create,
         html = html
       ),
       package = "mc"
@@ -319,7 +326,8 @@ mc_send <- function(path = NULL,
       thread_label_target <- if (draft) "draft thread" else "thread"
       tryCatch(
         {
-          mc_thread_modify(sent_thread_id, add = labels)
+          mc_thread_modify(sent_thread_id, add = labels,
+                           create_missing = labels_create)
           message(
             "Labels applied to ", thread_label_target, " ", sent_thread_id,
             ": ", paste(labels, collapse = ", ")

@@ -1,3 +1,24 @@
+# mc 0.2.9
+
+* Add `mc_label_ensure(label_names)` — primitive that creates missing
+  Gmail user labels and no-ops for existing ones. System labels (INBOX,
+  STARRED, etc.) are skipped via case-insensitive match (#33).
+* `mc_thread_modify()` gains `create_missing = FALSE` (opt-in). When
+  `TRUE`, calls `mc_label_ensure(add)` before resolving names so new
+  labels in `add` are auto-created. Default preserves the existing
+  typo-guard behavior (#33).
+* `mc_send()` gains `labels_create = TRUE` (default on). The YAML-
+  driven workflow (`mc_md_send()`) now creates new project tags on
+  first use — no need to pre-create labels via `gmailr::gm_create_label()`.
+  Set `FALSE` for strict typo-guard. Threaded through scheduled-send
+  recursion (#33).
+* Internal: `resolve_label_names()` now matches system labels case-
+  insensitively and normalizes returned IDs to uppercase, fixing a
+  cross-function inconsistency where `mc_label_ensure` skipped
+  `"inbox"` as system but `mc_thread_modify` then erred trying to
+  resolve it. Side benefit: callers can pass mixed-case system labels
+  ("Inbox", "Starred") and get correct resolution.
+
 # mc 0.2.8
 
 * `mc_send()` accepts a `labels` argument (character vector of Gmail label

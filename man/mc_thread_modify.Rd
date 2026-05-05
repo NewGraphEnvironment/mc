@@ -4,7 +4,7 @@
 \alias{mc_thread_modify}
 \title{Modify a Gmail thread's label state (archive, trash, star, label, etc.)}
 \usage{
-mc_thread_modify(thread_id, add = NULL, remove = NULL)
+mc_thread_modify(thread_id, add = NULL, remove = NULL, create_missing = FALSE)
 }
 \arguments{
 \item{thread_id}{Gmail thread ID (e.g. from \code{\link[=mc_thread_find]{mc_thread_find()}}).}
@@ -12,6 +12,11 @@ mc_thread_modify(thread_id, add = NULL, remove = NULL)
 \item{add}{Character vector of label names to add. \code{NULL} for none.}
 
 \item{remove}{Character vector of label names to remove. \code{NULL} for none.}
+
+\item{create_missing}{Logical. When \code{TRUE}, calls \code{\link[=mc_label_ensure]{mc_label_ensure()}} on
+\code{add} before resolving names — any user label in \code{add} that doesn't yet
+exist is created. Defaults \code{FALSE} (strict: errors on unknown labels)
+so existing callers keep their typo guard.}
 }
 \value{
 Invisibly returns the gmailr response.
@@ -32,6 +37,10 @@ intended.
 
 At least one of \code{add} or \code{remove} must be non-\code{NULL}. The \code{gm_labels()}
 call is skipped entirely when every input is a system label.
+
+Set \code{create_missing = TRUE} when applying labels from a YAML-driven
+workflow (e.g. via \code{mc_md_send()}) so new project tags don't error on
+first use. See \code{\link[=mc_label_ensure]{mc_label_ensure()}} for the underlying primitive.
 }
 \examples{
 \dontrun{

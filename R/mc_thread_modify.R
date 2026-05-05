@@ -9,6 +9,10 @@
 #' @param thread_id Gmail thread ID (e.g. from [mc_thread_find()]).
 #' @param add Character vector of label names to add. `NULL` for none.
 #' @param remove Character vector of label names to remove. `NULL` for none.
+#' @param create_missing Logical. When `TRUE`, calls [mc_label_ensure()] on
+#'   `add` before resolving names — any user label in `add` that doesn't yet
+#'   exist is created. Defaults `FALSE` (strict: errors on unknown labels)
+#'   so existing callers keep their typo guard.
 #'
 #' @details
 #' Pass **names**, not IDs. User-label names resolve to opaque IDs via
@@ -19,6 +23,10 @@
 #'
 #' At least one of `add` or `remove` must be non-`NULL`. The `gm_labels()`
 #' call is skipped entirely when every input is a system label.
+#'
+#' Set `create_missing = TRUE` when applying labels from a YAML-driven
+#' workflow (e.g. via `mc_md_send()`) so new project tags don't error on
+#' first use. See [mc_label_ensure()] for the underlying primitive.
 #'
 #' @return Invisibly returns the gmailr response.
 #'
@@ -37,17 +45,23 @@
 #' mc_thread_modify("18171fb2cec08e9d", add = "Done", remove = "Pending")
 #' }
 #'
-#' @importFrom chk chk_string chk_character
+#' @importFrom chk chk_string chk_character chk_flag
 #' @importFrom gmailr gm_labels gm_token
 #' @importFrom httr POST stop_for_status content
 #' @importFrom utils URLencode
 #' @export
-mc_thread_modify <- function(thread_id, add = NULL, remove = NULL) {
+mc_thread_modify <- function(thread_id, add = NULL, remove = NULL,
+                             create_missing = FALSE) {
   chk::chk_string(thread_id)
   if (!is.null(add))    chk::chk_character(add)
   if (!is.null(remove)) chk::chk_character(remove)
+  chk::chk_flag(create_missing)
   if (is.null(add) && is.null(remove)) {
     stop("Provide at least one of `add` or `remove`.", call. = FALSE)
+  }
+
+  if (create_missing && !is.null(add)) {
+    mc_label_ensure(add)
   }
 
   all_names <- c(add, remove)
@@ -127,8 +141,10 @@ resolve_label_names <- function(label_names, user_labels) {
   user_nms <- if (is.null(user_labels)) character(0) else names(user_labels)
 
   ids <- vapply(label_names, function(nm) {
-    if (nm %in% sys) {
-      nm
+    # System labels match case-insensitively (mirrors mc_label_ensure)
+    # and normalize to the canonical uppercase ID Gmail expects.
+    if (toupper(nm) %in% sys) {
+      toupper(nm)
     } else if (nm %in% user_nms) {
       unname(user_labels[[nm]])
     } else {

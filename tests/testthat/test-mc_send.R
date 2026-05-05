@@ -257,8 +257,10 @@ test_that("mc_send applies labels via mc_thread_modify on send path", {
     .package = "gmailr"
   )
   local_mocked_bindings(
-    mc_thread_modify = function(thread_id, add = NULL, remove = NULL) {
-      modify_args <<- list(thread_id = thread_id, add = add, remove = remove)
+    mc_thread_modify = function(thread_id, add = NULL, remove = NULL,
+                                create_missing = FALSE) {
+      modify_args <<- list(thread_id = thread_id, add = add, remove = remove,
+                           create_missing = create_missing)
       invisible(NULL)
     },
     .package = "mc"
@@ -284,8 +286,10 @@ test_that("mc_send applies labels to the draft thread on draft path", {
     .package = "gmailr"
   )
   local_mocked_bindings(
-    mc_thread_modify = function(thread_id, add = NULL, remove = NULL) {
-      modify_args <<- list(thread_id = thread_id, add = add, remove = remove)
+    mc_thread_modify = function(thread_id, add = NULL, remove = NULL,
+                                create_missing = FALSE) {
+      modify_args <<- list(thread_id = thread_id, add = add, remove = remove,
+                           create_missing = create_missing)
       invisible(NULL)
     },
     .package = "mc"
@@ -371,4 +375,62 @@ test_that("caffeinate is not called when send_at is NULL", {
     error = function(e) NULL
   )
   expect_false(called)
+})
+
+test_that("mc_send default labels_create=TRUE passes create_missing=TRUE", {
+  modify_args <- NULL
+  local_mocked_bindings(
+    gm_send_message = function(msg, ...) list(threadId = "tid_lc1"),
+    .package = "gmailr"
+  )
+  local_mocked_bindings(
+    mc_thread_modify = function(thread_id, add = NULL, remove = NULL,
+                                create_missing = FALSE) {
+      modify_args <<- list(create_missing = create_missing)
+      invisible(NULL)
+    },
+    .package = "mc"
+  )
+  mc_send(
+    html = "<p>x</p>", to = "bob@example.com",
+    subject = "lc default", from = "alice@example.com",
+    labels = "new-label",
+    draft = FALSE
+  )
+  expect_true(modify_args$create_missing)
+})
+
+test_that("mc_send labels_create=FALSE passes create_missing=FALSE", {
+  modify_args <- NULL
+  local_mocked_bindings(
+    gm_send_message = function(msg, ...) list(threadId = "tid_lc2"),
+    .package = "gmailr"
+  )
+  local_mocked_bindings(
+    mc_thread_modify = function(thread_id, add = NULL, remove = NULL,
+                                create_missing = FALSE) {
+      modify_args <<- list(create_missing = create_missing)
+      invisible(NULL)
+    },
+    .package = "mc"
+  )
+  mc_send(
+    html = "<p>x</p>", to = "bob@example.com",
+    subject = "lc strict", from = "alice@example.com",
+    labels = "existing-label",
+    labels_create = FALSE,
+    draft = FALSE
+  )
+  expect_false(modify_args$create_missing)
+})
+
+test_that("mc_send rejects non-flag labels_create", {
+  expect_error(
+    mc_send(
+      html = "<p>x</p>", to = "bob@example.com",
+      subject = "x", from = "alice@example.com",
+      labels = "x", labels_create = "yes"
+    ),
+    "labels_create"
+  )
 })
