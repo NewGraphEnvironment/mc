@@ -163,31 +163,66 @@
 <div class="section level2">
 <h2 id="scheduled-send">Scheduled send<a class="anchor" aria-label="anchor" href="#scheduled-send"></a>
 </h2>
-<p>Send an email later with <code>send_at</code> — either minutes from now or a specific time:</p>
+<p>Send an email later with <code>send_at</code> — either minutes from now or a specific time. Use <code>scheduler = "auto"</code> for durable OS-native scheduling (recommended):</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Send in 10 minutes</span></span>
-<span><span class="va">proc</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/mc_send.html">mc_send</a></span><span class="op">(</span><span class="st">"draft.md"</span>,</span>
-<span>                to <span class="op">=</span> <span class="st">"brandon@example.com"</span>,</span>
-<span>                subject <span class="op">=</span> <span class="st">"Cottonwood plugs"</span>,</span>
-<span>                send_at <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="co"># Send in 10 minutes via launchd (macOS) or atd (Linux)</span></span>
+<span><span class="fu"><a href="reference/mc_send.html">mc_send</a></span><span class="op">(</span><span class="st">"draft.md"</span>,</span>
+<span>        to <span class="op">=</span> <span class="st">"brandon@example.com"</span>,</span>
+<span>        subject <span class="op">=</span> <span class="st">"Cottonwood plugs"</span>,</span>
+<span>        send_at <span class="op">=</span> <span class="fl">10</span>,</span>
+<span>        scheduler <span class="op">=</span> <span class="st">"auto"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Send at a specific time</span></span>
 <span><span class="fu"><a href="reference/mc_send.html">mc_send</a></span><span class="op">(</span><span class="st">"draft.md"</span>,</span>
 <span>        to <span class="op">=</span> <span class="st">"brandon@example.com"</span>,</span>
 <span>        subject <span class="op">=</span> <span class="st">"Cottonwood plugs"</span>,</span>
-<span>        send_at <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.POSIXlt.html" class="external-link">as.POSIXct</a></span><span class="op">(</span><span class="st">"2026-02-24 09:11:00"</span><span class="op">)</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Check status or cancel</span></span>
-<span><span class="va">proc</span><span class="op">$</span><span class="fu">is_alive</span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="va">proc</span><span class="op">$</span><span class="fu">kill</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<p>On macOS, <code>caffeinate</code> keeps the machine awake until the email sends. The laptop lid can be closed as long as power is connected. If the machine sleeps through the send window (e.g., power loss), a 5-minute grace period applies — past that, the send is skipped to prevent stale emails.</p>
-<p>Outcomes are logged to <code>~/.mc/send_log.txt</code> and trigger a macOS desktop notification on success, skip, or failure.</p>
+<span>        send_at <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.POSIXlt.html" class="external-link">as.POSIXct</a></span><span class="op">(</span><span class="st">"2026-02-24 09:11:00"</span><span class="op">)</span>,</span>
+<span>        scheduler <span class="op">=</span> <span class="st">"auto"</span><span class="op">)</span></span></code></pre></div>
+<p>The <code>scheduler</code> argument selects the backend:</p>
+<ul>
+<li>
+<code>"callr"</code> (default for backward compatibility) — <code><a href="https://callr.r-lib.org/reference/r_bg.html" class="external-link">callr::r_bg</a></code> background R process. Survives some session lifecycles but <strong>can be cleaned up if its parent context exits</strong> (one-shot <code>Rscript -e</code>, RStudio sessions that close, CI). Emits a <code><a href="https://rdrr.io/r/base/warning.html" class="external-link">warning()</a></code> on use steering you toward <code>"auto"</code>.</li>
+<li>
+<code>"auto"</code> — resolves to <code>launchd</code> on macOS or <code>at</code> on Linux. The OS-native daemon owns the job lifecycle independent of any R session — survives shell exit, parent process death, and (on macOS) sleep/wake cycles.</li>
+<li>
+<code>"launchd"</code> / <code>"at"</code> — force a specific backend.</li>
+</ul>
+<p>Heartbeat log entries land in <code>~/.mc/send_log.txt</code> so missed fires are auditable from the log alone:</p>
+<ul>
+<li>
+<code>SCHEDULED</code> at submission with the target time</li>
+<li>
+<code>STARTED</code> at fire, just before the actual send</li>
+<li>
+<code>SENT</code> / <code>SKIPPED</code> / <code>FAILED</code> at outcome</li>
+</ul>
+<p>A <code>SCHEDULED</code> line with no follow-up <code>STARTED</code> means the bg process died before firing — the failure mode that the OS-native backends solve.</p>
+<p>On macOS, <code>caffeinate</code> keeps the machine awake until the email sends (callr backend only — launchd handles wake/sleep itself). If the machine sleeps through the send window with the callr backend, a 5-minute grace period applies — past that, the send is skipped to prevent stale emails.</p>
+<p>Outcomes also trigger a macOS desktop notification on success, skip, or failure.</p>
+</div>
+<div class="section level2">
+<h2 id="labels">Labels<a class="anchor" aria-label="anchor" href="#labels"></a>
+</h2>
+<p>Apply Gmail labels to threads via <code>mc_send(labels = ...)</code> or in YAML frontmatter as <code>labels:</code>. Missing user labels are auto-created on first use (via <code><a href="reference/mc_label_ensure.html">mc_label_ensure()</a></code>):</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="reference/mc_send.html">mc_send</a></span><span class="op">(</span><span class="st">"draft.md"</span>,</span>
+<span>        to <span class="op">=</span> <span class="st">"brandon@example.com"</span>,</span>
+<span>        subject <span class="op">=</span> <span class="st">"Cottonwood plugs"</span>,</span>
+<span>        labels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"project-x"</span>, <span class="st">"urgent"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a><span class="pp">---</span></span>
+<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a><span class="fu">to</span><span class="kw">:</span><span class="at"> brandon@example.com</span></span>
+<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a><span class="fu">subject</span><span class="kw">:</span><span class="at"> Cottonwood plugs</span></span>
+<span id="cb13-4"><a href="#cb13-4" tabindex="-1"></a><span class="fu">labels</span><span class="kw">:</span></span>
+<span id="cb13-5"><a href="#cb13-5" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> project-x</span></span>
+<span id="cb13-6"><a href="#cb13-6" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> urgent</span></span>
+<span id="cb13-7"><a href="#cb13-7" tabindex="-1"></a><span class="pp">---</span></span></code></pre></div>
+<p>Pass <code>labels_create = FALSE</code> for strict typo-guard (errors on unknown labels). After-the-fact labelling on existing threads via <code>mc_thread_modify(thread_id, add = ...)</code> — also accepts Gmail system labels like <code>INBOX</code>, <code>STARRED</code>, <code>TRASH</code> for archive / star / trash workflows.</p>
 </div>
 <div class="section level2">
 <h2 id="test-mode">Test mode<a class="anchor" aria-label="anchor" href="#test-mode"></a>
 </h2>
 <p>Send to yourself to preview:</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="reference/mc_send.html">mc_send</a></span><span class="op">(</span><span class="st">"draft.md"</span>,</span>
 <span>        to <span class="op">=</span> <span class="st">"brandon@example.com"</span>,</span>
 <span>        subject <span class="op">=</span> <span class="st">"Cottonwood plugs"</span>,</span>

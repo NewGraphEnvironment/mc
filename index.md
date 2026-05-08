@@ -155,35 +155,89 @@ subject line if it starts with “Re:”).
 ## Scheduled send
 
 Send an email later with `send_at` — either minutes from now or a
-specific time:
+specific time. Use `scheduler = "auto"` for durable OS-native scheduling
+(recommended):
 
 ``` r
 
-# Send in 10 minutes
-proc <- mc_send("draft.md",
-                to = "brandon@example.com",
-                subject = "Cottonwood plugs",
-                send_at = 10)
+# Send in 10 minutes via launchd (macOS) or atd (Linux)
+mc_send("draft.md",
+        to = "brandon@example.com",
+        subject = "Cottonwood plugs",
+        send_at = 10,
+        scheduler = "auto")
 
 # Send at a specific time
 mc_send("draft.md",
         to = "brandon@example.com",
         subject = "Cottonwood plugs",
-        send_at = as.POSIXct("2026-02-24 09:11:00"))
-
-# Check status or cancel
-proc$is_alive()
-proc$kill()
+        send_at = as.POSIXct("2026-02-24 09:11:00"),
+        scheduler = "auto")
 ```
 
-On macOS, `caffeinate` keeps the machine awake until the email sends.
-The laptop lid can be closed as long as power is connected. If the
-machine sleeps through the send window (e.g., power loss), a 5-minute
-grace period applies — past that, the send is skipped to prevent stale
-emails.
+The `scheduler` argument selects the backend:
 
-Outcomes are logged to `~/.mc/send_log.txt` and trigger a macOS desktop
-notification on success, skip, or failure.
+- `"callr"` (default for backward compatibility) —
+  [`callr::r_bg`](https://callr.r-lib.org/reference/r_bg.html)
+  background R process. Survives some session lifecycles but **can be
+  cleaned up if its parent context exits** (one-shot `Rscript -e`,
+  RStudio sessions that close, CI). Emits a
+  [`warning()`](https://rdrr.io/r/base/warning.html) on use steering you
+  toward `"auto"`.
+- `"auto"` — resolves to `launchd` on macOS or `at` on Linux. The
+  OS-native daemon owns the job lifecycle independent of any R session —
+  survives shell exit, parent process death, and (on macOS) sleep/wake
+  cycles.
+- `"launchd"` / `"at"` — force a specific backend.
+
+Heartbeat log entries land in `~/.mc/send_log.txt` so missed fires are
+auditable from the log alone:
+
+- `SCHEDULED` at submission with the target time
+- `STARTED` at fire, just before the actual send
+- `SENT` / `SKIPPED` / `FAILED` at outcome
+
+A `SCHEDULED` line with no follow-up `STARTED` means the bg process died
+before firing — the failure mode that the OS-native backends solve.
+
+On macOS, `caffeinate` keeps the machine awake until the email sends
+(callr backend only — launchd handles wake/sleep itself). If the machine
+sleeps through the send window with the callr backend, a 5-minute grace
+period applies — past that, the send is skipped to prevent stale emails.
+
+Outcomes also trigger a macOS desktop notification on success, skip, or
+failure.
+
+## Labels
+
+Apply Gmail labels to threads via `mc_send(labels = ...)` or in YAML
+frontmatter as `labels:`. Missing user labels are auto-created on first
+use (via
+[`mc_label_ensure()`](https://newgraphenvironment.github.io/mc/reference/mc_label_ensure.md)):
+
+``` r
+
+mc_send("draft.md",
+        to = "brandon@example.com",
+        subject = "Cottonwood plugs",
+        labels = c("project-x", "urgent"))
+```
+
+``` yaml
+---
+to: brandon@example.com
+subject: Cottonwood plugs
+labels:
+  - project-x
+  - urgent
+---
+```
+
+Pass `labels_create = FALSE` for strict typo-guard (errors on unknown
+labels). After-the-fact labelling on existing threads via
+`mc_thread_modify(thread_id, add = ...)` — also accepts Gmail system
+labels like `INBOX`, `STARRED`, `TRASH` for archive / star / trash
+workflows.
 
 ## Test mode
 
