@@ -65,12 +65,12 @@ Three additions to `R/mc_send.R`, with a new helper file for the OS-native backe
 
 ## Phase 4: Docs + release prep
 
-- [ ] Update `@details` of `mc_send` to document `scheduler` arg + per-OS backend behavior + the deprecation steering toward `"auto"`.
-- [ ] Add `# mc 0.2.10` block at top of `NEWS.md` covering: deprecation warning, heartbeat logging, `scheduler` arg, launchd backend, at backend.
-- [ ] `DESCRIPTION` Version: `0.2.9` → `0.2.10`. Confirm `jsonlite` in Imports; add if missing.
-- [ ] Full `devtools::document()`, `devtools::test()` (≥302 baseline + new tests), `lintr::lint_package()` clean.
-- [ ] `/code-check` on staged diff.
-- [ ] Atomic commit including checkbox flips.
+- [x] `@details ## Scheduled send` already documents `scheduler` arg + per-OS backend behavior + the deprecation steering toward `"auto"` (landed inline in Phases 1–2).
+- [x] Added `# mc 0.2.10` block at top of `NEWS.md` covering: `scheduler` arg + OS-native backends (launchd / at), heartbeat logging (SCHEDULED / STARTED), deprecation warning on callr path, internal HTML pre-render, new `R/mc_schedule.R` module.
+- [x] `DESCRIPTION` Version: `0.2.9` → `0.2.10`. `jsonlite` confirmed in Imports (line 35).
+- [x] Full `devtools::document()`, `devtools::test()` (364 pass, 0 fail, 0 warn), `lintr::lint_package()` clean for changed files.
+- [x] `/code-check` on staged diff.
+- [x] Atomic commit including checkbox flips.
 
 ## Validation
 
