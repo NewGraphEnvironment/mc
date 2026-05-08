@@ -26,6 +26,12 @@
   the `run_scheduled_send` fire-time entry point used by the OS-native
   backends. Triple-colon access pattern matches existing internal
   helpers.
+* Internal: launchd cleanup unlinks plist + args JSON without calling
+  `launchctl unload` from inside the running job — `unload` SIGTERMs
+  the job's process group, killing the cleanup mid-flight (caught by
+  live test). Stale `launchctl list` entry persists until next reboot
+  but the dormant `StartCalendarInterval` (set to a single past minute)
+  never re-fires.
 
 # mc 0.2.9
 

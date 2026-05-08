@@ -287,6 +287,36 @@ test_that("cleanup_scheduled_send is idempotent and removes args JSON", {
   expect_no_error(mc:::cleanup_scheduled_send(args_path))
 })
 
+test_that("cleanup_scheduled_send does NOT call launchctl unload", {
+  # Regression: live test 2026-05-08 found that calling launchctl unload
+  # from within the running launchd job sends SIGTERM to the job's
+  # process group — kills R before any subsequent unlinks run, leaving
+  # plist + args JSON + log files on disk. Fix: drop the unload call
+  # entirely; just unlink the files. Stale launchctl list entry persists
+  # until reboot but never re-fires.
+  system2_calls <- list()
+  local_mocked_bindings(
+    system2 = function(command, args, ...) {
+      system2_calls[[length(system2_calls) + 1]] <<-
+        list(command = command, args = args)
+      ""
+    },
+    .package = "base"
+  )
+
+  args_path <- tempfile(fileext = ".json")
+  writeLines("{}", args_path)
+  withr::defer(unlink(args_path))
+
+  mc:::cleanup_scheduled_send(args_path)
+
+  launchctl_calls <- Filter(
+    function(c) identical(c$command, "launchctl"),
+    system2_calls
+  )
+  expect_equal(length(launchctl_calls), 0L)
+})
+
 test_that("mc_send rejects invalid scheduler value", {
   expect_error(
     mc_send(html = "<p>x</p>", to = "t@t.com", subject = "s",

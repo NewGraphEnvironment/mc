@@ -308,28 +308,37 @@ run_scheduled_send <- function(args_json_path) {
 
 #' Cleanup launchd plist + args JSON after a scheduled send completes
 #'
-#' Idempotent — safe to call multiple times. macOS-specific launchctl unload
-#' is gated on platform; args JSON deletion is unconditional.
+#' Idempotent — safe to call multiple times. Unlinks all scheduling artifacts
+#' (plist, args JSON, captured stdout/stderr).
+#'
+#' @section macOS lifecycle note:
+#' We deliberately do NOT call `launchctl unload` from inside the running
+#' job. `unload` sends SIGTERM to the entire job process group, killing
+#' this R process before any subsequent unlink calls run — leaving the
+#' plist + args JSON + log files on disk forever (real failure observed
+#' in a live test on 2026-05-08). Instead we just unlink the plist file
+#' directly. launchd's in-memory job registry retains the entry as
+#' "exited 0" until next reboot or manual `launchctl bootout`. Because
+#' our `StartCalendarInterval` targets a single past minute, the dormant
+#' entry never re-fires. The only visible cost is `launchctl list`
+#' accumulating stale entries until reboot — purely cosmetic.
 #'
 #' @noRd
 cleanup_scheduled_send <- function(args_json_path) {
   uuid <- sub("\\.json$", "", basename(args_json_path))
   label <- paste0("com.newgraph.mc.send-", uuid)
-  plist_path <- file.path(Sys.getenv("HOME"), "Library", "LaunchAgents",
-                          paste0(label, ".plist"))
+  scheduled_dir <- dirname(args_json_path)
 
-  if (Sys.info()[["sysname"]] == "Darwin" && file.exists(plist_path)) {
-    tryCatch(
-      system2("launchctl", c("unload", "-w", plist_path),
-              stdout = FALSE, stderr = FALSE),
-      error = function(e) NULL
-    )
+  # Args JSON cleanup — unconditional across platforms
+  unlink(args_json_path)
+
+  if (Sys.info()[["sysname"]] == "Darwin") {
+    plist_path <- file.path(Sys.getenv("HOME"), "Library", "LaunchAgents",
+                            paste0(label, ".plist"))
     unlink(plist_path)
-    scheduled_dir <- dirname(args_json_path)
     unlink(file.path(scheduled_dir, paste0(label, c(".out", ".err"))))
   }
 
-  unlink(args_json_path)
   invisible(NULL)
 }
 
