@@ -22,7 +22,8 @@ mc_send(
   labels = NULL,
   labels_create = TRUE,
   html = NULL,
-  send_at = NULL
+  send_at = NULL,
+  scheduler = c("callr", "auto", "launchd", "at")
 )
 ```
 
@@ -117,19 +118,34 @@ mc_send(
 
   Schedule the email for later. Either a `POSIXct` datetime or a numeric
   number of minutes from now. Default `NULL` (send/draft immediately).
-  When set, `draft` is forced to `FALSE` and the email is sent in a
-  background R process via
-  [`callr::r_bg()`](https://callr.r-lib.org/reference/r_bg.html).
-  Requires the **callr** package.
+  When set, `draft` is forced to `FALSE` and the email is sent via the
+  backend selected by `scheduler`.
+
+- scheduler:
+
+  Backend for scheduled send. One of `"callr"` (default —
+  [`callr::r_bg`](https://callr.r-lib.org/reference/r_bg.html)
+  background process; back-compat with prior versions), `"auto"`
+  (resolves to OS-native: `launchd` on macOS, `at` on Linux),
+  `"launchd"` (force macOS launchd), `"at"` (force Linux at — Phase 3,
+  not yet implemented). Ignored when `send_at` is `NULL`. See the
+  `Scheduled send` section in details for the lifecycle caveat that
+  motivates `"auto"`.
 
 ## Value
 
 When `send_at` is `NULL`, the Gmail thread ID of the resulting draft or
 sent message, returned invisibly. May be `NULL` if the gmailr response
 did not include one (e.g. mocked tests). When `send_at` is set, returns
-the [`callr::r_bg()`](https://callr.r-lib.org/reference/r_bg.html)
-process handle invisibly. Use `$is_alive()` to check status or `$kill()`
-to cancel.
+a backend-specific scheduler handle invisibly:
+
+- `scheduler = "callr"`: a
+  [`callr::r_bg()`](https://callr.r-lib.org/reference/r_bg.html) process
+  handle with `$is_alive()` / `$kill()` methods.
+
+- `scheduler = "launchd"` (macOS) or `"auto"` on Darwin: a list with
+  `$backend = "launchd"`, `$label`, `$plist` (path), and `$args_path`.
+  Cancel manually via `launchctl unload <plist>` + `unlink` if needed.
 
 ## Details
 
@@ -153,10 +169,11 @@ prevent accidental sends to real threads during development.
 
 ### Scheduled send
 
-`send_at` runs a background R process on your machine. On macOS,
-`caffeinate` is used to prevent idle sleep so the machine stays awake
-until the email sends. The laptop lid can be closed as long as power is
-connected.
+`send_at` runs a background R process on your machine via
+[`callr::r_bg()`](https://callr.r-lib.org/reference/r_bg.html). On
+macOS, `caffeinate` is used to prevent idle sleep so the machine stays
+awake until the email sends. The laptop lid can be closed as long as
+power is connected.
 
 - **Laptop powered on** — sends on time (caffeinate prevents sleep)
 
@@ -165,6 +182,31 @@ connected.
 If caffeinate is bypassed and the machine sleeps through the send
 window, a 5-minute grace period applies. Past that, the send is
 **skipped** to prevent stale emails firing unexpectedly.
+
+#### Lifecycle caveat (mc#36)
+
+The [`callr::r_bg`](https://callr.r-lib.org/reference/r_bg.html)
+background process can be cleaned up before fire time when its parent
+context exits (one-shot `Rscript -e ...`, RStudio session that closes,
+CI job). When that happens the send silently drops — the bg process is
+gone before it could log a `STARTED` entry, and `caffeinate` exits when
+its watched PID dies. `send_at` emits a
+[`warning()`](https://rdrr.io/r/base/warning.html) on use to surface
+this risk; future versions will add `scheduler = "auto"` backed by
+OS-native primitives (`launchd` on macOS, `at` on Linux) that own their
+own lifecycle.
+
+Heartbeat log entries are written to `~/.mc/send_log.txt` so missed
+fires are auditable from the log alone:
+
+- `SCHEDULED` — written at submission with the target time
+
+- `STARTED` — written at fire time, just before the actual send
+
+- `SENT` / `SKIPPED` / `FAILED` — written at outcome
+
+A `SCHEDULED` line with no follow-up `STARTED` entry means the
+background process died before it fired.
 
 ## Examples
 

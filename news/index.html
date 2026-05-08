@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">mc</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.9</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.10</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,6 +35,18 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/mc/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.2.10" id="mc-0210">mc 0.2.10<a class="anchor" aria-label="anchor" href="#mc-0210"></a></h2>
+<ul><li>
+<code><a href="../reference/mc_send.html">mc_send()</a></code> gains a <code>scheduler</code> argument selecting the backend for scheduled sends — <code>"callr"</code> (default, for backward compatibility), <code>"auto"</code> (resolves to OS-native: <code>launchd</code> on macOS, <code>at</code> on Linux), or an explicit <code>"launchd"</code> / <code>"at"</code>. OS-native backends own their own job lifecycle independent of the originating R session — fixes the silent-drop failure mode where a <code><a href="https://callr.r-lib.org/reference/r_bg.html" class="external-link">callr::r_bg</a></code> child got cleaned up when its parent <code>Rscript</code> invocation exited (<a href="https://github.com/NewGraphEnvironment/mc/issues/36" class="external-link">#36</a>).</li>
+<li>
+<strong>Behavior change:</strong> using <code>scheduler = "callr"</code> now emits a <code><a href="https://rdrr.io/r/base/warning.html" class="external-link">warning()</a></code> flagging the unreliable lifecycle in some call contexts (<code>Rscript</code> one-shot, RStudio sessions that exit, CI). Steers users toward <code>scheduler = "auto"</code>. The default is still <code>"callr"</code> for back-compat — pass <code>scheduler = "auto"</code> (or set in YAML override) to silence the warning and use the OS-native backend.</li>
+<li>
+<code>send_at</code> now writes heartbeat log entries to <code>~/.mc/send_log.txt</code> so missed fires are auditable from the log alone: <code>SCHEDULED</code> at submission with the target time, <code>STARTED</code> at fire, plus the existing <code>SENT</code> / <code>SKIPPED</code> / <code>FAILED</code> entries. A <code>SCHEDULED</code> line with no follow-up <code>STARTED</code> means the bg process died before firing (<a href="https://github.com/NewGraphEnvironment/mc/issues/36" class="external-link">#36</a>).</li>
+<li>Internal: scheduled-send HTML is now pre-rendered before backend dispatch so the body travels with the serialized args — avoids fire-time filesystem dependency on the original draft and fixes a potential silent failure for <code>path</code>-based scheduled sends.</li>
+<li>Internal: new <code>R/mc_schedule.R</code> houses the dispatcher, backends, and the <code>run_scheduled_send</code> fire-time entry point used by the OS-native backends. Triple-colon access pattern matches existing internal helpers.</li>
+<li>Internal: launchd cleanup unlinks plist + args JSON without calling <code>launchctl unload</code> from inside the running job — <code>unload</code> SIGTERMs the job’s process group, killing the cleanup mid-flight (caught by live test). Stale <code>launchctl list</code> entry persists until next reboot but the dormant <code>StartCalendarInterval</code> (set to a single past minute) never re-fires.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.2.9" id="mc-029">mc 0.2.9<a class="anchor" aria-label="anchor" href="#mc-029"></a></h2>
 <ul><li>Add <code>mc_label_ensure(label_names)</code> — primitive that creates missing Gmail user labels and no-ops for existing ones. System labels (INBOX, STARRED, etc.) are skipped via case-insensitive match (<a href="https://github.com/NewGraphEnvironment/mc/issues/33" class="external-link">#33</a>).</li>

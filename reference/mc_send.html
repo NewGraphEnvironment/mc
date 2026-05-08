@@ -9,7 +9,7 @@ MIME message, and either creates a Gmail draft or sends immediately."><meta prop
 
     <a class="navbar-brand me-2" href="../index.html">mc</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.9</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.10</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -61,7 +61,8 @@ MIME message, and either creates a Gmail draft or sends immediately.</p>
 <span>  labels <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  labels_create <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  html <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  send_at <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  send_at <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  scheduler <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"callr"</span>, <span class="st">"auto"</span>, <span class="st">"launchd"</span>, <span class="st">"at"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -150,8 +151,17 @@ and this HTML is used directly.</p></dd>
 <dd><p>Schedule the email for later. Either a <code>POSIXct</code> datetime
 or a numeric number of minutes from now. Default <code>NULL</code> (send/draft
 immediately). When set, <code>draft</code> is forced to <code>FALSE</code> and the email is
-sent in a background R process via <code><a href="https://callr.r-lib.org/reference/r_bg.html" class="external-link">callr::r_bg()</a></code>. Requires the
-<strong>callr</strong> package.</p></dd>
+sent via the backend selected by <code>scheduler</code>.</p></dd>
+
+
+<dt id="arg-scheduler">scheduler<a class="anchor" aria-label="anchor" href="#arg-scheduler"></a></dt>
+<dd><p>Backend for scheduled send. One of <code>"callr"</code> (default —
+<code><a href="https://callr.r-lib.org/reference/r_bg.html" class="external-link">callr::r_bg</a></code> background process; back-compat with prior versions),
+<code>"auto"</code> (resolves to OS-native: <code>launchd</code> on macOS, <code>at</code> on Linux),
+<code>"launchd"</code> (force macOS launchd), <code>"at"</code> (force Linux at — Phase 3,
+not yet implemented). Ignored when <code>send_at</code> is <code>NULL</code>. See the
+<code>Scheduled send</code> section in details for the lifecycle caveat that
+motivates <code>"auto"</code>.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -159,9 +169,12 @@ sent in a background R process via <code><a href="https://callr.r-lib.org/refere
     <p>When <code>send_at</code> is <code>NULL</code>, the Gmail thread ID of the resulting
 draft or sent message, returned invisibly. May be <code>NULL</code> if the gmailr
 response did not include one (e.g. mocked tests). When <code>send_at</code> is set,
-returns the <code><a href="https://callr.r-lib.org/reference/r_bg.html" class="external-link">callr::r_bg()</a></code> process handle invisibly. Use <code>$is_alive()</code>
-to check status or <code>$kill()</code> to cancel.</p>
-    </div>
+returns a backend-specific scheduler handle invisibly:</p><ul><li><p><code>scheduler = "callr"</code>: a <code><a href="https://callr.r-lib.org/reference/r_bg.html" class="external-link">callr::r_bg()</a></code> process handle with
+<code>$is_alive()</code> / <code>$kill()</code> methods.</p></li>
+<li><p><code>scheduler = "launchd"</code> (macOS) or <code>"auto"</code> on Darwin: a list with
+<code>$backend = "launchd"</code>, <code>$label</code>, <code>$plist</code> (path), and <code>$args_path</code>.
+Cancel manually via <code>launchctl unload &lt;plist&gt;</code> + <code>unlink</code> if needed.</p></li>
+</ul></div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>Authenticates automatically if no active Gmail session is detected.</p><div class="section">
@@ -189,14 +202,35 @@ to prevent accidental sends to real threads during development.</p>
 <h3 id="scheduled-send">Scheduled send<a class="anchor" aria-label="anchor" href="#scheduled-send"></a></h3>
 
 
-<p><code>send_at</code> runs a background R process on your machine. On macOS,
-<code>caffeinate</code> is used to prevent idle sleep so the machine stays awake
-until the email sends. The laptop lid can be closed as long as power
-is connected.</p><ul><li><p><strong>Laptop powered on</strong> — sends on time (caffeinate prevents sleep)</p></li>
+<p><code>send_at</code> runs a background R process on your machine via
+<code><a href="https://callr.r-lib.org/reference/r_bg.html" class="external-link">callr::r_bg()</a></code>. On macOS, <code>caffeinate</code> is used to prevent idle sleep
+so the machine stays awake until the email sends. The laptop lid can
+be closed as long as power is connected.</p><ul><li><p><strong>Laptop powered on</strong> — sends on time (caffeinate prevents sleep)</p></li>
 <li><p><strong>Laptop powered off</strong> — process dies, email never sends</p></li>
 </ul><p>If caffeinate is bypassed and the machine sleeps through the send
 window, a 5-minute grace period applies. Past that, the send is
-<strong>skipped</strong> to prevent stale emails firing unexpectedly.</p>
+<strong>skipped</strong> to prevent stale emails firing unexpectedly.</p><div class="section">
+<h4 id="lifecycle-caveat-mc-">Lifecycle caveat (mc#36)<a class="anchor" aria-label="anchor" href="#lifecycle-caveat-mc-"></a></h4>
+
+
+<p>The <code><a href="https://callr.r-lib.org/reference/r_bg.html" class="external-link">callr::r_bg</a></code> background process can be cleaned up before fire
+time when its parent context exits (one-shot <code>Rscript -e ...</code>,
+RStudio session that closes, CI job). When that happens the send
+silently drops — the bg process is gone before it could log a
+<code>STARTED</code> entry, and <code>caffeinate</code> exits when its watched PID dies.
+<code>send_at</code> emits a <code><a href="https://rdrr.io/r/base/warning.html" class="external-link">warning()</a></code> on use to surface this risk; future
+versions will add <code>scheduler = "auto"</code> backed by OS-native
+primitives (<code>launchd</code> on macOS, <code>at</code> on Linux) that own their own
+lifecycle.</p>
+<p>Heartbeat log entries are written to <code>~/.mc/send_log.txt</code> so missed
+fires are auditable from the log alone:</p><ul><li><p><code>SCHEDULED</code> — written at submission with the target time</p></li>
+<li><p><code>STARTED</code> — written at fire time, just before the actual send</p></li>
+<li><p><code>SENT</code> / <code>SKIPPED</code> / <code>FAILED</code> — written at outcome</p></li>
+</ul><p>A <code>SCHEDULED</code> line with no follow-up <code>STARTED</code> entry means the
+background process died before it fired.</p>
+</div>
+
+
 </div>
 
     </div>
