@@ -1,3 +1,38 @@
+# mc 0.2.10
+
+* `mc_send()` gains a `scheduler` argument selecting the backend for
+  scheduled sends — `"callr"` (default, for backward compatibility),
+  `"auto"` (resolves to OS-native: `launchd` on macOS, `at` on Linux),
+  or an explicit `"launchd"` / `"at"`. OS-native backends own their own
+  job lifecycle independent of the originating R session — fixes the
+  silent-drop failure mode where a `callr::r_bg` child got cleaned up
+  when its parent `Rscript` invocation exited (#36).
+* **Behavior change:** using `scheduler = "callr"` now emits a
+  `warning()` flagging the unreliable lifecycle in some call contexts
+  (`Rscript` one-shot, RStudio sessions that exit, CI). Steers users
+  toward `scheduler = "auto"`. The default is still `"callr"` for
+  back-compat — pass `scheduler = "auto"` (or set in YAML override) to
+  silence the warning and use the OS-native backend.
+* `send_at` now writes heartbeat log entries to `~/.mc/send_log.txt` so
+  missed fires are auditable from the log alone: `SCHEDULED` at
+  submission with the target time, `STARTED` at fire, plus the existing
+  `SENT` / `SKIPPED` / `FAILED` entries. A `SCHEDULED` line with no
+  follow-up `STARTED` means the bg process died before firing (#36).
+* Internal: scheduled-send HTML is now pre-rendered before backend
+  dispatch so the body travels with the serialized args — avoids
+  fire-time filesystem dependency on the original draft and fixes a
+  potential silent failure for `path`-based scheduled sends.
+* Internal: new `R/mc_schedule.R` houses the dispatcher, backends, and
+  the `run_scheduled_send` fire-time entry point used by the OS-native
+  backends. Triple-colon access pattern matches existing internal
+  helpers.
+* Internal: launchd cleanup unlinks plist + args JSON without calling
+  `launchctl unload` from inside the running job — `unload` SIGTERMs
+  the job's process group, killing the cleanup mid-flight (caught by
+  live test). Stale `launchctl list` entry persists until next reboot
+  but the dormant `StartCalendarInterval` (set to a single past minute)
+  never re-fires.
+
 # mc 0.2.9
 
 * Add `mc_label_ensure(label_names)` — primitive that creates missing

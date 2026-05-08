@@ -434,3 +434,59 @@ test_that("mc_send rejects non-flag labels_create", {
     "labels_create"
   )
 })
+
+test_that("mc_send warns when send_at is non-NULL (lifecycle caveat)", {
+  # Mock callr::r_bg + caffeinate so we don't actually fire a bg process
+  local_mocked_bindings(
+    r_bg = function(...) {
+      list(get_pid = function() 1L, is_alive = function() TRUE)
+    },
+    .package = "callr"
+  )
+  local_mocked_bindings(
+    caffeinate_send = function(proc) invisible(NULL),
+    send_log = function(...) invisible(NULL),
+    .package = "mc"
+  )
+  expect_warning(
+    mc_send(
+      html = "<p>x</p>", to = "test@test.com",
+      subject = "scheduled", from = "test@test.com",
+      send_at = 5
+    ),
+    "scheduled-send is unreliable"
+  )
+})
+
+test_that("mc_send writes SCHEDULED log entry at submission time", {
+  log_calls <- list()
+  local_mocked_bindings(
+    r_bg = function(...) {
+      list(get_pid = function() 1L, is_alive = function() TRUE)
+    },
+    .package = "callr"
+  )
+  local_mocked_bindings(
+    caffeinate_send = function(proc) invisible(NULL),
+    send_log = function(subject, to, status, detail = "") {
+      log_calls[[length(log_calls) + 1]] <<- list(
+        subject = subject, to = to, status = status, detail = detail
+      )
+      invisible(NULL)
+    },
+    .package = "mc"
+  )
+  suppressWarnings(
+    mc_send(
+      html = "<p>x</p>", to = "test@test.com",
+      subject = "scheduled subject", from = "test@test.com",
+      send_at = 5
+    )
+  )
+  # Exactly one SCHEDULED entry should land at submission, with target= detail
+  scheduled <- Filter(function(c) identical(c$status, "SCHEDULED"), log_calls)
+  expect_equal(length(scheduled), 1L)
+  expect_equal(scheduled[[1]]$subject, "scheduled subject")
+  expect_equal(scheduled[[1]]$to, "test@test.com")
+  expect_match(scheduled[[1]]$detail, "^target=")
+})

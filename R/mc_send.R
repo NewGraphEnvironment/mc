@@ -40,14 +40,24 @@
 #' @param send_at Schedule the email for later. Either a `POSIXct` datetime
 #'   or a numeric number of minutes from now. Default `NULL` (send/draft
 #'   immediately). When set, `draft` is forced to `FALSE` and the email is
-#'   sent in a background R process via [callr::r_bg()]. Requires the
-#'   **callr** package.
+#'   sent via the backend selected by `scheduler`.
+#' @param scheduler Backend for scheduled send. One of `"callr"` (default —
+#'   `callr::r_bg` background process; back-compat with prior versions),
+#'   `"auto"` (resolves to OS-native: `launchd` on macOS, `at` on Linux),
+#'   `"launchd"` (force macOS launchd), `"at"` (force Linux at — Phase 3,
+#'   not yet implemented). Ignored when `send_at` is `NULL`. See the
+#'   `Scheduled send` section in details for the lifecycle caveat that
+#'   motivates `"auto"`.
 #'
 #' @return When `send_at` is `NULL`, the Gmail thread ID of the resulting
 #'   draft or sent message, returned invisibly. May be `NULL` if the gmailr
 #'   response did not include one (e.g. mocked tests). When `send_at` is set,
-#'   returns the [callr::r_bg()] process handle invisibly. Use `$is_alive()`
-#'   to check status or `$kill()` to cancel.
+#'   returns a backend-specific scheduler handle invisibly:
+#'   - `scheduler = "callr"`: a [callr::r_bg()] process handle with
+#'     `$is_alive()` / `$kill()` methods.
+#'   - `scheduler = "launchd"` (macOS) or `"auto"` on Darwin: a list with
+#'     `$backend = "launchd"`, `$label`, `$plist` (path), and `$args_path`.
+#'     Cancel manually via `launchctl unload <plist>` + `unlink` if needed.
 #'
 #' @details
 #' ## Threading
@@ -68,10 +78,10 @@
 #'
 #' ## Scheduled send
 #'
-#' `send_at` runs a background R process on your machine. On macOS,
-#' `caffeinate` is used to prevent idle sleep so the machine stays awake
-#' until the email sends. The laptop lid can be closed as long as power
-#' is connected.
+#' `send_at` runs a background R process on your machine via
+#' `callr::r_bg()`. On macOS, `caffeinate` is used to prevent idle sleep
+#' so the machine stays awake until the email sends. The laptop lid can
+#' be closed as long as power is connected.
 #'
 #' - **Laptop powered on** — sends on time (caffeinate prevents sleep)
 #' - **Laptop powered off** — process dies, email never sends
@@ -79,6 +89,28 @@
 #' If caffeinate is bypassed and the machine sleeps through the send
 #' window, a 5-minute grace period applies. Past that, the send is
 #' **skipped** to prevent stale emails firing unexpectedly.
+#'
+#' ### Lifecycle caveat (mc#36)
+#'
+#' The `callr::r_bg` background process can be cleaned up before fire
+#' time when its parent context exits (one-shot `Rscript -e ...`,
+#' RStudio session that closes, CI job). When that happens the send
+#' silently drops — the bg process is gone before it could log a
+#' `STARTED` entry, and `caffeinate` exits when its watched PID dies.
+#' `send_at` emits a `warning()` on use to surface this risk; future
+#' versions will add `scheduler = "auto"` backed by OS-native
+#' primitives (`launchd` on macOS, `at` on Linux) that own their own
+#' lifecycle.
+#'
+#' Heartbeat log entries are written to `~/.mc/send_log.txt` so missed
+#' fires are auditable from the log alone:
+#'
+#' - `SCHEDULED` — written at submission with the target time
+#' - `STARTED` — written at fire time, just before the actual send
+#' - `SENT` / `SKIPPED` / `FAILED` — written at outcome
+#'
+#' A `SCHEDULED` line with no follow-up `STARTED` entry means the
+#' background process died before it fired.
 #'
 #' @examples
 #' \dontrun{
@@ -141,7 +173,10 @@ mc_send <- function(path = NULL,
                     labels = NULL,
                     labels_create = TRUE,
                     html = NULL,
-                    send_at = NULL) {
+                    send_at = NULL,
+                    scheduler = c("callr", "auto", "launchd", "at")) {
+
+  scheduler <- match.arg(scheduler)
 
   chk::chk_null_or(path, vld = chk::vld_string)
   chk::chk_character(to)
@@ -171,11 +206,32 @@ mc_send <- function(path = NULL,
     }
   }
 
-  # Scheduled send — defer to background process
+  # Render HTML up front (before any scheduling dispatch) so the body
+  # travels with `args` to the scheduler backend — avoids re-reading the
+  # markdown at fire time (path may have moved, body may have changed)
+  # and means the launchd plist's R invocation does not need filesystem
+  # access to the original draft.
+  if (is.null(html)) {
+    if (is.null(path)) {
+      stop("Provide either `path` to a markdown file or `html`.", call. = FALSE)
+    }
+    html <- mc_md_render(path, sig = sig, sig_path = sig_path)
+  }
+
+  # Scheduled send — defer to backend dispatcher
   if (!is.null(send_at)) {
-    if (!requireNamespace("callr", quietly = TRUE)) {
-      stop("The callr package is required for send_at. Install with pak::pak('callr').",
-           call. = FALSE)
+    if (scheduler == "callr") {
+      warning(
+        "scheduler = \"callr\" scheduled-send is unreliable in some call ",
+        "contexts (Rscript one-shot, RStudio sessions that exit, CI). The ",
+        "callr background process can be cleaned up before fire time, ",
+        "silently dropping the send. Heartbeat log entries (SCHEDULED at ",
+        "submission, STARTED at fire) make missed fires auditable from ",
+        "~/.mc/send_log.txt. Use scheduler = \"auto\" for OS-native ",
+        "scheduling (launchd / at) — see ",
+        "https://github.com/NewGraphEnvironment/mc/issues/36",
+        call. = FALSE
+      )
     }
     send_time <- resolve_send_at(send_at)
     delay_min <- as.numeric(difftime(send_time, Sys.time(), units = "mins"))
@@ -184,77 +240,19 @@ mc_send <- function(path = NULL,
       " (", round(delay_min, 1), " min from now)",
       "\nTo: ", paste(to, collapse = ", ")
     )
-    proc <- callr::r_bg(
-      function(target_time, grace_secs, path, to, subject, cc, bcc,
-               from, thread_id, test, sig, sig_path, attachments, labels,
-               labels_create, html) {
-        # Sleep until target time
-        delay <- as.numeric(difftime(target_time, Sys.time(), units = "secs"))
-        if (delay > 0) Sys.sleep(delay)
-        # Check if we missed the window (machine was asleep)
-        late <- as.numeric(difftime(Sys.time(), target_time, units = "secs"))
-        if (late > grace_secs) {
-          msg <- paste0(
-            "Scheduled send SKIPPED. Machine woke ",
-            round(late / 60, 1), " min past target time ",
-            format(target_time, "%H:%M:%S"),
-            ". Draft not sent to protect against stale context."
-          )
-          mc:::send_log(subject, to, "SKIPPED", msg)
-          mc:::send_notify(paste0("SKIPPED: ", subject), msg)
-          stop(msg, call. = FALSE)
-        }
-        tryCatch(
-          {
-            mc::mc_send(
-              path = path, to = to, subject = subject,
-              cc = cc, bcc = bcc, from = from,
-              thread_id = thread_id, draft = FALSE,
-              test = test, sig = sig, sig_path = sig_path,
-              attachments = attachments, labels = labels,
-              labels_create = labels_create,
-              html = html, send_at = NULL
-            )
-            mc:::send_log(subject, to, "SENT")
-            mc:::send_notify(
-              paste0("Sent: ", subject),
-              paste0("To: ", paste(to, collapse = ", "))
-            )
-          },
-          error = function(e) {
-            mc:::send_log(subject, to, "FAILED", conditionMessage(e))
-            mc:::send_notify(
-              paste0("FAILED: ", subject),
-              conditionMessage(e)
-            )
-            stop(e)
-          }
-        )
-      },
-      args = list(
-        target_time = send_time, grace_secs = 300,
-        path = path, to = to,
-        subject = subject, cc = cc, bcc = bcc, from = from,
-        thread_id = thread_id, test = test, sig = sig,
-        sig_path = sig_path, attachments = attachments, labels = labels,
-        labels_create = labels_create,
-        html = html
-      ),
-      package = "mc"
+    send_log(
+      subject, to, "SCHEDULED",
+      paste0("target=", format(send_time, "%Y-%m-%d %H:%M:%S"),
+             " scheduler=", scheduler)
     )
-    # Prevent idle sleep on macOS until the send process exits
-    caffeinate_send(proc)
-    return(invisible(proc))
-  }
-
-  # Render HTML from markdown or use pre-rendered
-  if (is.null(html)) {
-    if (is.null(path)) {
-      stop("Provide either `path` to a markdown file or `html`.", call. = FALSE)
-    }
-    body_html <- mc_md_render(path, sig = sig, sig_path = sig_path)
-  } else {
-    body_html <- html
+    schedule_args <- list(
+      to = to, subject = subject, cc = cc, bcc = bcc, from = from,
+      thread_id = thread_id, draft = FALSE, test = test, sig = sig,
+      sig_path = sig_path, attachments = attachments, labels = labels,
+      labels_create = labels_create, html = html
+    )
+    handle <- schedule_send(send_time, schedule_args, scheduler = scheduler)
+    return(invisible(handle))
   }
 
   # Test mode: redirect to self, strip threading
@@ -271,7 +269,7 @@ mc_send <- function(path = NULL,
   msg <- gmailr::gm_to(msg, to)
   msg <- gmailr::gm_from(msg, from)
   msg <- gmailr::gm_subject(msg, subject)
-  msg <- gmailr::gm_html_body(msg, body_html)
+  msg <- gmailr::gm_html_body(msg, html)
 
   if (!is.null(cc)) {
     msg <- gmailr::gm_cc(msg, cc)
@@ -386,7 +384,7 @@ caffeinate_send <- function(proc) {
 #' Appends one line per event. Creates the directory if needed.
 #' @param subject Email subject.
 #' @param to Recipient(s).
-#' @param status One of "SENT", "SKIPPED", "FAILED".
+#' @param status One of "SCHEDULED", "STARTED", "SENT", "SKIPPED", "FAILED".
 #' @param detail Optional detail message.
 #' @noRd
 send_log <- function(subject, to, status, detail = "") {
