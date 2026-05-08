@@ -110,10 +110,10 @@ to prevent accidental sends to real threads during development.
 
 \subsection{Scheduled send}{
 
-\code{send_at} runs a background R process on your machine. On macOS,
-\code{caffeinate} is used to prevent idle sleep so the machine stays awake
-until the email sends. The laptop lid can be closed as long as power
-is connected.
+\code{send_at} runs a background R process on your machine via
+\code{callr::r_bg()}. On macOS, \code{caffeinate} is used to prevent idle sleep
+so the machine stays awake until the email sends. The laptop lid can
+be closed as long as power is connected.
 \itemize{
 \item \strong{Laptop powered on} — sends on time (caffeinate prevents sleep)
 \item \strong{Laptop powered off} — process dies, email never sends
@@ -122,6 +122,30 @@ is connected.
 If caffeinate is bypassed and the machine sleeps through the send
 window, a 5-minute grace period applies. Past that, the send is
 \strong{skipped} to prevent stale emails firing unexpectedly.
+\subsection{Lifecycle caveat (mc#36)}{
+
+The \code{callr::r_bg} background process can be cleaned up before fire
+time when its parent context exits (one-shot \verb{Rscript -e ...},
+RStudio session that closes, CI job). When that happens the send
+silently drops — the bg process is gone before it could log a
+\code{STARTED} entry, and \code{caffeinate} exits when its watched PID dies.
+\code{send_at} emits a \code{warning()} on use to surface this risk; future
+versions will add \code{scheduler = "auto"} backed by OS-native
+primitives (\code{launchd} on macOS, \code{at} on Linux) that own their own
+lifecycle.
+
+Heartbeat log entries are written to \verb{~/.mc/send_log.txt} so missed
+fires are auditable from the log alone:
+\itemize{
+\item \code{SCHEDULED} — written at submission with the target time
+\item \code{STARTED} — written at fire time, just before the actual send
+\item \code{SENT} / \code{SKIPPED} / \code{FAILED} — written at outcome
+}
+
+A \code{SCHEDULED} line with no follow-up \code{STARTED} entry means the
+background process died before it fired.
+}
+
 }
 }
 \examples{

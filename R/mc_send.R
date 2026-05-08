@@ -68,10 +68,10 @@
 #'
 #' ## Scheduled send
 #'
-#' `send_at` runs a background R process on your machine. On macOS,
-#' `caffeinate` is used to prevent idle sleep so the machine stays awake
-#' until the email sends. The laptop lid can be closed as long as power
-#' is connected.
+#' `send_at` runs a background R process on your machine via
+#' `callr::r_bg()`. On macOS, `caffeinate` is used to prevent idle sleep
+#' so the machine stays awake until the email sends. The laptop lid can
+#' be closed as long as power is connected.
 #'
 #' - **Laptop powered on** — sends on time (caffeinate prevents sleep)
 #' - **Laptop powered off** — process dies, email never sends
@@ -79,6 +79,28 @@
 #' If caffeinate is bypassed and the machine sleeps through the send
 #' window, a 5-minute grace period applies. Past that, the send is
 #' **skipped** to prevent stale emails firing unexpectedly.
+#'
+#' ### Lifecycle caveat (mc#36)
+#'
+#' The `callr::r_bg` background process can be cleaned up before fire
+#' time when its parent context exits (one-shot `Rscript -e ...`,
+#' RStudio session that closes, CI job). When that happens the send
+#' silently drops — the bg process is gone before it could log a
+#' `STARTED` entry, and `caffeinate` exits when its watched PID dies.
+#' `send_at` emits a `warning()` on use to surface this risk; future
+#' versions will add `scheduler = "auto"` backed by OS-native
+#' primitives (`launchd` on macOS, `at` on Linux) that own their own
+#' lifecycle.
+#'
+#' Heartbeat log entries are written to `~/.mc/send_log.txt` so missed
+#' fires are auditable from the log alone:
+#'
+#' - `SCHEDULED` — written at submission with the target time
+#' - `STARTED` — written at fire time, just before the actual send
+#' - `SENT` / `SKIPPED` / `FAILED` — written at outcome
+#'
+#' A `SCHEDULED` line with no follow-up `STARTED` entry means the
+#' background process died before it fired.
 #'
 #' @examples
 #' \dontrun{
@@ -173,6 +195,16 @@ mc_send <- function(path = NULL,
 
   # Scheduled send — defer to background process
   if (!is.null(send_at)) {
+    warning(
+      "`send_at` scheduled-send is unreliable in some call contexts ",
+      "(Rscript one-shot, RStudio sessions that exit, CI). The callr ",
+      "background process can be cleaned up before fire time, silently ",
+      "dropping the send. Heartbeat log entries (SCHEDULED at submission, ",
+      "STARTED at fire) make missed fires auditable from ~/.mc/send_log.txt. ",
+      "Future versions will add `scheduler = \"auto\"` for OS-native ",
+      "scheduling (launchd / at) — see https://github.com/NewGraphEnvironment/mc/issues/36",
+      call. = FALSE
+    )
     if (!requireNamespace("callr", quietly = TRUE)) {
       stop("The callr package is required for send_at. Install with pak::pak('callr').",
            call. = FALSE)
@@ -183,6 +215,10 @@ mc_send <- function(path = NULL,
       "Scheduled to send at ", format(send_time, "%Y-%m-%d %H:%M:%S"),
       " (", round(delay_min, 1), " min from now)",
       "\nTo: ", paste(to, collapse = ", ")
+    )
+    send_log(
+      subject, to, "SCHEDULED",
+      paste0("target=", format(send_time, "%Y-%m-%d %H:%M:%S"))
     )
     proc <- callr::r_bg(
       function(target_time, grace_secs, path, to, subject, cc, bcc,
@@ -204,6 +240,7 @@ mc_send <- function(path = NULL,
           mc:::send_notify(paste0("SKIPPED: ", subject), msg)
           stop(msg, call. = FALSE)
         }
+        mc:::send_log(subject, to, "STARTED")
         tryCatch(
           {
             mc::mc_send(
@@ -386,7 +423,7 @@ caffeinate_send <- function(proc) {
 #' Appends one line per event. Creates the directory if needed.
 #' @param subject Email subject.
 #' @param to Recipient(s).
-#' @param status One of "SENT", "SKIPPED", "FAILED".
+#' @param status One of "SCHEDULED", "STARTED", "SENT", "SKIPPED", "FAILED".
 #' @param detail Optional detail message.
 #' @noRd
 send_log <- function(subject, to, status, detail = "") {

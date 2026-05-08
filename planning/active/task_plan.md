@@ -18,16 +18,17 @@ Three additions to `R/mc_send.R`, with a new helper file for the OS-native backe
 
 ## Phase 1: Deprecation warning + heartbeat logging
 
-- [ ] Emit `warning()` when `send_at` is non-NULL noting unreliable lifecycle in some call contexts (Rscript one-shot, RStudio sessions that exit, CI). Recommend `scheduler = "auto"` once it lands.
-- [ ] Add `send_log("SCHEDULED", to, subject, target_time)` call at submission time, just before `callr::r_bg(...)` in `R/mc_send.R:175-248`.
-- [ ] Add `send_log("STARTED", to, subject)` call at fire time inside the callr inner function (after `Sys.sleep` returns, before the recursive `mc::mc_send` call).
-- [ ] Update `@details` for `mc_send` to document the new log statuses and the unreliability caveat.
-- [ ] New tests in `test-mc_send.R`:
-  - deprecation warning emitted on `send_at` non-NULL
-  - `SCHEDULED` log entry appears at submission (mock `callr::r_bg` to no-op; verify log file gets the SCHEDULED line)
-- [ ] `devtools::document()`, `devtools::test()`, `lintr::lint_package()` clean.
-- [ ] `/code-check` on staged diff.
-- [ ] Atomic commit including checkbox flips.
+- [x] Emit `warning()` when `send_at` is non-NULL noting unreliable lifecycle in some call contexts (Rscript one-shot, RStudio sessions that exit, CI). Points at #36 and recommends `scheduler = "auto"` once it lands.
+- [x] Add `send_log("SCHEDULED", to, subject, target_time)` call at submission time, just before `callr::r_bg(...)` in `R/mc_send.R`.
+- [x] Add `send_log("STARTED", to, subject)` call at fire time inside the callr inner function (after `Sys.sleep` + missed-window check, before the recursive `mc::mc_send` call).
+- [x] Updated `@details ## Scheduled send` section in `mc_send` roxygen with a "Lifecycle caveat (mc#36)" subsection documenting the silent-drop risk + the heartbeat log entries.
+- [x] Updated `send_log` `@param status` docstring to include SCHEDULED + STARTED.
+- [x] New tests in `test-mc_send.R`:
+  - deprecation warning emitted on `send_at` non-NULL (`mc_send warns when send_at is non-NULL`)
+  - SCHEDULED log entry appears at submission with `target=` detail (`mc_send writes SCHEDULED log entry at submission time`)
+- [x] `devtools::document()`, `devtools::test()` (307 pass, 0 fail, 0 warn), `lintr::lint_package()` clean for changed files.
+- [x] `/code-check` on staged diff.
+- [x] Atomic commit including checkbox flips.
 
 ## Phase 2: Backend abstraction + macOS launchd
 
