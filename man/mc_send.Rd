@@ -20,7 +20,8 @@ mc_send(
   labels = NULL,
   labels_create = TRUE,
   html = NULL,
-  send_at = NULL
+  send_at = NULL,
+  scheduler = c("callr", "auto", "launchd", "at")
 )
 }
 \arguments{
@@ -74,15 +75,28 @@ and this HTML is used directly.}
 \item{send_at}{Schedule the email for later. Either a \code{POSIXct} datetime
 or a numeric number of minutes from now. Default \code{NULL} (send/draft
 immediately). When set, \code{draft} is forced to \code{FALSE} and the email is
-sent in a background R process via \code{\link[callr:r_bg]{callr::r_bg()}}. Requires the
-\strong{callr} package.}
+sent via the backend selected by \code{scheduler}.}
+
+\item{scheduler}{Backend for scheduled send. One of \code{"callr"} (default —
+\code{callr::r_bg} background process; back-compat with prior versions),
+\code{"auto"} (resolves to OS-native: \code{launchd} on macOS, \code{at} on Linux),
+\code{"launchd"} (force macOS launchd), \code{"at"} (force Linux at — Phase 3,
+not yet implemented). Ignored when \code{send_at} is \code{NULL}. See the
+\verb{Scheduled send} section in details for the lifecycle caveat that
+motivates \code{"auto"}.}
 }
 \value{
 When \code{send_at} is \code{NULL}, the Gmail thread ID of the resulting
 draft or sent message, returned invisibly. May be \code{NULL} if the gmailr
 response did not include one (e.g. mocked tests). When \code{send_at} is set,
-returns the \code{\link[callr:r_bg]{callr::r_bg()}} process handle invisibly. Use \verb{$is_alive()}
-to check status or \verb{$kill()} to cancel.
+returns a backend-specific scheduler handle invisibly:
+\itemize{
+\item \code{scheduler = "callr"}: a \code{\link[callr:r_bg]{callr::r_bg()}} process handle with
+\verb{$is_alive()} / \verb{$kill()} methods.
+\item \code{scheduler = "launchd"} (macOS) or \code{"auto"} on Darwin: a list with
+\verb{$backend = "launchd"}, \verb{$label}, \verb{$plist} (path), and \verb{$args_path}.
+Cancel manually via \verb{launchctl unload <plist>} + \code{unlink} if needed.
+}
 }
 \description{
 The main function. Reads a markdown draft, renders to HTML, builds a

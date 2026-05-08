@@ -32,26 +32,24 @@ Three additions to `R/mc_send.R`, with a new helper file for the OS-native backe
 
 ## Phase 2: Backend abstraction + macOS launchd
 
-- [ ] Create `R/mc_schedule.R` with: `schedule_send()` dispatcher, `schedule_callr()` (refactor of existing inline code, behavior preserved), `schedule_launchd()`, `run_scheduled_send()`.
-- [ ] `schedule_launchd(target_time, args)`:
-  - Serialize `args` to `~/.mc/scheduled/<uuid>.json` via `jsonlite::write_json`.
-  - Generate launchd plist Label `com.newgraph.mc.send-<uuid>`.
-  - Write plist to `~/Library/LaunchAgents/<label>.plist` with `StartCalendarInterval` matching `target_time` and `ProgramArguments = ["/usr/bin/env", "Rscript", "-e", "mc:::run_scheduled_send('<args-path>')"]`.
-  - `system2("launchctl", c("load", "-w", plist_path))`.
-- [ ] `run_scheduled_send(args_json_path)`:
-  - Read args JSON, log `STARTED`, call `mc_send(..., send_at = NULL)`, log `SENT`/`FAILED`.
-  - Cleanup: `launchctl unload` + `unlink` plist + args JSON.
-- [ ] Add `scheduler = "callr"` arg to `mc_send()` (default `"callr"` for back-compat). Validate with `chk::chk_string` + enum check. Replace current inline `callr::r_bg` code with `schedule_send(target_time, args, scheduler)`.
-- [ ] Thread `scheduler` through scheduled-send recursive call.
-- [ ] New tests in `test-mc_schedule.R`:
-  - `schedule_launchd` writes a parseable plist with correct fire time + ProgramArguments
-  - cleanup logic invoked after `run_scheduled_send` returns (mocked `launchctl` + `unlink`)
-  - `run_scheduled_send` round-trip: read args, call mc_send, log entries land correctly
-  - skip launchd-specific tests on non-macOS via `skip_on_os("windows", "linux")`
-- [ ] New unit test in `test-mc_send.R`: `scheduler = "auto"` resolves to `launchd` on Darwin (mock `Sys.info`).
-- [ ] `devtools::document()`, `devtools::test()`, `lintr::lint_package()` clean.
-- [ ] `/code-check` on staged diff.
-- [ ] Atomic commit including checkbox flips.
+- [x] Created `R/mc_schedule.R` with: `schedule_send()` dispatcher, `resolve_scheduler()` (auto → OS-native), `schedule_callr()` (refactor of existing inline code, behavior preserved), `schedule_launchd()`, `launchd_plist()` helper, `schedule_at()` (Phase 3 stub that errors with clear message), `run_scheduled_send()`, `cleanup_scheduled_send()`, `generate_send_uuid()`.
+- [x] `schedule_launchd`: serializes args to `~/.mc/scheduled/<uuid>.json`, writes plist to `~/Library/LaunchAgents/<label>.plist` with `StartCalendarInterval` + `ProgramArguments = [Rscript, -e, mc:::run_scheduled_send("<args>")]`, `RunAtLoad = false`, stdout/stderr to `~/.mc/scheduled/<label>.{out,err}`. Loads via `launchctl load -w`.
+- [x] `run_scheduled_send`: reads args JSON, logs `STARTED`, calls `mc_send(send_at = NULL)`, logs `SENT`/`FAILED`, fires `send_notify`. `on.exit(cleanup_scheduled_send(...))` ensures plist + args + log files are removed regardless of outcome.
+- [x] `cleanup_scheduled_send`: macOS-only `launchctl unload -w` + plist unlink + stdout/stderr unlink. Args JSON unlink unconditional. Idempotent.
+- [x] Added `scheduler = c("callr", "auto", "launchd", "at")` arg to `mc_send()` with `match.arg` validation. Default `"callr"` preserves back-compat. Replaced inline `callr::r_bg` code with `schedule_send(send_time, schedule_args, scheduler)` dispatch.
+- [x] Warning on `send_at` is now scoped to `scheduler == "callr"` only (auto/launchd/at don't have the lifecycle issue, so no warning needed when user opts into them).
+- [x] New tests in `test-mc_schedule.R` (12 test_that blocks):
+  - resolve_scheduler passthrough + auto-mapping (Darwin → launchd, Linux → at, Windows → error)
+  - schedule_at Phase 3 placeholder errors
+  - launchd_plist embeds Label, ProgramArguments, StartCalendarInterval, RunAtLoad correctly
+  - schedule_launchd writes plist + args JSON, invokes launchctl load (skip on non-macOS)
+  - run_scheduled_send round-trip: reads args, calls mc_send with send_at = NULL, logs STARTED + SENT, notifies, cleans up
+  - run_scheduled_send logs FAILED on error path
+  - cleanup_scheduled_send idempotent
+  - mc_send rejects invalid scheduler value
+- [x] `devtools::document()`, `devtools::test()` (351 pass, 0 fail, 0 warn), `lintr::lint_package()` clean for changed files.
+- [x] `/code-check` on staged diff.
+- [x] Atomic commit including checkbox flips.
 
 ## Phase 3: Linux `at` backend
 
