@@ -202,18 +202,70 @@ launchd_plist <- function(label, target_time, rscript_path, args_json_path,
 }
 
 
-#' Schedule via Linux `at` (Phase 3 placeholder)
+#' Schedule a one-shot send via Linux `at`
 #'
-#' Implementation lands in mc#36 Phase 3. Until then, errors with a clear
-#' message pointing users to `scheduler = "callr"`.
+#' Serializes `args` to JSON, pipes a one-line `Rscript -e ...` invocation
+#' into `at -t YYYYMMDDhhmm.ss`. The `atd` daemon owns the job lifecycle —
+#' it survives shell exit, parent process death, and (on systemd hosts)
+#' the originating R session disappearing entirely.
+#'
+#' Assumes `atd` is running. On most Linux distros (Ubuntu/Debian VMs in
+#' our fleet) it's default-enabled. If `atd` is stopped, `at` will accept
+#' and queue the job but it will never fire — a silent failure mode worth
+#' watching for. Verify with `systemctl is-active atd` or equivalent.
 #'
 #' @noRd
 schedule_at <- function(target_time, args) {
-  stop(
-    "Linux 'at' backend not yet implemented (mc#36 Phase 3). ",
-    "Use scheduler = 'callr' until then.",
-    call. = FALSE
+  uuid <- generate_send_uuid()
+  scheduled_dir <- file.path(Sys.getenv("HOME"), ".mc", "scheduled")
+  if (!dir.exists(scheduled_dir)) dir.create(scheduled_dir, recursive = TRUE)
+
+  args_path <- file.path(scheduled_dir, paste0(uuid, ".json"))
+  jsonlite::write_json(args, args_path, auto_unbox = TRUE, null = "null")
+
+  rscript <- Sys.which("Rscript")
+  if (rscript == "") {
+    stop("Rscript not found on PATH — required by at backend.",
+         call. = FALSE)
+  }
+
+  # at -t accepts: [[CC]YY]MMDDhhmm[.ss]
+  at_time <- format(target_time, "%Y%m%d%H%M.%S")
+
+  # Body of the at job — single Rscript invocation that reads the args
+  # JSON and runs the send. The args path is written by us above, so
+  # quoting safety is bounded to package-generated uuid filenames.
+  job_cmd <- sprintf(
+    "%s -e 'mc:::run_scheduled_send(\"%s\")'",
+    rscript, args_path
   )
+
+  res <- system2(
+    "at", c("-t", at_time),
+    input = job_cmd,
+    stdout = TRUE, stderr = TRUE
+  )
+  status <- attr(res, "status")
+  if (!is.null(status) && status != 0) {
+    unlink(args_path)
+    stop("at command failed: ", paste(res, collapse = " "),
+         call. = FALSE)
+  }
+
+  # `at` typically prints "job N at <time>" to stderr; capture the job
+  # number for diagnostic logging if available.
+  job_id <- NA_character_
+  job_match <- grep("^job [0-9]+", res, value = TRUE)
+  if (length(job_match) > 0) {
+    m <- regmatches(job_match[1], regexpr("^job [0-9]+", job_match[1]))
+    if (length(m) > 0) job_id <- sub("^job ", "", m)
+  }
+
+  invisible(list(
+    backend = "at",
+    job_id = job_id,
+    args_path = args_path
+  ))
 }
 
 

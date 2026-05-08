@@ -31,11 +31,80 @@ test_that("resolve_scheduler errors on auto for unsupported platform", {
   )
 })
 
-test_that("schedule_at errors with Phase 3 placeholder message", {
-  expect_error(
-    mc:::schedule_at(Sys.time() + 60, list()),
-    "not yet implemented"
+test_that("schedule_at writes args JSON and pipes Rscript invocation to at", {
+  at_calls <- list()
+  local_mocked_bindings(
+    system2 = function(command, args, ...) {
+      kwargs <- list(...)
+      at_calls[[length(at_calls) + 1]] <<-
+        list(command = command, args = args, input = kwargs$input)
+      "job 42 at Sat May 10 14:30:00 2026"
+    },
+    .package = "base"
   )
+
+  tmp_home <- tempfile("mc-test-home-")
+  dir.create(tmp_home)
+  withr::local_envvar(HOME = tmp_home)
+  withr::defer(unlink(tmp_home, recursive = TRUE))
+
+  target <- as.POSIXct("2026-05-10 14:30:00", tz = "")
+  args <- list(
+    to = "test@test.com", subject = "at test",
+    from = "from@test.com", html = "<p>x</p>"
+  )
+
+  handle <- mc:::schedule_at(target, args)
+
+  # Handle shape
+  expect_equal(handle$backend, "at")
+  expect_equal(handle$job_id, "42")
+  expect_true(file.exists(handle$args_path))
+
+  # Args JSON round-trip
+  read_back <- jsonlite::read_json(handle$args_path, simplifyVector = TRUE)
+  expect_equal(read_back$to, "test@test.com")
+  expect_equal(read_back$subject, "at test")
+
+  # at invoked with -t YYYYMMDDhhmm.ss + Rscript invocation as stdin
+  at_call <- at_calls[[length(at_calls)]]
+  expect_equal(at_call$command, "at")
+  expect_equal(at_call$args[1], "-t")
+  expect_match(at_call$args[2], "^20260510[0-9]{4}\\.[0-9]{2}$")
+  expect_match(at_call$input, "run_scheduled_send", fixed = TRUE)
+  expect_match(at_call$input, handle$args_path, fixed = TRUE)
+})
+
+test_that("schedule_at unlinks args JSON and stops on at command failure", {
+  local_mocked_bindings(
+    system2 = function(command, args, ...) {
+      result <- "at: bad time specification"
+      attr(result, "status") <- 1L
+      result
+    },
+    .package = "base"
+  )
+
+  tmp_home <- tempfile("mc-test-home-")
+  dir.create(tmp_home)
+  withr::local_envvar(HOME = tmp_home)
+  withr::defer(unlink(tmp_home, recursive = TRUE))
+
+  expect_error(
+    mc:::schedule_at(
+      as.POSIXct("2026-05-10 14:30:00"),
+      list(to = "x@x.com", subject = "x", from = "f@f.com",
+           html = "<p>x</p>")
+    ),
+    "at command failed"
+  )
+
+  # No leftover args JSON in the scheduled dir
+  scheduled_dir <- file.path(tmp_home, ".mc", "scheduled")
+  if (dir.exists(scheduled_dir)) {
+    leftovers <- list.files(scheduled_dir, pattern = "\\.json$")
+    expect_equal(length(leftovers), 0L)
+  }
 })
 
 test_that("launchd_plist embeds target time + ProgramArguments correctly", {

@@ -53,17 +53,15 @@ Three additions to `R/mc_send.R`, with a new helper file for the OS-native backe
 
 ## Phase 3: Linux `at` backend
 
-- [ ] `schedule_at(target_time, args)`:
-  - Serialize args to `~/.mc/scheduled/<uuid>.json` (same pattern).
-  - Pipe `Rscript -e "mc:::run_scheduled_send('<args-path>')"` into `at -t YYYYMMDDHHMM.SS` via `system2` with `input = ...`.
-  - Capture `at` job number from stderr if available (for diagnostic logging).
-- [ ] Auto-dispatch in `schedule_send`: `Sys.info()["sysname"] == "Linux"` → `at` backend.
-- [ ] New tests in `test-mc_schedule.R`:
-  - `schedule_at` invokes `at` with correctly formatted time string and stdin Rscript invocation (mock `system2`, capture args)
-  - skip on non-Linux via `skip_on_os("mac", "windows")`
-- [ ] `devtools::document()`, `devtools::test()`, `lintr::lint_package()` clean.
-- [ ] `/code-check` on staged diff.
-- [ ] Atomic commit including checkbox flips.
+- [x] `schedule_at(target_time, args)`: serializes args to `~/.mc/scheduled/<uuid>.json`, pipes `Rscript -e 'mc:::run_scheduled_send("<args-path>")'` into `at -t YYYYMMDDhhmm.ss` via `system2(..., input = ...)`. Captures `at` job number from stderr (`"job N at <time>"`) for diagnostic logging. On non-zero status, unlinks args + stops with the `at` error message.
+- [x] Auto-dispatch already wired in Phase 2 (`resolve_scheduler` returns `"at"` on Linux).
+- [x] Documented `atd` daemon assumption in the schedule_at docstring (silent failure mode if atd not running — verify with `systemctl is-active atd`).
+- [x] New tests in `test-mc_schedule.R`:
+  - `schedule_at` writes args JSON, pipes Rscript invocation to `at`, parses job_id, returns handle (cross-platform, system2 mocked)
+  - `schedule_at` cleans up args JSON and stops on `at` command failure (cross-platform, system2 mocked)
+- [x] `devtools::document()`, `devtools::test()` (364 pass, 0 fail, 0 warn), `lintr::lint_package()` clean for changed files.
+- [x] `/code-check` on staged diff.
+- [x] Atomic commit including checkbox flips.
 
 ## Phase 4: Docs + release prep
 
