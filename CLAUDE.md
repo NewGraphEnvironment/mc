@@ -7,14 +7,14 @@ boilerplate to 3.
 ## Repository Context
 
 **Repository:** NewGraphEnvironment/mc **Primary Language:** R
-**License:** MIT **Status:** Early development (0.0.0.9000)
+**License:** MIT **Status:** Active development (0.2.10)
 
 ## Architecture
 
-- `R/` — Package source: `mc_auth`, `mc_compose`, `mc_md_render`,
-  `mc_scroll`, `mc_send`, `mc_sig`, `mc_thread_find`
+- `R/` — Package source. Function reference is auto-generated; see
+  pkgdown site / `man/*.Rd` for the canonical list.
 - `man/` — roxygen2-generated docs
-- `vignettes/` — pkgdown vignettes (tables-in-emails)
+- `vignettes/` — pkgdown vignettes (tables-in-emails, etc.)
 - `tests/testthat/` — testthat v3 tests
 - `data-raw/` — Data preparation scripts
 - `inst/` — Installed files (signature template, etc.)
@@ -32,6 +32,25 @@ boilerplate to 3.
 - Input validation uses `chk` package on all exported functions
 - HTML conversion via `commonmark`
 - Gmail API interaction via `gmailr`
+- **Default sender:** `default_from()` in `mc_auth.R` checks
+  `getOption("mc.from")` → `MC_FROM` env → fallback
+- **Header stripping:** `strip_md_header()` in `mc_md_render.R` shared
+  by
+  [`mc_md_render()`](https://newgraphenvironment.github.io/mc/reference/mc_md_render.md)
+  and
+  [`mc_compose()`](https://newgraphenvironment.github.io/mc/reference/mc_compose.md)
+  — must stay in lockstep
+- **Scheduled send:** `send_at` param on
+  [`mc_send()`](https://newgraphenvironment.github.io/mc/reference/mc_send.md)
+  uses [`callr::r_bg()`](https://callr.r-lib.org/reference/r_bg.html) +
+  `caffeinate` on macOS; OS-native scheduler (`launchd` / `at`) via
+  `scheduler = "auto"` is the v0.2.10 path
+- **Send notifications:** `send_log()` writes to `~/.mc/send_log.txt`;
+  `send_notify()` fires macOS notification
+- **MIME parsing:** `extract_body()` recursively walks nested multipart
+  for thread reading
+- **Custom `%||%`:** in `mc_thread_find.R` — masks base R 4.4+ version,
+  also catches length-0 (don’t replace with base)
 
 ## Development
 
@@ -40,6 +59,69 @@ boilerplate to 3.
 - [`pkgdown::build_site()`](https://pkgdown.r-lib.org/reference/build_site.html)
   for docs site
 - Follow tidyverse/r-lib conventions (roxygen2 markdown, testthat v3)
+
+### Testing
+
+- Unit tests use `local_mocked_bindings()` on gmailr functions
+- Integration tests require `MC_RUN_INTEGRATION=true` (opt-in, skipped
+  by default)
+- Run with:
+  `MC_RUN_INTEGRATION=true devtools::test(filter = "integration")`
+- Integration tests auto-trash all test emails via Gmail API after run
+  (3 safeguards: `newer_than:1h`, subject verification,
+  timestamp-to-second tag)
+- Test email bodies stamped with package version, R version, OS
+- `send_at` tests use `local_mocked_bindings()` on `caffeinate_send`
+
+### Lint
+
+`.lintr` requires single-line DCF format. Current config suppresses
+`quotes_linter` and sets 120-char line length. If `R_LINTR_LINTER_FILE`
+is set in `~/.Renviron`, it must point to a real file (or the env var
+must be unset) — pointing to a missing `~/.lintr` breaks lint runs
+silently.
+
+## Known Issues
+
+- **\#8:**
+  [`callr::r_bg()`](https://callr.r-lib.org/reference/r_bg.html)
+  children die when parent Rscript exits. `send_at` (callr path) only
+  works from interactive sessions or scripts with a
+  `while(proc$is_alive())` loop. The `scheduler = "auto"` OS-native path
+  (launchd / at, v0.2.10) avoids this — prefer it for production use.
+
+## Working Conventions
+
+### Always BCC `al@newgraphenvironment.com` on real sends
+
+**Why:** keeps a personal archive trail outside Gmail’s Sent folder, and
+ensures send confirmation lands somewhere reliable in case of a
+recipient-side delivery issue.
+
+**How to apply:** every
+[`mc_send()`](https://newgraphenvironment.github.io/mc/reference/mc_send.md)
+call targeting `test = FALSE` should include
+`bcc = "al@newgraphenvironment.com"` (unless the recipient list already
+includes that address). Test sends (`test = TRUE`) go to al@ only — no
+BCC needed.
+
+### Run tests and lint before committing
+
+**Why:** mc is a published-style R package — test / lint state should be
+clean on every commit so CI doesn’t surface preventable failures and
+[`pkgdown::build_site()`](https://pkgdown.r-lib.org/reference/build_site.html)
+doesn’t trip on stale doc state.
+
+**How to apply:** before any commit touching `R/`, `tests/`, or `man/`:
+`devtools::document() && devtools::test() && lintr::lint_package()`.
+Integration tests are opt-in (see Testing) — running just unit tests is
+fine for fast iteration; integration before merge.
+
+## Related repos
+
+- `compost` (NewGraphEnvironment/compost, private) — primary consumer
+  of mc. Email drafts follow `YYYYMMDD_recipient_topic.md` + matching
+  `.R` file convention documented in `compost/docs/comms_structure.md`.
 
 # CI Monitoring
 
