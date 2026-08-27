@@ -1,12 +1,16 @@
-# Send an email from a markdown file
+# Build and deliver a message (internal)
 
-Sends immediately. To produce a Gmail draft for review instead, use
-[`mc_draft()`](https://newgraphenvironment.github.io/mc/reference/mc_draft.md).
+Shared implementation behind
+[`mc_draft()`](https://newgraphenvironment.github.io/mc/reference/mc_draft.md)
+and
+[`mc_send()`](https://newgraphenvironment.github.io/mc/reference/mc_send.md).
+Renders the body, builds the MIME message, and either creates a Gmail
+draft or sends, according to `.draft`.
 
 ## Usage
 
 ``` r
-mc_send(
+mc_deliver(
   path = NULL,
   to,
   subject,
@@ -14,6 +18,7 @@ mc_send(
   bcc = NULL,
   from = default_from(),
   thread_id = NULL,
+  .draft,
   to_self = FALSE,
   sig = TRUE,
   sig_path = NULL,
@@ -59,6 +64,11 @@ mc_send(
   Gmail thread ID to reply into. Default `NULL` (new thread). Use
   [`mc_thread_find()`](https://newgraphenvironment.github.io/mc/reference/mc_thread_find.md)
   to look up thread IDs.
+
+- .draft:
+
+  Logical. `TRUE` creates a Gmail draft, `FALSE` sends. Supplied by the
+  wrapper, never by the caller.
 
 - to_self:
 
@@ -122,45 +132,11 @@ mc_send(
 
 ## Value
 
-The Gmail thread ID of the sent message, invisibly. When `send_at` is
-set, returns a backend-specific scheduler handle invisibly instead.
+Gmail thread ID, invisibly.
 
 ## Details
 
-The verb lives in the function name deliberately. An earlier API
-selected send-vs-draft with a `draft` argument, which meant one
-character separated a reversible act from an irreversible one — and did,
-once, deliver a message to external recipients when a draft was
-intended. There is no `draft` argument here; sending is named, not
-configured (#39).
-
-Authenticates automatically if no active Gmail session is detected.
-
-## See also
-
+Not exported. The exported wrappers each fix `.draft`, which is what
+makes "nothing passed to
 [`mc_draft()`](https://newgraphenvironment.github.io/mc/reference/mc_draft.md)
-to create a draft,
-[`mc_md_send()`](https://newgraphenvironment.github.io/mc/reference/mc_md_send.md)
-to send from frontmatter.
-
-## Examples
-
-``` r
-if (FALSE) { # \dontrun{
-mc_send("communications/newsletter.md",
-        to = "someone@example.com",
-        subject = "Spring newsletter")
-
-# Check the rendering in a real inbox without involving anyone else
-mc_send("communications/newsletter.md",
-        to = "someone@example.com",
-        subject = "Spring newsletter",
-        to_self = TRUE)
-
-# Reply into an existing thread
-mc_send("communications/reply.md",
-        to = "someone@example.com",
-        subject = "Re: Spring newsletter",
-        thread_id = "19c05f0a98188c91")
-} # }
-```
+can send" true by construction rather than by convention (#39).

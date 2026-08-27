@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">mc</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.10</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,6 +35,29 @@
       <small>Source: <a href="https://github.com/NewGraphEnvironment/mc/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.3.0" id="mc-030">mc 0.3.0<a class="anchor" aria-label="anchor" href="#mc-030"></a></h2>
+<div class="section level3">
+<h3 id="breaking-changes-0-3-0">Breaking changes<a class="anchor" aria-label="anchor" href="#breaking-changes-0-3-0"></a></h3>
+<ul><li>
+<p><strong><code><a href="../reference/mc_send.html">mc_send()</a></code> no longer drafts.</strong> Delivery is split by function name: <code><a href="../reference/mc_draft.html">mc_draft()</a></code> can only create a Gmail draft and <code><a href="../reference/mc_send.html">mc_send()</a></code> can only send. The frontmatter pair splits the same way — <code><a href="../reference/mc_md_draft.html">mc_md_draft()</a></code> and <code><a href="../reference/mc_md_send.html">mc_md_send()</a></code>. The <code>draft</code> argument is gone from all of them, with no deprecated alias (<a href="https://github.com/NewGraphEnvironment/mc/issues/39" class="external-link">#39</a>).</p>
+<p>Previously a single boolean selected between a reversible act and an irreversible one, so one character separated them. That produced a real incident: a message reached nine external recipients when a draft was intended. Sending is now named rather than configured, and nothing passed to <code><a href="../reference/mc_draft.html">mc_draft()</a></code> can send.</p>
+</li>
+<li><p><strong><code>test</code> is renamed <code>to_self</code>.</strong> The old name implied a dry run and never was one — it rewrites the recipients so the message reaches only the sender, but with <code>draft = FALSE</code> it still sent. <code>to_self</code> says what it does. Use <code><a href="../reference/mc_draft.html">mc_draft()</a></code> when you want nothing delivered.</p></li>
+<li><p><code><a href="../reference/mc_draft.html">mc_draft()</a></code> rejects <code>send_at</code> and <code>scheduler</code> with an error naming <code><a href="../reference/mc_send.html">mc_send()</a></code>. A scheduled message is by definition one that gets sent.</p></li>
+<li><p><code>override</code> in <code><a href="../reference/mc_md_draft.html">mc_md_draft()</a></code> / <code><a href="../reference/mc_md_send.html">mc_md_send()</a></code> rejects <code>draft</code> and <code>test</code> keys, naming the replacement. <code>override</code> is a back door into the dispatch arguments, so removing the formals did not close the path on its own.</p></li>
+</ul></div>
+<div class="section level3">
+<h3 id="migration-0-3-0">Migration<a class="anchor" aria-label="anchor" href="#migration-0-3-0"></a></h3>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/mc_send.html">mc_send</a></span><span class="op">(</span><span class="va">...</span>, draft <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>              <span class="co"># -&gt; mc_draft(...)</span></span>
+<span><span class="fu"><a href="../reference/mc_send.html">mc_send</a></span><span class="op">(</span><span class="va">...</span>, draft <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>             <span class="co"># -&gt; mc_send(...)</span></span>
+<span><span class="fu"><a href="../reference/mc_send.html">mc_send</a></span><span class="op">(</span><span class="va">...</span>, draft <span class="op">=</span> <span class="cn">FALSE</span>, test <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>  <span class="co"># -&gt; mc_send(..., to_self = TRUE)</span></span>
+<span><span class="fu"><a href="../reference/mc_md_send.html">mc_md_send</a></span><span class="op">(</span><span class="va">path</span><span class="op">)</span>                        <span class="co"># -&gt; mc_md_draft(path)</span></span>
+<span><span class="fu"><a href="../reference/mc_md_send.html">mc_md_send</a></span><span class="op">(</span><span class="va">path</span>, override <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>draft <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span>  <span class="co"># -&gt; mc_md_send(path)</span></span></code></pre></div>
+<p>Calls passing <code>draft</code> or <code>test</code> error rather than changing behaviour silently.</p>
+</div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.2.10" id="mc-0210">mc 0.2.10<a class="anchor" aria-label="anchor" href="#mc-0210"></a></h2>
 <ul><li>
@@ -129,7 +152,7 @@
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer></div>

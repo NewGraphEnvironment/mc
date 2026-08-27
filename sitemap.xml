@@ -11,7 +11,10 @@
 <url><loc>https://newgraphenvironment.github.io/mc/reference/index.html</loc></url>
 <url><loc>https://newgraphenvironment.github.io/mc/reference/mc_auth.html</loc></url>
 <url><loc>https://newgraphenvironment.github.io/mc/reference/mc_compose.html</loc></url>
+<url><loc>https://newgraphenvironment.github.io/mc/reference/mc_deliver.html</loc></url>
+<url><loc>https://newgraphenvironment.github.io/mc/reference/mc_draft.html</loc></url>
 <url><loc>https://newgraphenvironment.github.io/mc/reference/mc_label_ensure.html</loc></url>
+<url><loc>https://newgraphenvironment.github.io/mc/reference/mc_md_draft.html</loc></url>
 <url><loc>https://newgraphenvironment.github.io/mc/reference/mc_md_index.html</loc></url>
 <url><loc>https://newgraphenvironment.github.io/mc/reference/mc_md_meta.html</loc></url>
 <url><loc>https://newgraphenvironment.github.io/mc/reference/mc_md_render.html</loc></url>
@@ -25,6 +28,7 @@
 <url><loc>https://newgraphenvironment.github.io/mc/reference/mc_thread_find.html</loc></url>
 <url><loc>https://newgraphenvironment.github.io/mc/reference/mc_thread_modify.html</loc></url>
 <url><loc>https://newgraphenvironment.github.io/mc/reference/mc_thread_read.html</loc></url>
+<url><loc>https://newgraphenvironment.github.io/mc/reference/md_dispatch_args.html</loc></url>
 <url><loc>https://newgraphenvironment.github.io/mc/reference/run_scheduled_send.html</loc></url>
 </urlset>
 

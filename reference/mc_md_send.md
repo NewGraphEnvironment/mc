@@ -1,4 +1,4 @@
-# Send or draft an email from a markdown file with YAML frontmatter
+# Send an email from a markdown file with YAML frontmatter
 
 One-file workflow: reads metadata (`to`, `subject`, optional `cc`,
 `bcc`, `thread_id`, `attachments`, `labels`, `from`) from the YAML
@@ -10,7 +10,7 @@ splitting subject, body, and recipients across a paired `.R` script.
 ## Usage
 
 ``` r
-mc_md_send(path, draft = TRUE, test = FALSE, override = list())
+mc_md_send(path, to_self = FALSE, override = list())
 ```
 
 ## Arguments
@@ -19,18 +19,16 @@ mc_md_send(path, draft = TRUE, test = FALSE, override = list())
 
   Path to the markdown draft (with YAML frontmatter).
 
-- draft:
+- to_self:
 
-  Logical. If `TRUE` (default), create a Gmail draft.
-
-- test:
-
-  Logical. Test mode — sends to self, strips cc/thread_id.
+  Logical. If `TRUE`, address the message to the sender and drop `cc`,
+  `bcc` and `thread_id`, so it reaches nobody else. Default `FALSE`.
+  Caps the recipients; does not stop the send.
 
 - override:
 
   Named list of arguments to override frontmatter values at call time
-  (e.g. `list(draft = FALSE)` to send). Overrides merge **after**
+  (e.g. `list(subject = "New subject")`). Overrides merge **after**
   frontmatter, so `override` wins.
 
 ## Value
@@ -41,20 +39,27 @@ returns.
 
 ## Details
 
+Sends. To produce a Gmail draft for review instead, use
+[`mc_md_draft()`](https://newgraphenvironment.github.io/mc/reference/mc_md_draft.md).
+
 Required frontmatter fields: `to`, `subject`. Missing either triggers an
 error that names the file.
+
+## See also
+
+[`mc_md_draft()`](https://newgraphenvironment.github.io/mc/reference/mc_md_draft.md)
+to draft from frontmatter,
+[`mc_send()`](https://newgraphenvironment.github.io/mc/reference/mc_send.md)
+for the argument-driven form.
 
 ## Examples
 
 ``` r
 if (FALSE) { # \dontrun{
-# Draft from a frontmattered .md
 mc_md_send("communications/20260413_cindy_newsletter_draft.md")
 
-# Send for real, overriding the default draft = TRUE
-mc_md_send(
-  "communications/20260413_cindy_newsletter_draft.md",
-  override = list(draft = FALSE)
-)
+# Check the rendering in a real inbox without involving anyone else
+mc_md_send("communications/20260413_cindy_newsletter_draft.md",
+           to_self = TRUE)
 } # }
 ```

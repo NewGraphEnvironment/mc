@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="index.html">mc</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.10</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -121,7 +121,7 @@
 <div class="section level3">
 <h3 id="always-bcc-alnewgraphenvironmentcom-on-real-sends">Always BCC <code>al@newgraphenvironment.com</code> on real sends<a class="anchor" aria-label="anchor" href="#always-bcc-alnewgraphenvironmentcom-on-real-sends"></a></h3>
 <p><strong>Why:</strong> keeps a personal archive trail outside Gmail’s Sent folder, and ensures send confirmation lands somewhere reliable in case of a recipient-side delivery issue.</p>
-<p><strong>How to apply:</strong> every <code><a href="reference/mc_send.html">mc_send()</a></code> call targeting <code>test = FALSE</code> should include <code>bcc = "al@newgraphenvironment.com"</code> (unless the recipient list already includes that address). Test sends (<code>test = TRUE</code>) go to al@ only — no BCC needed.</p>
+<p><strong>How to apply:</strong> every <code><a href="reference/mc_send.html">mc_send()</a></code> / <code><a href="reference/mc_md_send.html">mc_md_send()</a></code> call should include <code>bcc = "al@newgraphenvironment.com"</code> (unless the recipient list already includes that address). <code>to_self = TRUE</code> sends go to al@ only — no BCC needed. <code><a href="reference/mc_draft.html">mc_draft()</a></code> / <code><a href="reference/mc_md_draft.html">mc_md_draft()</a></code> deliver nothing, so they need no BCC either.</p>
 </div>
 <div class="section level3">
 <h3 id="run-tests-and-lint-before-committing">Run tests and lint before committing<a class="anchor" aria-label="anchor" href="#run-tests-and-lint-before-committing"></a></h3>
@@ -898,7 +898,7 @@
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer></div>

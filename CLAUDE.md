@@ -100,10 +100,15 @@ recipient-side delivery issue.
 
 **How to apply:** every
 [`mc_send()`](https://newgraphenvironment.github.io/mc/reference/mc_send.md)
-call targeting `test = FALSE` should include
-`bcc = "al@newgraphenvironment.com"` (unless the recipient list already
-includes that address). Test sends (`test = TRUE`) go to al@ only — no
-BCC needed.
+/
+[`mc_md_send()`](https://newgraphenvironment.github.io/mc/reference/mc_md_send.md)
+call should include `bcc = "al@newgraphenvironment.com"` (unless the
+recipient list already includes that address). `to_self = TRUE` sends go
+to al@ only — no BCC needed.
+[`mc_draft()`](https://newgraphenvironment.github.io/mc/reference/mc_draft.md)
+/
+[`mc_md_draft()`](https://newgraphenvironment.github.io/mc/reference/mc_md_draft.md)
+deliver nothing, so they need no BCC either.
 
 ### Run tests and lint before committing
 

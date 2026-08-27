@@ -1,5 +1,63 @@
 # Changelog
 
+## mc 0.3.0
+
+### Breaking changes
+
+- **[`mc_send()`](https://newgraphenvironment.github.io/mc/reference/mc_send.md)
+  no longer drafts.** Delivery is split by function name:
+  [`mc_draft()`](https://newgraphenvironment.github.io/mc/reference/mc_draft.md)
+  can only create a Gmail draft and
+  [`mc_send()`](https://newgraphenvironment.github.io/mc/reference/mc_send.md)
+  can only send. The frontmatter pair splits the same way —
+  [`mc_md_draft()`](https://newgraphenvironment.github.io/mc/reference/mc_md_draft.md)
+  and
+  [`mc_md_send()`](https://newgraphenvironment.github.io/mc/reference/mc_md_send.md).
+  The `draft` argument is gone from all of them, with no deprecated
+  alias ([\#39](https://github.com/NewGraphEnvironment/mc/issues/39)).
+
+  Previously a single boolean selected between a reversible act and an
+  irreversible one, so one character separated them. That produced a
+  real incident: a message reached nine external recipients when a draft
+  was intended. Sending is now named rather than configured, and nothing
+  passed to
+  [`mc_draft()`](https://newgraphenvironment.github.io/mc/reference/mc_draft.md)
+  can send.
+
+- **`test` is renamed `to_self`.** The old name implied a dry run and
+  never was one — it rewrites the recipients so the message reaches only
+  the sender, but with `draft = FALSE` it still sent. `to_self` says
+  what it does. Use
+  [`mc_draft()`](https://newgraphenvironment.github.io/mc/reference/mc_draft.md)
+  when you want nothing delivered.
+
+- [`mc_draft()`](https://newgraphenvironment.github.io/mc/reference/mc_draft.md)
+  rejects `send_at` and `scheduler` with an error naming
+  [`mc_send()`](https://newgraphenvironment.github.io/mc/reference/mc_send.md).
+  A scheduled message is by definition one that gets sent.
+
+- `override` in
+  [`mc_md_draft()`](https://newgraphenvironment.github.io/mc/reference/mc_md_draft.md)
+  /
+  [`mc_md_send()`](https://newgraphenvironment.github.io/mc/reference/mc_md_send.md)
+  rejects `draft` and `test` keys, naming the replacement. `override` is
+  a back door into the dispatch arguments, so removing the formals did
+  not close the path on its own.
+
+### Migration
+
+``` r
+
+mc_send(..., draft = TRUE)              # -> mc_draft(...)
+mc_send(..., draft = FALSE)             # -> mc_send(...)
+mc_send(..., draft = FALSE, test = TRUE)  # -> mc_send(..., to_self = TRUE)
+mc_md_send(path)                        # -> mc_md_draft(path)
+mc_md_send(path, override = list(draft = FALSE))  # -> mc_md_send(path)
+```
+
+Calls passing `draft` or `test` error rather than changing behaviour
+silently.
+
 ## mc 0.2.10
 
 - [`mc_send()`](https://newgraphenvironment.github.io/mc/reference/mc_send.md)

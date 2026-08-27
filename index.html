@@ -23,7 +23,7 @@
 
     <a class="navbar-brand me-2" href="index.html">mc</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.10</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -97,19 +97,19 @@
 <span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a></span>
 <span id="cb5-12"><a href="#cb5-12" tabindex="-1"></a>Thanks,</span>
 <span id="cb5-13"><a href="#cb5-13" tabindex="-1"></a>Al</span></code></pre></div>
-<p>Send it in three lines:</p>
+<p>Draft it in three lines:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/NewGraphEnvironment/mc" class="external-link">mc</a></span><span class="op">)</span></span>
-<span><span class="fu"><a href="reference/mc_send.html">mc_send</a></span><span class="op">(</span><span class="st">"communications/draft.md"</span>,</span>
-<span>        to <span class="op">=</span> <span class="st">"brandon@example.com"</span>,</span>
-<span>        subject <span class="op">=</span> <span class="st">"Cottonwood plugs - 2026 planting"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="reference/mc_draft.html">mc_draft</a></span><span class="op">(</span><span class="st">"communications/draft.md"</span>,</span>
+<span>         to <span class="op">=</span> <span class="st">"brandon@example.com"</span>,</span>
+<span>         subject <span class="op">=</span> <span class="st">"Cottonwood plugs - 2026 planting"</span><span class="op">)</span></span></code></pre></div>
 <p>That creates a Gmail draft with HTML formatting and the standard signature appended. Authentication happens automatically via cached OAuth tokens (run <code><a href="reference/mc_auth.html">mc_auth()</a></code> once per machine to set up).</p>
-<p>When you’re ready to send for real:</p>
+<p>When you’re ready to send for real, name the act:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="reference/mc_send.html">mc_send</a></span><span class="op">(</span><span class="st">"communications/draft.md"</span>,</span>
 <span>        to <span class="op">=</span> <span class="st">"brandon@example.com"</span>,</span>
-<span>        subject <span class="op">=</span> <span class="st">"Cottonwood plugs"</span>,</span>
-<span>        draft <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+<span>        subject <span class="op">=</span> <span class="st">"Cottonwood plugs"</span><span class="op">)</span></span></code></pre></div>
+<p><code><a href="reference/mc_draft.html">mc_draft()</a></code> can only draft and <code><a href="reference/mc_send.html">mc_send()</a></code> can only send — there is no flag that flips one into the other. The same split applies to the frontmatter-driven pair, <code><a href="reference/mc_md_draft.html">mc_md_draft()</a></code> and <code><a href="reference/mc_md_send.html">mc_md_send()</a></code>.</p>
 </div>
 <div class="section level2">
 <h2 id="tables-in-emails">Tables in emails<a class="anchor" aria-label="anchor" href="#tables-in-emails"></a>
@@ -156,9 +156,8 @@
 <span><span class="fu"><a href="reference/mc_send.html">mc_send</a></span><span class="op">(</span><span class="st">"draft.md"</span>,</span>
 <span>        to <span class="op">=</span> <span class="st">"brandon@example.com"</span>,</span>
 <span>        subject <span class="op">=</span> <span class="st">"Re: Cottonwood plugs"</span>,</span>
-<span>        thread_id <span class="op">=</span> <span class="st">"19c05f0a98188c91"</span>,</span>
-<span>        draft <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
-<p><strong>Note:</strong> <code>gm_create_draft()</code> does not support <code>thread_id</code>. Drafts are always standalone. Use <code>draft = FALSE</code> to send directly into a thread, or send the draft manually from the Gmail UI (Gmail will match by subject line if it starts with “Re:”).</p>
+<span>        thread_id <span class="op">=</span> <span class="st">"19c05f0a98188c91"</span><span class="op">)</span></span></code></pre></div>
+<p><strong>Note:</strong> <code>gm_create_draft()</code> does not support <code>thread_id</code>. Drafts are always standalone, and <code><a href="reference/mc_draft.html">mc_draft()</a></code> warns if you pass one. Use <code><a href="reference/mc_send.html">mc_send()</a></code> to deliver straight into a thread, or send the draft manually from the Gmail UI (Gmail will match by subject line if it starts with “Re:”).</p>
 </div>
 <div class="section level2">
 <h2 id="scheduled-send">Scheduled send<a class="anchor" aria-label="anchor" href="#scheduled-send"></a>
@@ -219,15 +218,15 @@
 <p>Pass <code>labels_create = FALSE</code> for strict typo-guard (errors on unknown labels). After-the-fact labelling on existing threads via <code>mc_thread_modify(thread_id, add = ...)</code> — also accepts Gmail system labels like <code>INBOX</code>, <code>STARRED</code>, <code>TRASH</code> for archive / star / trash workflows.</p>
 </div>
 <div class="section level2">
-<h2 id="test-mode">Test mode<a class="anchor" aria-label="anchor" href="#test-mode"></a>
+<h2 id="sending-to-yourself">Sending to yourself<a class="anchor" aria-label="anchor" href="#sending-to-yourself"></a>
 </h2>
-<p>Send to yourself to preview:</p>
+<p><code>to_self = TRUE</code> redirects to your own address, strips CC/BCC, and ignores <code>thread_id</code>:</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="reference/mc_send.html">mc_send</a></span><span class="op">(</span><span class="st">"draft.md"</span>,</span>
 <span>        to <span class="op">=</span> <span class="st">"brandon@example.com"</span>,</span>
 <span>        subject <span class="op">=</span> <span class="st">"Cottonwood plugs"</span>,</span>
-<span>        test <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
-<p>Test mode redirects to your own address, strips CC/BCC, and ignores <code>thread_id</code>.</p>
+<span>        to_self <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<p>It caps who receives the message — it does not stop the send. If you want nothing delivered at all, use <code><a href="reference/mc_draft.html">mc_draft()</a></code>.</p>
 </div>
 <div class="section level2">
 <h2 id="license">License<a class="anchor" aria-label="anchor" href="#license"></a>
@@ -277,7 +276,7 @@
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer>

@@ -6,8 +6,12 @@
   : Authenticate with Gmail
 - [`mc_compose()`](https://newgraphenvironment.github.io/mc/reference/mc_compose.md)
   : Compose an HTML email from mixed content
+- [`mc_draft()`](https://newgraphenvironment.github.io/mc/reference/mc_draft.md)
+  : Create a Gmail draft from a markdown file
 - [`mc_label_ensure()`](https://newgraphenvironment.github.io/mc/reference/mc_label_ensure.md)
   : Ensure Gmail user labels exist (create any missing)
+- [`mc_md_draft()`](https://newgraphenvironment.github.io/mc/reference/mc_md_draft.md)
+  : Create a Gmail draft from a markdown file with YAML frontmatter
 - [`mc_md_index()`](https://newgraphenvironment.github.io/mc/reference/mc_md_index.md)
   : Index markdown email drafts under a directory
 - [`mc_md_meta()`](https://newgraphenvironment.github.io/mc/reference/mc_md_meta.md)
@@ -15,7 +19,7 @@
 - [`mc_md_render()`](https://newgraphenvironment.github.io/mc/reference/mc_md_render.md)
   : Render a markdown draft to HTML email body
 - [`mc_md_send()`](https://newgraphenvironment.github.io/mc/reference/mc_md_send.md)
-  : Send or draft an email from a markdown file with YAML frontmatter
+  : Send an email from a markdown file with YAML frontmatter
 - [`mc_message_find()`](https://newgraphenvironment.github.io/mc/reference/mc_message_find.md)
   : Search Gmail at the message level
 - [`mc_preview()`](https://newgraphenvironment.github.io/mc/reference/mc_preview.md)
@@ -23,7 +27,7 @@
 - [`mc_scroll()`](https://newgraphenvironment.github.io/mc/reference/mc_scroll.md)
   : Wrap a table in a scrollable container for email
 - [`mc_send()`](https://newgraphenvironment.github.io/mc/reference/mc_send.md)
-  : Send or draft an email from a markdown file
+  : Send an email from a markdown file
 - [`mc_sig()`](https://newgraphenvironment.github.io/mc/reference/mc_sig.md)
   : Return an email signature as HTML
 - [`mc_thread_body_latest()`](https://newgraphenvironment.github.io/mc/reference/mc_thread_body_latest.md)
