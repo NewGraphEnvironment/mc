@@ -2,6 +2,7 @@
 
 export(mc_auth)
 export(mc_compose)
+export(mc_draft)
 export(mc_label_ensure)
 export(mc_md_index)
 export(mc_md_meta)

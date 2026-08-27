@@ -14,3 +14,12 @@
 - All fail with "could not find function mc_draft" — the contract is set
 - Two guards encoded that the issue did not call for: `mc_draft()` rejects
   `send_at`/`scheduler`, and `override` rejects `draft`/`test` keys
+
+### Phase 2 — core split (complete)
+
+- `R/mc_deliver.R` holds the shared implementation plus the existing file-local
+  helpers; `R/mc_send.R` and `R/mc_draft.R` are thin wrappers fixing `.draft`
+- `test` → `to_self` throughout; message text now "TO SELF: addressed to ..."
+- `mc_draft()` takes `...` purely to reject `send_at`/`scheduler` with a message
+  naming `mc_send()`, rather than an opaque unused-argument error
+- 66 pass / 0 fail on the draft+send suites

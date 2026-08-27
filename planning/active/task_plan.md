@@ -39,13 +39,13 @@ being removed.
 
 ## Phase 2 — Core split
 
-- [ ] Extract current `mc_send()` body into internal `mc_deliver()` with `.draft` arg; `@keywords internal`, no export
-- [ ] `R/mc_draft.R`: `mc_draft()` — `.draft = TRUE`, no `send_at` / `scheduler`, explicit error if either is supplied
-- [ ] `R/mc_send.R`: `mc_send()` — send-only, retains `send_at` / `scheduler`
-- [ ] Rename `test` → `to_self` in both signatures and in `mc_deliver()`
-- [ ] Move the `gm_create_draft()`-cannot-thread warning into the draft path
-- [ ] `devtools::document()`; confirm NAMESPACE exports `mc_draft`, not `mc_deliver`
-- [ ] Phase 1 draft/send tests pass
+- [x] Extract current `mc_send()` body into internal `mc_deliver()` with `.draft` arg; `@keywords internal`, no export
+- [x] `R/mc_draft.R`: `mc_draft()` — `.draft = TRUE`, no `send_at` / `scheduler`, explicit error if either is supplied
+- [x] `R/mc_send.R`: `mc_send()` — send-only, retains `send_at` / `scheduler`
+- [x] Rename `test` → `to_self` in both signatures and in `mc_deliver()`
+- [x] Move the `gm_create_draft()`-cannot-thread warning into the draft path
+- [x] `devtools::document()`; confirm NAMESPACE exports `mc_draft`, not `mc_deliver`
+- [x] Phase 1 draft/send tests pass
 
 ## Phase 3 — Frontmatter wrappers
 
