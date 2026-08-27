@@ -2,19 +2,19 @@
 % Please edit documentation in R/mc_md_send.R
 \name{mc_md_send}
 \alias{mc_md_send}
-\title{Send or draft an email from a markdown file with YAML frontmatter}
+\title{Send an email from a markdown file with YAML frontmatter}
 \usage{
-mc_md_send(path, draft = TRUE, test = FALSE, override = list())
+mc_md_send(path, to_self = FALSE, override = list())
 }
 \arguments{
 \item{path}{Path to the markdown draft (with YAML frontmatter).}
 
-\item{draft}{Logical. If \code{TRUE} (default), create a Gmail draft.}
-
-\item{test}{Logical. Test mode — sends to self, strips cc/thread_id.}
+\item{to_self}{Logical. If \code{TRUE}, address the message to the sender and
+drop \code{cc}, \code{bcc} and \code{thread_id}, so it reaches nobody else. Default
+\code{FALSE}. Caps the recipients; does not stop the send.}
 
 \item{override}{Named list of arguments to override frontmatter values
-at call time (e.g. \code{list(draft = FALSE)} to send). Overrides merge
+at call time (e.g. \code{list(subject = "New subject")}). Overrides merge
 \strong{after} frontmatter, so \code{override} wins.}
 }
 \value{
@@ -28,19 +28,22 @@ keep each logical email in a single \code{.md} file instead of splitting
 subject, body, and recipients across a paired \code{.R} script.
 }
 \details{
+Sends. To produce a Gmail draft for review instead, use \code{\link[=mc_md_draft]{mc_md_draft()}}.
+
 Required frontmatter fields: \code{to}, \code{subject}. Missing either triggers an
 error that names the file.
 }
 \examples{
 \dontrun{
-# Draft from a frontmattered .md
 mc_md_send("communications/20260413_cindy_newsletter_draft.md")
 
-# Send for real, overriding the default draft = TRUE
-mc_md_send(
-  "communications/20260413_cindy_newsletter_draft.md",
-  override = list(draft = FALSE)
-)
+# Check the rendering in a real inbox without involving anyone else
+mc_md_send("communications/20260413_cindy_newsletter_draft.md",
+           to_self = TRUE)
 }
 
+}
+\seealso{
+\code{\link[=mc_md_draft]{mc_md_draft()}} to draft from frontmatter, \code{\link[=mc_send]{mc_send()}} for the
+argument-driven form.
 }

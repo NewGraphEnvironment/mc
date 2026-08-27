@@ -64,7 +64,7 @@ Mail Composer — compose, draft, and send emails from markdown via the Gmail AP
 
 **Why:** keeps a personal archive trail outside Gmail's Sent folder, and ensures send confirmation lands somewhere reliable in case of a recipient-side delivery issue.
 
-**How to apply:** every `mc_send()` call targeting `test = FALSE` should include `bcc = "al@newgraphenvironment.com"` (unless the recipient list already includes that address). Test sends (`test = TRUE`) go to al@ only — no BCC needed.
+**How to apply:** every `mc_send()` / `mc_md_send()` call should include `bcc = "al@newgraphenvironment.com"` (unless the recipient list already includes that address). `to_self = TRUE` sends go to al@ only — no BCC needed. `mc_draft()` / `mc_md_draft()` deliver nothing, so they need no BCC either.
 
 ### Run tests and lint before committing
 

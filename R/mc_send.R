@@ -1,7 +1,13 @@
-#' Send or draft an email from a markdown file
+#' Send an email from a markdown file
 #'
-#' The main function. Reads a markdown draft, renders to HTML, builds a
-#' MIME message, and either creates a Gmail draft or sends immediately.
+#' Sends immediately. To produce a Gmail draft for review instead, use
+#' [mc_draft()].
+#'
+#' The verb lives in the function name deliberately. An earlier API selected
+#' send-vs-draft with a `draft` argument, which meant one character separated a
+#' reversible act from an irreversible one — and did, once, deliver a message to
+#' external recipients when a draft was intended. There is no `draft` argument
+#' here; sending is named, not configured (#39).
 #'
 #' Authenticates automatically if no active Gmail session is detected.
 #'
@@ -14,10 +20,10 @@
 #'   then the `MC_FROM` environment variable. Errors if neither is set.
 #' @param thread_id Gmail thread ID to reply into. Default `NULL` (new thread).
 #'   Use [mc_thread_find()] to look up thread IDs.
-#' @param draft Logical. If `TRUE` (default), create a Gmail draft.
-#'   If `FALSE`, send immediately.
-#' @param test Logical. If `TRUE`, override `to` with `from` (send to self)
-#'   and ignore `cc` and `thread_id`. Default `FALSE`.
+#' @param to_self Logical. If `TRUE`, override `to` with `from` and drop `cc`,
+#'   `bcc` and `thread_id`, so the message reaches nobody but the sender.
+#'   Default `FALSE`. This caps who receives the message; it does not stop the
+#'   send. Use [mc_draft()] if you do not want a message delivered at all.
 #' @param sig Logical. Append signature? Passed to [mc_md_render()].
 #'   Default `TRUE`.
 #' @param sig_path Path to a custom signature HTML file. Default `NULL`
@@ -27,136 +33,44 @@
 #'   Each file is attached via [gmailr::gm_attach_file()]. Default `NULL`.
 #' @param labels Optional character vector of Gmail label names to apply
 #'   to the resulting thread. Applied via [mc_thread_modify()] after a
-#'   successful draft creation or send. Labels are applied to the draft's
-#'   thread on the draft path; in most cases Gmail keeps the same thread
-#'   when the draft is sent from the UI, so labels carry over.
+#'   successful send.
 #' @param labels_create Logical. When `TRUE` (default), missing user
-#'   labels in `labels` are auto-created via [mc_label_ensure()] before
-#'   being applied — supports tag-as-you-go in YAML-driven drafts. Set
-#'   `FALSE` to keep typo-guard behavior (errors on unknown labels,
-#'   downgraded to a warning per the existing label tryCatch).
+#'   labels in `labels` are auto-created via [mc_label_ensure()].
 #' @param html Optional pre-rendered HTML body. If provided, `path` is ignored
 #'   and this HTML is used directly.
 #' @param send_at Schedule the email for later. Either a `POSIXct` datetime
-#'   or a numeric number of minutes from now. Default `NULL` (send/draft
-#'   immediately). When set, `draft` is forced to `FALSE` and the email is
-#'   sent via the backend selected by `scheduler`.
-#' @param scheduler Backend for scheduled send. One of `"callr"` (default —
-#'   `callr::r_bg` background process; back-compat with prior versions),
-#'   `"auto"` (resolves to OS-native: `launchd` on macOS, `at` on Linux),
-#'   `"launchd"` (force macOS launchd), `"at"` (force Linux at — Phase 3,
-#'   not yet implemented). Ignored when `send_at` is `NULL`. See the
-#'   `Scheduled send` section in details for the lifecycle caveat that
-#'   motivates `"auto"`.
+#'   or a numeric number of minutes from now. Default `NULL` (send now).
+#'   Scheduling is inherently a send, which is why it lives here and not on
+#'   [mc_draft()].
+#' @param scheduler Backend for scheduled send. One of `"callr"` (default),
+#'   `"auto"` (OS-native: `launchd` on macOS, `at` on Linux), `"launchd"`, or
+#'   `"at"`. Ignored when `send_at` is `NULL`.
 #'
-#' @return When `send_at` is `NULL`, the Gmail thread ID of the resulting
-#'   draft or sent message, returned invisibly. May be `NULL` if the gmailr
-#'   response did not include one (e.g. mocked tests). When `send_at` is set,
-#'   returns a backend-specific scheduler handle invisibly:
-#'   - `scheduler = "callr"`: a [callr::r_bg()] process handle with
-#'     `$is_alive()` / `$kill()` methods.
-#'   - `scheduler = "launchd"` (macOS) or `"auto"` on Darwin: a list with
-#'     `$backend = "launchd"`, `$label`, `$plist` (path), and `$args_path`.
-#'     Cancel manually via `launchctl unload <plist>` + `unlink` if needed.
+#' @return The Gmail thread ID of the sent message, invisibly. When `send_at`
+#'   is set, returns a backend-specific scheduler handle invisibly instead.
 #'
-#' @details
-#' ## Threading
-#'
-#' Gmail's `gm_create_draft()` does **not** support `thread_id`. When
-#' `draft = TRUE` and `thread_id` is set, `mc_send()` issues a warning
-#' because the draft will not appear in the thread until manually sent
-#' from the Gmail UI. Set subject to `"Re: Original Subject"` so Gmail's
-#' thread-matching heuristic can place it correctly.
-#'
-#' When `draft = FALSE` and `thread_id` is set, the message is sent
-#' directly into the thread via `gm_send_message(thread_id = ...)`.
-#'
-#' ## Test mode
-#'
-#' `test = TRUE` sends to yourself, strips CC, and ignores `thread_id`
-#' to prevent accidental sends to real threads during development.
-#'
-#' ## Scheduled send
-#'
-#' `send_at` runs a background R process on your machine via
-#' `callr::r_bg()`. On macOS, `caffeinate` is used to prevent idle sleep
-#' so the machine stays awake until the email sends. The laptop lid can
-#' be closed as long as power is connected.
-#'
-#' - **Laptop powered on** — sends on time (caffeinate prevents sleep)
-#' - **Laptop powered off** — process dies, email never sends
-#'
-#' If caffeinate is bypassed and the machine sleeps through the send
-#' window, a 5-minute grace period applies. Past that, the send is
-#' **skipped** to prevent stale emails firing unexpectedly.
-#'
-#' ### Lifecycle caveat (mc#36)
-#'
-#' The `callr::r_bg` background process can be cleaned up before fire
-#' time when its parent context exits (one-shot `Rscript -e ...`,
-#' RStudio session that closes, CI job). When that happens the send
-#' silently drops — the bg process is gone before it could log a
-#' `STARTED` entry, and `caffeinate` exits when its watched PID dies.
-#' `send_at` emits a `warning()` on use to surface this risk; future
-#' versions will add `scheduler = "auto"` backed by OS-native
-#' primitives (`launchd` on macOS, `at` on Linux) that own their own
-#' lifecycle.
-#'
-#' Heartbeat log entries are written to `~/.mc/send_log.txt` so missed
-#' fires are auditable from the log alone:
-#'
-#' - `SCHEDULED` — written at submission with the target time
-#' - `STARTED` — written at fire time, just before the actual send
-#' - `SENT` / `SKIPPED` / `FAILED` — written at outcome
-#'
-#' A `SCHEDULED` line with no follow-up `STARTED` entry means the
-#' background process died before it fired.
+#' @seealso [mc_draft()] to create a draft, [mc_md_send()] to send from
+#'   frontmatter.
 #'
 #' @examples
 #' \dontrun{
-#' # Create a draft (safe default)
-#' mc_send("communications/draft.md",
-#'         to = "brandon@example.com",
-#'         subject = "Cottonwood plugs")
+#' mc_send("communications/newsletter.md",
+#'         to = "someone@example.com",
+#'         subject = "Spring newsletter")
 #'
-#' # Send into an existing thread
-#' mc_send("communications/draft.md",
-#'         to = "brandon@example.com",
-#'         subject = "Re: Cottonwood plugs",
-#'         thread_id = "19c05f0a98188c91",
-#'         draft = FALSE)
+#' # Check the rendering in a real inbox without involving anyone else
+#' mc_send("communications/newsletter.md",
+#'         to = "someone@example.com",
+#'         subject = "Spring newsletter",
+#'         to_self = TRUE)
 #'
-#' # Test mode — sends to self
-#' mc_send("communications/draft.md",
-#'         to = "brandon@example.com",
-#'         subject = "Cottonwood plugs",
-#'         test = TRUE)
-#'
-#' # Send in 10 minutes
-#' proc <- mc_send("communications/draft.md",
-#'                 to = "brandon@example.com",
-#'                 subject = "Cottonwood plugs",
-#'                 send_at = 10)
-#' proc$is_alive()  # check if still waiting
-#' proc$kill()      # cancel
-#'
-#' # Send at a specific time
-#' mc_send("communications/draft.md",
-#'         to = "brandon@example.com",
-#'         subject = "Cottonwood plugs",
-#'         send_at = as.POSIXct("2026-02-24 09:11:00"))
-#'
-#' # Attach files
-#' mc_send("communications/draft.md",
-#'         to = "brandon@example.com",
-#'         subject = "Planting plan",
-#'         attachments = c("data/plan.xlsx", "fig/map.pdf"))
+#' # Reply into an existing thread
+#' mc_send("communications/reply.md",
+#'         to = "someone@example.com",
+#'         subject = "Re: Spring newsletter",
+#'         thread_id = "19c05f0a98188c91")
 #' }
 #'
-#' @importFrom chk chk_null_or chk_character chk_string chk_flag vld_string
-#'   vld_character
-#' @importFrom gmailr gm_mime gm_to gm_from gm_subject gm_html_body gm_cc
-#'   gm_bcc gm_create_draft gm_send_message gm_attach_file
 #' @export
 mc_send <- function(path = NULL,
                     to,
@@ -165,8 +79,7 @@ mc_send <- function(path = NULL,
                     bcc = NULL,
                     from = default_from(),
                     thread_id = NULL,
-                    draft = TRUE,
-                    test = FALSE,
+                    to_self = FALSE,
                     sig = TRUE,
                     sig_path = NULL,
                     attachments = NULL,
@@ -175,269 +88,11 @@ mc_send <- function(path = NULL,
                     html = NULL,
                     send_at = NULL,
                     scheduler = c("callr", "auto", "launchd", "at")) {
-
-  scheduler <- match.arg(scheduler)
-
-  chk::chk_null_or(path, vld = chk::vld_string)
-  chk::chk_character(to)
-  chk::chk_string(subject)
-  chk::chk_null_or(cc, vld = chk::vld_character)
-  chk::chk_null_or(bcc, vld = chk::vld_character)
-  chk::chk_string(from)
-  chk::chk_null_or(thread_id, vld = chk::vld_string)
-  chk::chk_flag(draft)
-  chk::chk_flag(test)
-  chk::chk_flag(sig)
-  chk::chk_null_or(sig_path, vld = chk::vld_string)
-  chk::chk_null_or(attachments, vld = chk::vld_character)
-  chk::chk_null_or(labels, vld = chk::vld_character)
-  chk::chk_flag(labels_create)
-  chk::chk_null_or(html, vld = chk::vld_string)
-
-  # Validate attachment files exist
-  if (!is.null(attachments)) {
-    missing <- attachments[!file.exists(attachments)]
-    if (length(missing) > 0) {
-      stop(
-        "Attachment file(s) not found: ",
-        paste(missing, collapse = ", "),
-        call. = FALSE
-      )
-    }
-  }
-
-  # Render HTML up front (before any scheduling dispatch) so the body
-  # travels with `args` to the scheduler backend — avoids re-reading the
-  # markdown at fire time (path may have moved, body may have changed)
-  # and means the launchd plist's R invocation does not need filesystem
-  # access to the original draft.
-  if (is.null(html)) {
-    if (is.null(path)) {
-      stop("Provide either `path` to a markdown file or `html`.", call. = FALSE)
-    }
-    html <- mc_md_render(path, sig = sig, sig_path = sig_path)
-  }
-
-  # Scheduled send — defer to backend dispatcher
-  if (!is.null(send_at)) {
-    if (scheduler == "callr") {
-      warning(
-        "scheduler = \"callr\" scheduled-send is unreliable in some call ",
-        "contexts (Rscript one-shot, RStudio sessions that exit, CI). The ",
-        "callr background process can be cleaned up before fire time, ",
-        "silently dropping the send. Heartbeat log entries (SCHEDULED at ",
-        "submission, STARTED at fire) make missed fires auditable from ",
-        "~/.mc/send_log.txt. Use scheduler = \"auto\" for OS-native ",
-        "scheduling (launchd / at) — see ",
-        "https://github.com/NewGraphEnvironment/mc/issues/36",
-        call. = FALSE
-      )
-    }
-    send_time <- resolve_send_at(send_at)
-    delay_min <- as.numeric(difftime(send_time, Sys.time(), units = "mins"))
-    message(
-      "Scheduled to send at ", format(send_time, "%Y-%m-%d %H:%M:%S"),
-      " (", round(delay_min, 1), " min from now)",
-      "\nTo: ", paste(to, collapse = ", ")
-    )
-    send_log(
-      subject, to, "SCHEDULED",
-      paste0("target=", format(send_time, "%Y-%m-%d %H:%M:%S"),
-             " scheduler=", scheduler)
-    )
-    schedule_args <- list(
-      to = to, subject = subject, cc = cc, bcc = bcc, from = from,
-      thread_id = thread_id, draft = FALSE, test = test, sig = sig,
-      sig_path = sig_path, attachments = attachments, labels = labels,
-      labels_create = labels_create, html = html
-    )
-    handle <- schedule_send(send_time, schedule_args, scheduler = scheduler)
-    return(invisible(handle))
-  }
-
-  # Test mode: redirect to self, strip threading
-  if (test) {
-    to <- from
-    cc <- NULL
-    bcc <- NULL
-    thread_id <- NULL
-    message("TEST MODE: sending to ", from)
-  }
-
-  # Build MIME message
-  msg <- gmailr::gm_mime()
-  msg <- gmailr::gm_to(msg, to)
-  msg <- gmailr::gm_from(msg, from)
-  msg <- gmailr::gm_subject(msg, subject)
-  msg <- gmailr::gm_html_body(msg, html)
-
-  if (!is.null(cc)) {
-    msg <- gmailr::gm_cc(msg, cc)
-  }
-  if (!is.null(bcc)) {
-    msg <- gmailr::gm_bcc(msg, bcc)
-  }
-  if (!is.null(attachments)) {
-    for (file_path in attachments) {
-      msg <- gmailr::gm_attach_file(msg, file_path)
-    }
-  }
-
-  # Draft or send — capture thread_id from gmailr response
-  if (draft) {
-    if (!is.null(thread_id)) {
-      warning(
-        "Draft created but will NOT appear in thread. ",
-        "gm_create_draft() does not support thread_id. ",
-        "Use draft = FALSE to send directly into the thread, ",
-        "or send the draft manually from Gmail UI.",
-        call. = FALSE
-      )
-    }
-    res <- gmailr::gm_create_draft(msg)
-    sent_thread_id <- extract_thread_id(res)
-    message("Draft created in Gmail. To: ", paste(to, collapse = ", "))
-  } else {
-    if (!is.null(thread_id)) {
-      res <- gmailr::gm_send_message(msg, thread_id = thread_id)
-      message("Sent to thread ", thread_id, ". To: ", paste(to, collapse = ", "))
-    } else {
-      res <- gmailr::gm_send_message(msg)
-      message("Sent (new thread). To: ", paste(to, collapse = ", "))
-    }
-    sent_thread_id <- extract_thread_id(res)
-  }
-
-  # Apply labels to the draft or sent thread.
-  # Wrapped in tryCatch so a label failure (unknown name, network error, auth
-  # blip) does not cascade into an error on a draft/send that already
-  # succeeded — the user would otherwise be left with a sent email but no
-  # labels and no clear recovery path. Failures degrade to a warning that
-  # surfaces the thread_id so the user can retry mc_thread_modify() manually.
-  if (!is.null(labels)) {
-    if (is.null(sent_thread_id)) {
-      warning(
-        "Labels not applied: gmailr response did not include a threadId.",
-        call. = FALSE
-      )
-    } else {
-      thread_label_target <- if (draft) "draft thread" else "thread"
-      tryCatch(
-        {
-          mc_thread_modify(sent_thread_id, add = labels,
-                           create_missing = labels_create)
-          message(
-            "Labels applied to ", thread_label_target, " ", sent_thread_id,
-            ": ", paste(labels, collapse = ", ")
-          )
-        },
-        error = function(e) {
-          warning(
-            "Labels not applied to ", thread_label_target, " ",
-            sent_thread_id, ": ", conditionMessage(e),
-            "\nRetry manually with mc_thread_modify(\"", sent_thread_id,
-            "\", add = c(\"", paste(labels, collapse = "\", \""), "\")).",
-            call. = FALSE
-          )
-        }
-      )
-    }
-  }
-
-  invisible(sent_thread_id)
-}
-
-
-#' Pull threadId out of a gmailr draft or message resource
-#'
-#' Drafts nest the message under `$message`; sent messages have it at the top
-#' level. Returns `NULL` if no threadId is present (e.g. mocked test stubs).
-#' @noRd
-extract_thread_id <- function(res) {
-  if (is.null(res)) return(NULL)
-  if (!is.null(res$threadId)) return(res$threadId)
-  if (!is.null(res$message) && !is.null(res$message$threadId)) {
-    return(res$message$threadId)
-  }
-  NULL
-}
-
-
-#' Prevent idle sleep on macOS while a scheduled send is waiting
-#'
-#' Runs `caffeinate -i -w <pid>` in the background. Caffeinate exits
-#' automatically when the target process exits. No-op on non-macOS systems.
-#' @param proc A callr process handle.
-#' @noRd
-caffeinate_send <- function(proc) {
-  if (Sys.info()[["sysname"]] != "Darwin") return(invisible(NULL))
-  pid <- proc$get_pid()
-  system2("caffeinate", args = c("-i", "-w", pid), wait = FALSE,
-          stdout = FALSE, stderr = FALSE)
-  message("caffeinate active (PID ", pid, ") — machine will stay awake")
-  invisible(NULL)
-}
-
-
-#' Log a scheduled send outcome to ~/.mc/send_log.txt
-#'
-#' Appends one line per event. Creates the directory if needed.
-#' @param subject Email subject.
-#' @param to Recipient(s).
-#' @param status One of "SCHEDULED", "STARTED", "SENT", "SKIPPED", "FAILED".
-#' @param detail Optional detail message.
-#' @noRd
-send_log <- function(subject, to, status, detail = "") {
-  log_dir <- file.path(Sys.getenv("HOME"), ".mc")
-  if (!dir.exists(log_dir)) dir.create(log_dir, recursive = TRUE)
-  line <- paste0(
-    format(Sys.time(), "%Y-%m-%d %H:%M:%S"), " | ",
-    status, " | ",
-    "To: ", paste(to, collapse = ", "), " | ",
-    "Subject: ", subject,
-    if (nzchar(detail)) paste0(" | ", detail) else ""
+  mc_deliver(
+    path = path, to = to, subject = subject, cc = cc, bcc = bcc, from = from,
+    thread_id = thread_id, to_self = to_self, sig = sig, sig_path = sig_path,
+    attachments = attachments, labels = labels, labels_create = labels_create,
+    html = html, send_at = send_at, scheduler = scheduler,
+    .draft = FALSE
   )
-  cat(line, "\n", file = file.path(log_dir, "send_log.txt"), append = TRUE)
-}
-
-
-#' Show a macOS desktop notification for scheduled send outcomes
-#'
-#' Uses `osascript` to display a notification. No-op on non-macOS systems.
-#' @param title Notification title.
-#' @param body Notification body.
-#' @noRd
-send_notify <- function(title, body) {
-  if (Sys.info()[["sysname"]] != "Darwin") return(invisible(NULL))
-  script <- paste0(
-    'display notification "', gsub('"', '\\\\"', body),
-    '" with title "mc" subtitle "', gsub('"', '\\\\"', title), '"'
-  )
-  tryCatch(
-    system2("osascript", args = c("-e", script), stdout = FALSE, stderr = FALSE),
-    error = function(e) NULL
-  )
-  invisible(NULL)
-}
-
-
-#' Convert send_at value to a target POSIXct time
-#' @param send_at POSIXct datetime or numeric minutes from now.
-#' @return POSIXct target time.
-#' @noRd
-resolve_send_at <- function(send_at) {
-  if (inherits(send_at, "POSIXct")) {
-    target <- send_at
-  } else if (is.numeric(send_at) && length(send_at) == 1) {
-    target <- Sys.time() + send_at * 60
-  } else {
-    stop(
-      "`send_at` must be a POSIXct datetime or numeric minutes from now.",
-      call. = FALSE
-    )
-  }
-  if (target <= Sys.time()) {
-    stop("`send_at` must be in the future.", call. = FALSE)
-  }
-  target
 }

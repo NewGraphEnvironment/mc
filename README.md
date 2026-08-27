@@ -55,27 +55,30 @@ Thanks,
 Al
 ```
 
-Send it in three lines:
+Draft it in three lines:
 
 ```r
 library(mc)
-mc_send("communications/draft.md",
-        to = "brandon@example.com",
-        subject = "Cottonwood plugs - 2026 planting")
+mc_draft("communications/draft.md",
+         to = "brandon@example.com",
+         subject = "Cottonwood plugs - 2026 planting")
 ```
 
 That creates a Gmail draft with HTML formatting and the standard signature
 appended. Authentication happens automatically via cached OAuth tokens
 (run `mc_auth()` once per machine to set up).
 
-When you're ready to send for real:
+When you're ready to send for real, name the act:
 
 ```r
 mc_send("communications/draft.md",
         to = "brandon@example.com",
-        subject = "Cottonwood plugs",
-        draft = FALSE)
+        subject = "Cottonwood plugs")
 ```
+
+`mc_draft()` can only draft and `mc_send()` can only send — there is no flag
+that flips one into the other. The same split applies to the frontmatter-driven
+pair, `mc_md_draft()` and `mc_md_send()`.
 
 ## Tables in emails
 
@@ -127,14 +130,13 @@ mc_thread_read("19c05f0a98188c91", drafts = TRUE)
 mc_send("draft.md",
         to = "brandon@example.com",
         subject = "Re: Cottonwood plugs",
-        thread_id = "19c05f0a98188c91",
-        draft = FALSE)
+        thread_id = "19c05f0a98188c91")
 ```
 
 **Note:** `gm_create_draft()` does not support `thread_id`. Drafts are always
-standalone. Use `draft = FALSE` to send directly into a thread, or send the
-draft manually from the Gmail UI (Gmail will match by subject line if it
-starts with "Re:").
+standalone, and `mc_draft()` warns if you pass one. Use `mc_send()` to deliver
+straight into a thread, or send the draft manually from the Gmail UI (Gmail
+will match by subject line if it starts with "Re:").
 
 ## Scheduled send
 
@@ -213,18 +215,20 @@ After-the-fact labelling on existing threads via `mc_thread_modify(thread_id, ad
 also accepts Gmail system labels like `INBOX`, `STARRED`, `TRASH` for
 archive / star / trash workflows.
 
-## Test mode
+## Sending to yourself
 
-Send to yourself to preview:
+`to_self = TRUE` redirects to your own address, strips CC/BCC, and ignores
+`thread_id`:
 
 ```r
 mc_send("draft.md",
         to = "brandon@example.com",
         subject = "Cottonwood plugs",
-        test = TRUE)
+        to_self = TRUE)
 ```
 
-Test mode redirects to your own address, strips CC/BCC, and ignores `thread_id`.
+It caps who receives the message — it does not stop the send. If you want
+nothing delivered at all, use `mc_draft()`.
 
 ## License
 

@@ -6,7 +6,7 @@ write_draft <- function(lines) {
 
 test_that("mc_md_send rejects bad input", {
   expect_error(mc_md_send(123))
-  expect_error(mc_md_send("x", draft = "yes"))
+  expect_error(mc_md_send("x", to_self = "yes"))
   expect_error(mc_md_send("x", override = "bad"))
 })
 
@@ -40,15 +40,15 @@ test_that("mc_md_send dispatches frontmatter fields to mc_send", {
   expect_equal(captured$thread_id, "tid1")
   expect_equal(captured$attachments, "/tmp/x.pdf")
   expect_equal(captured$labels, c("project-x", "urgent"))
-  expect_true(captured$draft)
-  expect_false(captured$test)
+  expect_false(captured$to_self)
   expect_equal(captured$path, p)
 })
 
 test_that("mc_md_send passes NULL labels when frontmatter omits them", {
   captured <- NULL
   mockery::stub(mc_md_send, "mc_send", function(...) {
-    captured <<- list(...); invisible(NULL)
+    captured <<- list(...)
+    invisible(NULL)
   })
   p <- write_draft(c("---", "to: a@x.com", "subject: Hi", "---", "body"))
   mc_md_send(p)
@@ -58,7 +58,8 @@ test_that("mc_md_send passes NULL labels when frontmatter omits them", {
 test_that("mc_md_send coerces empty labels list to NULL", {
   captured <- NULL
   mockery::stub(mc_md_send, "mc_send", function(...) {
-    captured <<- list(...); invisible(NULL)
+    captured <<- list(...)
+    invisible(NULL)
   })
   # `labels: []` parses to list() — should pass through as NULL
   p_empty <- write_draft(c(
@@ -76,12 +77,26 @@ test_that("mc_md_send coerces empty labels list to NULL", {
   expect_null(captured$labels)
 })
 
-test_that("mc_md_send rejects path in override", {
-  p <- write_draft(c("---", "to: a@x.com", "subject: hi", "---", "body"))
-  expect_error(
-    mc_md_send(p, override = list(path = "/other.md")),
-    "cannot change"
-  )
+test_that("mc_md_send override wins over frontmatter", {
+  captured <- NULL
+  mockery::stub(mc_md_send, "mc_send", function(...) {
+    captured <<- list(...)
+    invisible(NULL)
+  })
+  p <- write_draft(c(
+    "---", "to: a@x.com", "subject: Original", "---", "body"
+  ))
+  mc_md_send(p, override = list(subject = "Overridden"))
+  expect_equal(captured$subject, "Overridden")
+})
+
+# draft/test are gone (#39). override is a back door into mc_send()'s arguments,
+# so removing the formals is not enough - the list needs its own guard or the
+# ambiguity survives.
+test_that("mc_md_send override rejects the removed draft and test keys", {
+  p <- write_draft(c("---", "to: a@x.com", "subject: Hi", "---", "body"))
+  expect_error(mc_md_send(p, override = list(draft = FALSE)), "mc_md_draft")
+  expect_error(mc_md_send(p, override = list(test = TRUE)), "to_self")
 })
 
 test_that("mc_md_send override wins over frontmatter", {
@@ -94,18 +109,17 @@ test_that("mc_md_send override wins over frontmatter", {
   p <- write_draft(c(
     "---", "to: a@x.com", "subject: Hi", "---", "body"
   ))
-  mc_md_send(p, override = list(draft = FALSE, subject = "Overridden"))
-  expect_false(captured$draft)
+  mc_md_send(p, override = list(subject = "Overridden"))
   expect_equal(captured$subject, "Overridden")
 })
 
-test_that("mc_md_send passes draft/test flags through", {
+test_that("mc_md_send passes to_self through", {
   captured <- NULL
   mockery::stub(mc_md_send, "mc_send", function(...) {
-    captured <<- list(...); invisible(NULL)
+    captured <<- list(...)
+    invisible(NULL)
   })
   p <- write_draft(c("---", "to: a@x.com", "subject: Hi", "---", "body"))
-  mc_md_send(p, draft = FALSE, test = TRUE)
-  expect_false(captured$draft)
-  expect_true(captured$test)
+  mc_md_send(p, to_self = TRUE)
+  expect_true(captured$to_self)
 })

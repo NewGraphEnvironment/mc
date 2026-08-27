@@ -56,8 +56,8 @@ withr::defer({
   }
 }, envir = parent.frame())
 
-test_that("mc_send creates a draft", {
-  mc_send(
+test_that("mc_draft creates a draft", {
+  mc_draft(
     html = paste0("<p>Integration test: ", test_tag, "</p><pre>", test_meta, "</pre>"),
     to = "al@newgraphenvironment.com",
     subject = test_tag,
@@ -81,8 +81,7 @@ test_that("mc_send sends to self", {
     html = paste0("<p>Sent test: ", test_tag, "</p><pre>", test_meta, "</pre>"),
     to = "al@newgraphenvironment.com",
     subject = paste("Sent", test_tag),
-    draft = FALSE,
-    test = TRUE,
+    to_self = TRUE,
     sig = FALSE
   )
 
@@ -117,13 +116,12 @@ test_that("mc_thread_read returns the test message", {
 test_that("mc_send replies into the test thread", {
   thread_id <- env$test_thread_id
 
-  # Can't use test = TRUE here — it strips thread_id
+  # Can't use to_self = TRUE here — it strips thread_id
   mc_send(
     html = paste0("<p>Reply test: ", test_tag, "</p><pre>", test_meta, "</pre>"),
     to = "al@newgraphenvironment.com",
     subject = paste("Re: Sent", test_tag),
     thread_id = thread_id,
-    draft = FALSE,
     sig = FALSE
   )
 
@@ -201,8 +199,7 @@ test_that("mc_send applies labels to a sent thread", {
     html = paste0("<p>Labels send test: ", test_tag, "</p><pre>", test_meta, "</pre>"),
     to = "al@newgraphenvironment.com",
     subject = paste("Labels send", test_tag),
-    draft = FALSE,
-    test = TRUE,
+    to_self = TRUE,
     labels = label_name,
     sig = FALSE
   )
@@ -218,7 +215,7 @@ test_that("mc_send applies labels to a sent thread", {
   )
 })
 
-test_that("mc_send applies labels to a draft thread", {
+test_that("mc_draft applies labels to a draft thread", {
   label_name <- paste0("mc-draft-label-", format(Sys.time(), "%Y%m%d-%H%M%S"))
   created <- gmailr::gm_create_label(label_name)
   label_id <- created$id
@@ -226,7 +223,7 @@ test_that("mc_send applies labels to a draft thread", {
     tryCatch(gmailr::gm_delete_label(label_id), error = function(e) NULL)
   )
 
-  thread_id <- mc_send(
+  thread_id <- mc_draft(
     html = paste0("<p>Labels draft test: ", test_tag, "</p><pre>", test_meta, "</pre>"),
     to = "al@newgraphenvironment.com",
     subject = paste("Labels draft", test_tag),
@@ -236,7 +233,7 @@ test_that("mc_send applies labels to a draft thread", {
 
   Sys.sleep(3)
 
-  expect_false(is.null(thread_id), info = "mc_send did not return a draft thread_id")
+  expect_false(is.null(thread_id), info = "mc_draft did not return a draft thread_id")
   thread <- gmailr::gm_thread(id = thread_id)
   msg_labels <- unlist(lapply(thread$messages, function(m) m$labelIds))
   expect_true(
@@ -293,8 +290,7 @@ test_that("mc_compose with mc_scroll sends a table email", {
     html = body,
     to = "al@newgraphenvironment.com",
     subject = paste("Table", test_tag),
-    draft = FALSE,
-    test = TRUE,
+    to_self = TRUE,
     sig = FALSE
   )
 
