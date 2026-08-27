@@ -62,7 +62,7 @@ being removed.
 - [x] `CLAUDE.md`: reword the BCC convention in terms of `mc_send()` vs `mc_send(to_self = TRUE)`
 - [x] `NEWS.md`: 0.3.0 breaking entry
 - [x] `devtools::document() && devtools::test() && lintr::lint_package()` clean
-- [ ] `DESCRIPTION` → 0.3.0 as the final commit
+- [x] `DESCRIPTION` → 0.3.0 as the final commit
 
 ## Phase 5 — Downstream (compost, separate PR)
 
@@ -70,8 +70,8 @@ being removed.
 
 ## Validation
 
-- [ ] `devtools::test()` green; `lintr::lint_package()` clean
-- [ ] Manual: `grep -rn "draft *=" R/ | grep -v thread_find | grep -v message_find` returns nothing
-- [ ] `/code-check` clean on each commit
-- [ ] PWF checkboxes match landed work
+- [x] `devtools::test()` green; `lintr::lint_package()` clean
+- [x] Manual: `grep -rn "draft *=" R/ | grep -v thread_find | grep -v message_find` returns nothing
+- [x] `/code-check` clean on each commit
+- [x] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion
