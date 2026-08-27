@@ -56,12 +56,12 @@ being removed.
 
 ## Phase 4 — Docs, integration tests, release
 
-- [ ] Runnable `@examples` on `mc_draft()` / `mc_md_draft()`; update `mc_send()` / `mc_md_send()` examples
-- [ ] `test-integration.R`: `draft = FALSE, test = TRUE` → `mc_send(to_self = TRUE)`
-- [ ] `README.md`: quick-start and threading sections
-- [ ] `CLAUDE.md`: reword the BCC convention in terms of `mc_send()` vs `mc_send(to_self = TRUE)`
-- [ ] `NEWS.md`: 0.3.0 breaking entry
-- [ ] `devtools::document() && devtools::test() && lintr::lint_package()` clean
+- [x] Runnable `@examples` on `mc_draft()` / `mc_md_draft()`; update `mc_send()` / `mc_md_send()` examples
+- [x] `test-integration.R`: `draft = FALSE, test = TRUE` → `mc_send(to_self = TRUE)`
+- [x] `README.md`: quick-start and threading sections
+- [x] `CLAUDE.md`: reword the BCC convention in terms of `mc_send()` vs `mc_send(to_self = TRUE)`
+- [x] `NEWS.md`: 0.3.0 breaking entry
+- [x] `devtools::document() && devtools::test() && lintr::lint_package()` clean
 - [ ] `DESCRIPTION` → 0.3.0 as the final commit
 
 ## Phase 5 — Downstream (compost, separate PR)

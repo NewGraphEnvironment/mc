@@ -18,22 +18,22 @@
 #' @importFrom gmailr gm_mime gm_to gm_from gm_subject gm_html_body gm_cc
 #'   gm_bcc gm_create_draft gm_send_message gm_attach_file
 mc_deliver <- function(path = NULL,
-                    to,
-                    subject,
-                    cc = NULL,
-                    bcc = NULL,
-                    from = default_from(),
-                    thread_id = NULL,
-                    .draft,
-                    to_self = FALSE,
-                    sig = TRUE,
-                    sig_path = NULL,
-                    attachments = NULL,
-                    labels = NULL,
-                    labels_create = TRUE,
-                    html = NULL,
-                    send_at = NULL,
-                    scheduler = c("callr", "auto", "launchd", "at")) {
+                       to,
+                       subject,
+                       cc = NULL,
+                       bcc = NULL,
+                       from = default_from(),
+                       thread_id = NULL,
+                       .draft,
+                       to_self = FALSE,
+                       sig = TRUE,
+                       sig_path = NULL,
+                       attachments = NULL,
+                       labels = NULL,
+                       labels_create = TRUE,
+                       html = NULL,
+                       send_at = NULL,
+                       scheduler = c("callr", "auto", "launchd", "at")) {
 
   scheduler <- match.arg(scheduler)
 

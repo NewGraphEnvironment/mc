@@ -32,3 +32,16 @@
 - `override` guards reject `draft` and `test` keys with messages naming the
   replacement, rather than an unused-argument error further down
 - Full suite: 396 pass / 0 fail / 1 skip
+
+### Phase 4 — docs, integration tests, release
+
+- Integration tests: four `draft = FALSE, test = TRUE` sites became
+  `mc_send(to_self = TRUE)`. Two others relied on the old `draft = TRUE`
+  default and had to become `mc_draft()` — a blanket rename would have left
+  them sending while asserting `in:drafts`
+- README quick start now leads with `mc_draft()`; "Test mode" section renamed
+  and reworded, since `to_self` caps recipients rather than preventing a send
+- `CLAUDE.md` BCC convention rephrased off `test`
+- NEWS 0.3.0 with a migration table
+- 396 pass / 0 fail; lint clean in every file this branch touches (the 12
+  remaining package lints are in files untouched here)

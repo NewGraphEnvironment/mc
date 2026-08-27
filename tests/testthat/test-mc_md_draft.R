@@ -18,7 +18,8 @@ test_that("mc_md_draft errors when required fields missing", {
 test_that("mc_md_draft dispatches frontmatter fields to mc_draft", {
   captured <- NULL
   mockery::stub(mc_md_draft, "mc_draft", function(...) {
-    captured <<- list(...); invisible(NULL)
+    captured <<- list(...)
+    invisible(NULL)
   })
   p <- write_md(c(
     "---",
@@ -43,7 +44,8 @@ test_that("mc_md_draft dispatches frontmatter fields to mc_draft", {
 test_that("mc_md_draft passes to_self through", {
   captured <- NULL
   mockery::stub(mc_md_draft, "mc_draft", function(...) {
-    captured <<- list(...); invisible(NULL)
+    captured <<- list(...)
+    invisible(NULL)
   })
   p <- write_md(c("---", "to: a@x.com", "subject: Hi", "---", "body"))
   mc_md_draft(p, to_self = TRUE)
@@ -53,7 +55,8 @@ test_that("mc_md_draft passes to_self through", {
 test_that("mc_md_draft coerces empty labels list to NULL", {
   captured <- NULL
   mockery::stub(mc_md_draft, "mc_draft", function(...) {
-    captured <<- list(...); invisible(NULL)
+    captured <<- list(...)
+    invisible(NULL)
   })
   p <- write_md(c("---", "to: a@x.com", "subject: Hi", "labels: []",
                   "---", "body"))

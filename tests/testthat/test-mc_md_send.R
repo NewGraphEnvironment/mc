@@ -47,7 +47,8 @@ test_that("mc_md_send dispatches frontmatter fields to mc_send", {
 test_that("mc_md_send passes NULL labels when frontmatter omits them", {
   captured <- NULL
   mockery::stub(mc_md_send, "mc_send", function(...) {
-    captured <<- list(...); invisible(NULL)
+    captured <<- list(...)
+    invisible(NULL)
   })
   p <- write_draft(c("---", "to: a@x.com", "subject: Hi", "---", "body"))
   mc_md_send(p)
@@ -57,7 +58,8 @@ test_that("mc_md_send passes NULL labels when frontmatter omits them", {
 test_that("mc_md_send coerces empty labels list to NULL", {
   captured <- NULL
   mockery::stub(mc_md_send, "mc_send", function(...) {
-    captured <<- list(...); invisible(NULL)
+    captured <<- list(...)
+    invisible(NULL)
   })
   # `labels: []` parses to list() — should pass through as NULL
   p_empty <- write_draft(c(
@@ -78,7 +80,8 @@ test_that("mc_md_send coerces empty labels list to NULL", {
 test_that("mc_md_send override wins over frontmatter", {
   captured <- NULL
   mockery::stub(mc_md_send, "mc_send", function(...) {
-    captured <<- list(...); invisible(NULL)
+    captured <<- list(...)
+    invisible(NULL)
   })
   p <- write_draft(c(
     "---", "to: a@x.com", "subject: Original", "---", "body"
@@ -113,7 +116,8 @@ test_that("mc_md_send override wins over frontmatter", {
 test_that("mc_md_send passes to_self through", {
   captured <- NULL
   mockery::stub(mc_md_send, "mc_send", function(...) {
-    captured <<- list(...); invisible(NULL)
+    captured <<- list(...)
+    invisible(NULL)
   })
   p <- write_draft(c("---", "to: a@x.com", "subject: Hi", "---", "body"))
   mc_md_send(p, to_self = TRUE)
