@@ -34,28 +34,10 @@ test_that("resolve_send_at rejects bad types", {
   expect_error(mc:::resolve_send_at(c(1, 2)), "POSIXct")
 })
 
-test_that("mc_send builds MIME message with correct fields (draft)", {
-  captured_msg <- NULL
-  local_mocked_bindings(
-    gm_create_draft = function(msg) {
-      captured_msg <<- msg
-      list(message = list(threadId = "draft_thread_001"))
-    },
-    .package = "gmailr"
-  )
-  res <- mc_send(
-    html = "<p>hello</p>", to = "bob@example.com",
-    subject = "Test subject", from = "alice@example.com",
-    draft = TRUE
-  )
-  expect_false(is.null(captured_msg))
-  expect_equal(res, "draft_thread_001")
-})
-
 test_that("mc_send passes cc and bcc to MIME message", {
   captured_msg <- NULL
   local_mocked_bindings(
-    gm_create_draft = function(msg) {
+    gm_send_message = function(msg, ...) {
       captured_msg <<- msg
       msg
     },
@@ -64,13 +46,12 @@ test_that("mc_send passes cc and bcc to MIME message", {
   mc_send(
     html = "<p>hi</p>", to = "bob@example.com",
     subject = "CC test", from = "alice@example.com",
-    cc = "carol@example.com", bcc = "dave@example.com",
-    draft = TRUE
+    cc = "carol@example.com", bcc = "dave@example.com"
   )
   expect_false(is.null(captured_msg))
 })
 
-test_that("mc_send sends with thread_id when draft = FALSE", {
+test_that("mc_send sends into a thread when thread_id is set", {
   captured_args <- list()
   local_mocked_bindings(
     gm_send_message = function(msg, ...) {
@@ -82,7 +63,7 @@ test_that("mc_send sends with thread_id when draft = FALSE", {
   res <- mc_send(
     html = "<p>reply</p>", to = "bob@example.com",
     subject = "Re: Thread", from = "alice@example.com",
-    thread_id = "abc123", draft = FALSE
+    thread_id = "abc123"
   )
   expect_equal(captured_args$thread_id, "abc123")
   expect_equal(res, "abc123")
@@ -97,8 +78,7 @@ test_that("mc_send returns thread_id from new-thread send (no thread_id arg)", {
   )
   res <- mc_send(
     html = "<p>fresh</p>", to = "bob@example.com",
-    subject = "Fresh thread", from = "alice@example.com",
-    draft = FALSE
+    subject = "Fresh thread", from = "alice@example.com"
   )
   expect_equal(res, "newly_assigned_thread_42")
 })
@@ -110,48 +90,28 @@ test_that("mc_send returns NULL invisibly when gmailr response lacks threadId", 
   )
   res <- mc_send(
     html = "<p>x</p>", to = "bob@example.com",
-    subject = "No thread id", from = "alice@example.com",
-    draft = FALSE
+    subject = "No thread id", from = "alice@example.com"
   )
   expect_null(res)
 })
 
-test_that("mc_send test mode overrides to/cc/bcc/thread_id", {
+test_that("mc_send to_self overrides to/cc/bcc/thread_id", {
   captured_msg <- NULL
   local_mocked_bindings(
     gm_send_message = function(msg, ...) {
       captured_msg <<- msg
       msg
     },
-    gm_create_draft = function(msg) {
-      captured_msg <<- msg
-      msg
-    },
     .package = "gmailr"
   )
-  # test = TRUE should redirect to from, strip cc/bcc/thread_id
+  # to_self = TRUE should redirect to from, strip cc/bcc/thread_id
   mc_send(
     html = "<p>test</p>", to = "bob@example.com",
     subject = "Test mode", from = "alice@example.com",
     cc = "carol@example.com", bcc = "dave@example.com",
-    thread_id = "abc123", test = TRUE, draft = FALSE
+    thread_id = "abc123", to_self = TRUE
   )
   expect_false(is.null(captured_msg))
-})
-
-test_that("mc_send warns when draft + thread_id", {
-  local_mocked_bindings(
-    gm_create_draft = function(msg) msg,
-    .package = "gmailr"
-  )
-  expect_warning(
-    mc_send(
-      html = "<p>hi</p>", to = "bob@example.com",
-      subject = "Test", from = "alice@example.com",
-      thread_id = "abc123", draft = TRUE
-    ),
-    "will NOT appear in thread"
-  )
 })
 
 test_that("send_log writes to ~/.mc/send_log.txt", {
@@ -186,7 +146,7 @@ test_that("default_from reads option then env then errors", {
 test_that("mc_send attaches files to MIME message", {
   captured_msg <- NULL
   local_mocked_bindings(
-    gm_create_draft = function(msg) {
+    gm_send_message = function(msg, ...) {
       captured_msg <<- msg
       msg
     },
@@ -201,8 +161,7 @@ test_that("mc_send attaches files to MIME message", {
   mc_send(
     html = "<p>hello</p>", to = "bob@example.com",
     subject = "Attachment test", from = "alice@example.com",
-    attachments = c(tmp1, tmp2),
-    draft = TRUE
+    attachments = c(tmp1, tmp2)
   )
   expect_false(is.null(captured_msg))
   unlink(c(tmp1, tmp2))
@@ -236,7 +195,7 @@ test_that("mc_send errors on mix of valid and missing attachments", {
 test_that("mc_send works without attachments (NULL default)", {
   captured_msg <- NULL
   local_mocked_bindings(
-    gm_create_draft = function(msg) {
+    gm_send_message = function(msg, ...) {
       captured_msg <<- msg
       msg
     },
@@ -244,8 +203,7 @@ test_that("mc_send works without attachments (NULL default)", {
   )
   mc_send(
     html = "<p>no attachments</p>", to = "bob@example.com",
-    subject = "No attach", from = "alice@example.com",
-    draft = TRUE
+    subject = "No attach", from = "alice@example.com"
   )
   expect_false(is.null(captured_msg))
 })
@@ -268,41 +226,12 @@ test_that("mc_send applies labels via mc_thread_modify on send path", {
   res <- mc_send(
     html = "<p>x</p>", to = "bob@example.com",
     subject = "labelled", from = "alice@example.com",
-    labels = c("project-x", "urgent"),
-    draft = FALSE
+    labels = c("project-x", "urgent")
   )
   expect_equal(res, "tid_99")
   expect_equal(modify_args$thread_id, "tid_99")
   expect_equal(modify_args$add, c("project-x", "urgent"))
   expect_null(modify_args$remove)
-})
-
-test_that("mc_send applies labels to the draft thread on draft path", {
-  modify_args <- NULL
-  local_mocked_bindings(
-    gm_create_draft = function(msg) {
-      list(message = list(threadId = "draft_tid"))
-    },
-    .package = "gmailr"
-  )
-  local_mocked_bindings(
-    mc_thread_modify = function(thread_id, add = NULL, remove = NULL,
-                                create_missing = FALSE) {
-      modify_args <<- list(thread_id = thread_id, add = add, remove = remove,
-                           create_missing = create_missing)
-      invisible(NULL)
-    },
-    .package = "mc"
-  )
-  res <- mc_send(
-    html = "<p>x</p>", to = "bob@example.com",
-    subject = "draft labelled", from = "alice@example.com",
-    labels = "project-x",
-    draft = TRUE
-  )
-  expect_equal(res, "draft_tid")
-  expect_equal(modify_args$thread_id, "draft_tid")
-  expect_equal(modify_args$add, "project-x")
 })
 
 test_that("mc_send warns when send succeeds but threadId missing and labels set", {
@@ -318,8 +247,7 @@ test_that("mc_send warns when send succeeds but threadId missing and labels set"
     mc_send(
       html = "<p>x</p>", to = "bob@example.com",
       subject = "no tid", from = "alice@example.com",
-      labels = "project-x",
-      draft = FALSE
+      labels = "project-x"
     ),
     "did not include a threadId"
   )
@@ -338,8 +266,7 @@ test_that("mc_send warns rather than errors when label apply fails", {
     res <- mc_send(
       html = "<p>x</p>", to = "bob@example.com",
       subject = "x", from = "alice@example.com",
-      labels = "X",
-      draft = FALSE
+      labels = "X"
     ),
     "Labels not applied to thread tid_77.*unknown label X"
   )
@@ -394,8 +321,7 @@ test_that("mc_send default labels_create=TRUE passes create_missing=TRUE", {
   mc_send(
     html = "<p>x</p>", to = "bob@example.com",
     subject = "lc default", from = "alice@example.com",
-    labels = "new-label",
-    draft = FALSE
+    labels = "new-label"
   )
   expect_true(modify_args$create_missing)
 })
@@ -418,8 +344,7 @@ test_that("mc_send labels_create=FALSE passes create_missing=FALSE", {
     html = "<p>x</p>", to = "bob@example.com",
     subject = "lc strict", from = "alice@example.com",
     labels = "existing-label",
-    labels_create = FALSE,
-    draft = FALSE
+    labels_create = FALSE
   )
   expect_false(modify_args$create_missing)
 })
@@ -489,4 +414,33 @@ test_that("mc_send writes SCHEDULED log entry at submission time", {
   expect_equal(scheduled[[1]]$subject, "scheduled subject")
   expect_equal(scheduled[[1]]$to, "test@test.com")
   expect_match(scheduled[[1]]$detail, "^target=")
+})
+
+test_that("mc_send rejects the removed draft and test arguments", {
+  expect_error(
+    mc_send(
+      html = "<p>x</p>", to = "bob@example.com",
+      subject = "x", from = "alice@example.com", draft = TRUE
+    )
+  )
+  expect_error(
+    mc_send(
+      html = "<p>x</p>", to = "bob@example.com",
+      subject = "x", from = "alice@example.com", test = TRUE
+    )
+  )
+})
+
+test_that("mc_send never calls gm_create_draft", {
+  local_mocked_bindings(
+    gm_send_message = function(msg, ...) list(threadId = "sent_tid"),
+    gm_create_draft = function(msg) stop("mc_send must never draft"),
+    .package = "gmailr"
+  )
+  expect_no_error(
+    mc_send(
+      html = "<p>x</p>", to = "bob@example.com",
+      subject = "no draft", from = "alice@example.com"
+    )
+  )
 })

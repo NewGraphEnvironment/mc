@@ -28,14 +28,14 @@ being removed.
 
 ## Phase 1 — Tests first (failing)
 
-- [ ] `tests/testthat/test-mc_draft.R` (new): creates a draft; `to_self = TRUE` redirects to `from` and strips cc/bcc/thread_id; warns on `thread_id`; applies labels to the draft thread
-- [ ] `test-mc_draft.R`: `mc_draft()` never calls `gm_send_message()` — mock it to `stop()` and assert no error
-- [ ] `test-mc_draft.R`: `mc_draft()` rejects `send_at` / `scheduler`
-- [ ] `test-mc_send.R`: rewrite to send-only — drop every `draft =`; `to_self = TRUE`; `thread_id` sends into thread; `send_at` / `scheduler` paths retained
-- [ ] `test-mc_send.R`: passing `draft =` or `test =` errors
-- [ ] `tests/testthat/test-mc_md_draft.R` (new): frontmatter dispatch to `mc_draft()`; `to_self` passes through
-- [ ] `test-mc_md_send.R`: rewrite to send-only; `override = list(draft = ...)` and `list(test = ...)` error naming the replacement
-- [ ] Run: fails as expected
+- [x] `tests/testthat/test-mc_draft.R` (new): creates a draft; `to_self = TRUE` redirects to `from` and strips cc/bcc/thread_id; warns on `thread_id`; applies labels to the draft thread
+- [x] `test-mc_draft.R`: `mc_draft()` never calls `gm_send_message()` — mock it to `stop()` and assert no error
+- [x] `test-mc_draft.R`: `mc_draft()` rejects `send_at` / `scheduler`
+- [x] `test-mc_send.R`: rewrite to send-only — drop every `draft =`; `to_self = TRUE`; `thread_id` sends into thread; `send_at` / `scheduler` paths retained
+- [x] `test-mc_send.R`: passing `draft =` or `test =` errors
+- [x] `tests/testthat/test-mc_md_draft.R` (new): frontmatter dispatch to `mc_draft()`; `to_self` passes through
+- [x] `test-mc_md_send.R`: rewrite to send-only; `override = list(draft = ...)` and `list(test = ...)` error naming the replacement
+- [x] Run: fails as expected
 
 ## Phase 2 — Core split
 
