@@ -49,10 +49,10 @@ being removed.
 
 ## Phase 3 — Frontmatter wrappers
 
-- [ ] `R/mc_md_draft.R`: `mc_md_draft(path, to_self = FALSE, override = list())` → `mc_draft()`
-- [ ] `R/mc_md_send.R`: send-only, `to_self`, → `mc_send()`
-- [ ] Both: guard `override` against `draft` / `test` keys, erroring with the replacement named
-- [ ] Phase 1 md tests pass
+- [x] `R/mc_md_draft.R`: `mc_md_draft(path, to_self = FALSE, override = list())` → `mc_draft()`
+- [x] `R/mc_md_send.R`: send-only, `to_self`, → `mc_send()`
+- [x] Both: guard `override` against `draft` / `test` keys, erroring with the replacement named
+- [x] Phase 1 md tests pass
 
 ## Phase 4 — Docs, integration tests, release
 

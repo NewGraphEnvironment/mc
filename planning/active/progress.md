@@ -23,3 +23,12 @@
 - `mc_draft()` takes `...` purely to reject `send_at`/`scheduler` with a message
   naming `mc_send()`, rather than an opaque unused-argument error
 - 66 pass / 0 fail on the draft+send suites
+
+### Phase 3 — frontmatter wrappers (complete)
+
+- Frontmatter reading and argument assembly factored into internal
+  `md_dispatch_args()`; `mc_md_draft()` and `mc_md_send()` differ only in which
+  function they dispatch to
+- `override` guards reject `draft` and `test` keys with messages naming the
+  replacement, rather than an unused-argument error further down
+- Full suite: 396 pass / 0 fail / 1 skip

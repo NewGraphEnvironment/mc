@@ -1,4 +1,4 @@
-#' Send or draft an email from a markdown file with YAML frontmatter
+#' Send an email from a markdown file with YAML frontmatter
 #'
 #' One-file workflow: reads metadata (`to`, `subject`, optional `cc`, `bcc`,
 #' `thread_id`, `attachments`, `labels`, `from`) from the YAML frontmatter at
@@ -6,11 +6,14 @@
 #' keep each logical email in a single `.md` file instead of splitting
 #' subject, body, and recipients across a paired `.R` script.
 #'
+#' Sends. To produce a Gmail draft for review instead, use [mc_md_draft()].
+#'
 #' @param path Path to the markdown draft (with YAML frontmatter).
-#' @param draft Logical. If `TRUE` (default), create a Gmail draft.
-#' @param test Logical. Test mode — sends to self, strips cc/thread_id.
+#' @param to_self Logical. If `TRUE`, address the message to the sender and
+#'   drop `cc`, `bcc` and `thread_id`, so it reaches nobody else. Default
+#'   `FALSE`. Caps the recipients; does not stop the send.
 #' @param override Named list of arguments to override frontmatter values
-#'   at call time (e.g. `list(draft = FALSE)` to send). Overrides merge
+#'   at call time (e.g. `list(subject = "New subject")`). Overrides merge
 #'   **after** frontmatter, so `override` wins.
 #'
 #' @return Invisibly returns whatever [mc_send()] returns.
@@ -19,68 +22,21 @@
 #' Required frontmatter fields: `to`, `subject`. Missing either triggers an
 #' error that names the file.
 #'
+#' @seealso [mc_md_draft()] to draft from frontmatter, [mc_send()] for the
+#'   argument-driven form.
+#'
 #' @examples
 #' \dontrun{
-#' # Draft from a frontmattered .md
 #' mc_md_send("communications/20260413_cindy_newsletter_draft.md")
 #'
-#' # Send for real, overriding the default draft = TRUE
-#' mc_md_send(
-#'   "communications/20260413_cindy_newsletter_draft.md",
-#'   override = list(draft = FALSE)
-#' )
+#' # Check the rendering in a real inbox without involving anyone else
+#' mc_md_send("communications/20260413_cindy_newsletter_draft.md",
+#'            to_self = TRUE)
 #' }
 #'
 #' @importFrom chk chk_string chk_flag chk_list
 #' @export
-mc_md_send <- function(path, draft = TRUE, test = FALSE, override = list()) {
-  chk::chk_string(path)
-  chk::chk_flag(draft)
-  chk::chk_flag(test)
-  chk::chk_list(override)
-
-  meta <- mc_md_meta(path)
-
-  required <- c("to", "subject")
-  missing <- setdiff(required, names(meta))
-  if (length(missing) > 0) {
-    stop(
-      "Missing required frontmatter field(s) in ", path, ": ",
-      paste(missing, collapse = ", "),
-      call. = FALSE
-    )
-  }
-
-  # yaml.load() returns list() for empty flow-style arrays (`labels: []`)
-  # and for explicit nulls (`labels: ~`). Coerce to NULL so chk_null_or()
-  # in mc_send accepts these as "no labels" rather than rejecting list().
-  meta_labels <- meta$labels
-  if (is.list(meta_labels) && length(meta_labels) == 0) meta_labels <- NULL
-
-  args <- list(
-    path = path,
-    to = meta$to,
-    subject = meta$subject,
-    cc = meta$cc,
-    bcc = meta$bcc,
-    thread_id = meta$thread_id,
-    attachments = meta$attachments,
-    labels = meta_labels,
-    draft = draft,
-    test = test
-  )
-  if (!is.null(meta$from)) args$from <- meta$from
-  if (!is.null(meta$sig)) args$sig <- meta$sig
-  if (!is.null(meta$sig_path)) args$sig_path <- meta$sig_path
-
-  if ("path" %in% names(override)) {
-    stop(
-      "`override` cannot change `path` — frontmatter is already read from ",
-      "the original file. Call mc_md_send() on the new path instead.",
-      call. = FALSE
-    )
-  }
-  for (key in names(override)) args[[key]] <- override[[key]]
-
+mc_md_send <- function(path, to_self = FALSE, override = list()) {
+  args <- md_dispatch_args(path, to_self = to_self, override = override)
   invisible(do.call(mc_send, args))
 }
