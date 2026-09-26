@@ -1,6 +1,7 @@
 Package: mc
 Title: Mail Composer - Email Composition and Delivery
 Version: 0.3.0
+Date: 2026-08-27
 Authors@R:
     person("Allan", "Irvine", , "al@newgraphenvironment.com", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-3495-2128"))

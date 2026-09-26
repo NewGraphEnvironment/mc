@@ -1,0 +1,29 @@
+# ------------------------------------------------
+# CITATION.cff file created with {cffr} R package
+# See also: https://docs.ropensci.org/cffr/
+# ------------------------------------------------
+ 
+cff-version: 1.2.0
+message: 'To cite package "mc" in publications use:'
+type: software
+license: MIT
+title: 'mc: Mail Composer - Email Composition and Delivery'
+version: 0.3.0
+abstract: Compose, draft, and send emails from markdown files via the Gmail API. Strips
+  markdown headers, converts to HTML with inline table styles, appends a standard
+  signature, and handles threading. Wraps gmailr to reduce email scripts from 80 lines
+  of boilerplate to 3.
+authors:
+- family-names: Irvine
+  given-names: Allan
+  email: al@newgraphenvironment.com
+  orcid: https://orcid.org/0000-0002-3495-2128
+repository-code: https://github.com/NewGraphEnvironment/mc
+url: https://newgraphenvironment.github.io/mc/
+date-released: '2026-08-27'
+contact:
+- family-names: Irvine
+  given-names: Allan
+  email: al@newgraphenvironment.com
+  orcid: https://orcid.org/0000-0002-3495-2128
+
