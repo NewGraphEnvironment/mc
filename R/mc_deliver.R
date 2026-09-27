@@ -16,7 +16,7 @@
 #' @importFrom chk chk_null_or chk_character chk_string chk_flag vld_string
 #'   vld_character
 #' @importFrom gmailr gm_mime gm_to gm_from gm_subject gm_html_body gm_cc
-#'   gm_bcc gm_create_draft gm_send_message gm_attach_file
+#'   gm_bcc gm_create_draft gm_send_message gm_attach_file gm_attach_part
 mc_deliver <- function(path = NULL,
                        to,
                        subject,
@@ -29,6 +29,7 @@ mc_deliver <- function(path = NULL,
                        sig = TRUE,
                        sig_path = NULL,
                        attachments = NULL,
+                       inline_images = NULL,
                        labels = NULL,
                        labels_create = TRUE,
                        html = NULL,
@@ -49,6 +50,7 @@ mc_deliver <- function(path = NULL,
   chk::chk_flag(sig)
   chk::chk_null_or(sig_path, vld = chk::vld_string)
   chk::chk_null_or(attachments, vld = chk::vld_character)
+  chk::chk_null_or(inline_images, vld = chk::vld_character)
   chk::chk_null_or(labels, vld = chk::vld_character)
   chk::chk_flag(labels_create)
   chk::chk_null_or(html, vld = chk::vld_string)
@@ -76,6 +78,8 @@ mc_deliver <- function(path = NULL,
     }
     html <- mc_md_render(path, sig = sig, sig_path = sig_path)
   }
+
+  check_inline_images(inline_images, html)
 
   # Scheduled send — defer to backend dispatcher
   if (!is.null(send_at)) {
@@ -107,7 +111,8 @@ mc_deliver <- function(path = NULL,
     schedule_args <- list(
       to = to, subject = subject, cc = cc, bcc = bcc, from = from,
       thread_id = thread_id, to_self = to_self, sig = sig,
-      sig_path = sig_path, attachments = attachments, labels = labels,
+      sig_path = sig_path, attachments = attachments,
+      inline_images = inline_images, labels = labels,
       labels_create = labels_create, html = html
     )
     handle <- schedule_send(send_time, schedule_args, scheduler = scheduler)
@@ -140,6 +145,18 @@ mc_deliver <- function(path = NULL,
     for (file_path in attachments) {
       msg <- gmailr::gm_attach_file(msg, file_path)
     }
+  }
+  # Inline images: a part with Content-Id <name> and inline disposition, which
+  # the HTML references as src="cid:<name>". Kept under to_self, since that is
+  # how the rendering gets checked.
+  for (cid in names(inline_images)) {
+    file_path <- inline_images[[cid]]
+    msg <- gmailr::gm_attach_part(
+      msg, readBin(file_path, "raw", file.info(file_path)$size),
+      id = cid, content_type = mime::guess_type(file_path),
+      name = basename(file_path), filename = basename(file_path),
+      disposition = "inline"
+    )
   }
 
   # Draft or send — capture thread_id from gmailr response
@@ -300,4 +317,40 @@ resolve_send_at <- function(send_at) {
     stop("`send_at` must be in the future.", call. = FALSE)
   }
   target
+}
+
+
+#' Check inline images against the HTML that references them (internal)
+#'
+#' Each name must be a usable Content-ID token and each path must exist. A
+#' `cid:` in the HTML with no matching image is an error, because the reader
+#' would see a broken image; an image the HTML never references is a warning.
+#'
+#' @param inline_images Named character vector, name = Content-ID, value = path.
+#' @param html The HTML body.
+#' @return `NULL`, invisibly. Called for its errors and warnings.
+#' @keywords internal
+check_inline_images <- function(inline_images, html) {
+  refs <- unique(regmatches(html, gregexpr("(?<=cid:)[A-Za-z0-9._@-]+", html, perl = TRUE))[[1]])
+  if (is.null(inline_images)) {
+    if (length(refs)) stop("HTML references cid: ", paste(refs, collapse = ", "),
+                           " but no inline_images were given.", call. = FALSE)
+    return(invisible(NULL))
+  }
+  ids <- names(inline_images)
+  if (is.null(ids) || any(!nzchar(ids)) || anyDuplicated(ids)) {
+    stop("inline_images must be named, with a unique Content-ID for each image.", call. = FALSE)
+  }
+  bad <- ids[!grepl("^[A-Za-z0-9._@-]+$", ids)]
+  if (length(bad)) stop("Invalid Content-ID name(s): ", paste(bad, collapse = ", "),
+                        ". Use letters, digits and . _ @ -", call. = FALSE)
+  missing <- inline_images[!file.exists(inline_images)]
+  if (length(missing)) stop("Inline image file(s) not found: ", paste(missing, collapse = ", "), call. = FALSE)
+  unmatched <- setdiff(refs, ids)
+  if (length(unmatched)) stop("HTML references cid: ", paste(unmatched, collapse = ", "),
+                              " with no matching inline image.", call. = FALSE)
+  unused <- setdiff(ids, refs)
+  if (length(unused)) warning("Inline image(s) not referenced in the HTML: ",
+                              paste(unused, collapse = ", "), call. = FALSE)
+  invisible(NULL)
 }

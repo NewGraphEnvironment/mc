@@ -31,6 +31,10 @@
 #'   Ignored when `sig = FALSE` or when `html` is provided.
 #' @param attachments Optional character vector of file paths to attach.
 #'   Each file is attached via [gmailr::gm_attach_file()]. Default `NULL`.
+#' @param inline_images Optional named character vector of image paths to
+#'   show in the body: each name is a Content-ID the HTML references as
+#'   `<img src="cid:name">`. A `cid:` with no matching image is an error; an
+#'   image the HTML never references is a warning. Kept when `to_self = TRUE`.
 #' @param labels Optional character vector of Gmail label names to apply
 #'   to the resulting thread. Applied via [mc_thread_modify()] after a
 #'   successful send.
@@ -83,6 +87,7 @@ mc_send <- function(path = NULL,
                     sig = TRUE,
                     sig_path = NULL,
                     attachments = NULL,
+                    inline_images = NULL,
                     labels = NULL,
                     labels_create = TRUE,
                     html = NULL,
@@ -91,7 +96,8 @@ mc_send <- function(path = NULL,
   mc_deliver(
     path = path, to = to, subject = subject, cc = cc, bcc = bcc, from = from,
     thread_id = thread_id, to_self = to_self, sig = sig, sig_path = sig_path,
-    attachments = attachments, labels = labels, labels_create = labels_create,
+    attachments = attachments, inline_images = inline_images,
+    labels = labels, labels_create = labels_create,
     html = html, send_at = send_at, scheduler = scheduler,
     .draft = FALSE
   )
