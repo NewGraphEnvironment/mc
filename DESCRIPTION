@@ -34,5 +34,6 @@ Imports:
     gmailr,
     httr,
     jsonlite,
+    mime,
     yaml
 VignetteBuilder: knitr

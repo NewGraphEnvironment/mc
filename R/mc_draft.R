@@ -46,6 +46,7 @@ mc_draft <- function(path = NULL,
                      sig = TRUE,
                      sig_path = NULL,
                      attachments = NULL,
+                     inline_images = NULL,
                      labels = NULL,
                      labels_create = TRUE,
                      html = NULL,
@@ -72,7 +73,8 @@ mc_draft <- function(path = NULL,
   mc_deliver(
     path = path, to = to, subject = subject, cc = cc, bcc = bcc, from = from,
     thread_id = thread_id, to_self = to_self, sig = sig, sig_path = sig_path,
-    attachments = attachments, labels = labels, labels_create = labels_create,
+    attachments = attachments, inline_images = inline_images,
+    labels = labels, labels_create = labels_create,
     html = html, send_at = NULL, scheduler = "callr",
     .draft = TRUE
   )

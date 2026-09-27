@@ -16,6 +16,7 @@ mc_draft(
   sig = TRUE,
   sig_path = NULL,
   attachments = NULL,
+  inline_images = NULL,
   labels = NULL,
   labels_create = TRUE,
   html = NULL,
@@ -51,6 +52,11 @@ Ignored when \code{sig = FALSE} or when \code{html} is provided.}
 
 \item{attachments}{Optional character vector of file paths to attach.
 Each file is attached via \code{\link[gmailr:gm_mime]{gmailr::gm_attach_file()}}. Default \code{NULL}.}
+
+\item{inline_images}{Optional named character vector of image paths to
+show in the body: each name is a Content-ID the HTML references as
+\verb{<img src="cid:name">}. A \verb{cid:} with no matching image is an error; an
+image the HTML never references is a warning. Kept when \code{to_self = TRUE}.}
 
 \item{labels}{Optional character vector of Gmail label names to apply
 to the resulting thread. Applied via \code{\link[=mc_thread_modify]{mc_thread_modify()}} after a
