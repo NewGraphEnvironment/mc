@@ -14,15 +14,15 @@ Source:
 [`inst/CITATION`](https://github.com/NewGraphEnvironment/mc/blob/main/inst/CITATION)
 
 Irvine A (2026). *mc: Mail Composer - Email Composition and Delivery*.
-New Graph Environment Ltd. R package version 0.3.0,
+New Graph Environment Ltd. Version 0.3.0,
 <https://github.com/NewGraphEnvironment/mc>.
 
-    @Manual{,
+    @Manual{mc,
       title = {mc: Mail Composer - Email Composition and Delivery},
       author = {Allan Irvine},
       organization = {New Graph Environment Ltd.},
       year = {2026},
       version = {0.3.0},
-      note = {R package version 0.3.0},
+      note = {Version 0.3.0},
       url = {https://github.com/NewGraphEnvironment/mc},
     }
