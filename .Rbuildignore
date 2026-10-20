@@ -12,3 +12,4 @@
 ^mc\.Rproj$
 ^\.Rproj\.user$
 ^\.git$
+^CITATION\.cff$
