@@ -52,7 +52,7 @@ Mail Composer — compose, draft, and send emails from markdown via the Gmail AP
 
 ### Lint
 
-`.lintr` requires single-line DCF format. Current config suppresses `quotes_linter` and sets 120-char line length. If `R_LINTR_LINTER_FILE` is set in `~/.Renviron`, it must point to a real file (or the env var must be unset) — pointing to a missing `~/.lintr` breaks lint runs silently.
+`.lintr` requires single-line DCF format. Current config suppresses `quotes_linter` and sets 120-char line length. If `R_LINTR_LINTER_FILE` is set in the environment, it must point to a real file (or the env var must be unset) — pointing to a missing `~/.lintr` breaks lint runs silently.
 
 ## Known Issues
 
@@ -74,7 +74,7 @@ Mail Composer — compose, draft, and send emails from markdown via the Gmail AP
 
 ## Related repos
 
-- `compost` (NewGraphEnvironment/compost, private) — primary consumer of mc. Email drafts follow `YYYYMMDD_recipient_topic.md` + matching `.R` file convention documented in `compost/docs/comms_structure.md`.
+- An internal communications repo is the primary consumer of mc. Email drafts there follow a `YYYYMMDD_recipient_topic.md` + matching `.R` file convention.
 
 <!-- BEGIN SOUL CONVENTIONS — DO NOT EDIT BELOW THIS LINE -->
 
