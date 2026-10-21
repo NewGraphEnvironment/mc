@@ -8,7 +8,7 @@ message: 'To cite package "mc" in publications use:'
 type: software
 license: MIT
 title: 'mc: Mail Composer - Email Composition and Delivery'
-version: 0.3.0
+version: 0.3.1
 abstract: Compose, draft, and send emails from markdown files via the Gmail API. Strips
   markdown headers, converts to HTML with inline table styles, appends a standard
   signature, and handles threading. Wraps gmailr to reduce email scripts from 80 lines
@@ -27,8 +27,8 @@ preferred-citation:
     email: al@newgraphenvironment.com
     orcid: https://orcid.org/0000-0002-3495-2128
     affiliation: New Graph Environment Ltd.
-  version: 0.3.0
-  date-released: '2026-08-27'
+  version: 0.3.1
+  date-released: '2026-10-21'
   url: https://newgraphenvironment.github.io/mc/
   repository-code: https://github.com/NewGraphEnvironment/mc
   license: MIT
@@ -37,7 +37,7 @@ preferred-citation:
     name: New Graph Environment Ltd.
 repository-code: https://github.com/NewGraphEnvironment/mc
 url: https://newgraphenvironment.github.io/mc/
-date-released: '2026-08-27'
+date-released: '2026-10-21'
 contact:
 - family-names: Irvine
   given-names: Allan
