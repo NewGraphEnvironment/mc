@@ -65,7 +65,9 @@ mc_thread_modify <- function(thread_id, add = NULL, remove = NULL,
   }
 
   all_names <- c(add, remove)
-  user_labels <- if (any(!all_names %in% system_labels())) {
+  # Case-insensitive, as resolve_label_names() matches system labels: "Starred"
+  # is a system label and must not trigger the user-label fetch (#47).
+  user_labels <- if (any(!toupper(all_names) %in% system_labels())) {
     fetch_user_labels()
   } else {
     NULL

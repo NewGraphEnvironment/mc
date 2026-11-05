@@ -1,10 +1,13 @@
 Package: mc
 Title: Mail Composer - Email Composition and Delivery
-Version: 0.3.0
-Date: 2026-08-27
-Authors@R:
+Version: 0.4.0
+Date: 2026-11-05
+Authors@R: c(
     person("Allan", "Irvine", , "al@newgraphenvironment.com", role = c("aut", "cre"),
-           comment = c(ORCID = "0000-0002-3495-2128"))
+           comment = c(ORCID = "0000-0002-3495-2128",
+                       affiliation = "New Graph Environment Ltd.")),
+    person("New Graph Environment Ltd.", role = c("cph", "fnd"))
+    )
 Description: Compose, draft, and send emails from markdown files via the
     Gmail API. Strips markdown headers, converts to HTML with inline table
     styles, appends a standard signature, and handles threading. Wraps
@@ -24,6 +27,7 @@ Suggests:
     rmarkdown,
     testthat (>= 3.0.0),
     withr
+Config/DOI: 10.5281/zenodo.23524725
 Config/testthat/edition: 3
 Depends:
     R (>= 4.1)
@@ -31,9 +35,11 @@ Imports:
     chk,
     cli,
     commonmark,
+    gargle,
     gmailr,
     httr,
     jsonlite,
     mime,
+    rappdirs,
     yaml
 VignetteBuilder: knitr

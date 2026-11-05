@@ -47,7 +47,20 @@ resolve_scheduler <- function(scheduler) {
 }
 
 
-#' callr-based scheduler (existing default)
+#' Scheduler used when the caller names none
+#'
+#' `"auto"` where an OS-native backend exists, so a scheduled send survives the
+#' R session that made it (#8). Elsewhere `"callr"`, whose warning says the send
+#' can be dropped; an explicit `"auto"` there still errors in
+#' `resolve_scheduler()`.
+#'
+#' @noRd
+default_scheduler <- function() {
+  if (Sys.info()[["sysname"]] %in% c("Darwin", "Linux")) "auto" else "callr"
+}
+
+
+#' callr-based scheduler (the fallback where no OS-native backend exists)
 #'
 #' Spawns a `callr::r_bg` child that sleeps until `target_time` then invokes
 #' [mc_send()] via the recursive path. Caffeinate keeps the machine awake on
@@ -72,7 +85,7 @@ schedule_callr <- function(target_time, args) {
         msg <- paste0(
           "Scheduled send SKIPPED. Machine woke ",
           round(late / 60, 1), " min past target time ",
-          format(target_time, "%H:%M:%S"),
+          format(target_time, "%Y-%m-%d %H:%M:%S %Z", tz = ""),
           ". Draft not sent to protect against stale context."
         )
         mc:::send_log(args$subject, args$to, "SKIPPED", msg)
@@ -99,7 +112,8 @@ schedule_callr <- function(target_time, args) {
         }
       )
     },
-    args = list(target_time = target_time, grace_secs = 300, args = args),
+    args = list(target_time = target_time, grace_secs = send_grace_secs(),
+                args = args),
     package = "mc"
   )
   caffeinate_send(proc)
@@ -122,7 +136,6 @@ schedule_launchd <- function(target_time, args) {
   if (!dir.exists(scheduled_dir)) dir.create(scheduled_dir, recursive = TRUE)
 
   args_path <- file.path(scheduled_dir, paste0(uuid, ".json"))
-  jsonlite::write_json(args, args_path, auto_unbox = TRUE, null = "null")
 
   label <- paste0("com.newgraph.mc.send-", uuid)
   agents_dir <- file.path(Sys.getenv("HOME"), "Library", "LaunchAgents")
@@ -131,12 +144,15 @@ schedule_launchd <- function(target_time, args) {
 
   rscript <- Sys.which("Rscript")
   if (rscript == "") {
-    stop("Rscript not found on PATH — required by launchd backend.",
+    stop("Rscript not found on PATH - required by launchd backend.",
          call. = FALSE)
   }
 
+  # Build the plist before writing anything, so a failure here (e.g. reading
+  # the system clock) leaves no orphaned args JSON behind.
   plist_xml <- launchd_plist(label, target_time, rscript, args_path,
                              scheduled_dir)
+  write_scheduled_args(args, target_time, args_path)
   writeLines(plist_xml, plist_path)
 
   res <- system2(
@@ -167,7 +183,9 @@ schedule_launchd <- function(target_time, args) {
 #' @noRd
 launchd_plist <- function(label, target_time, rscript_path, args_json_path,
                           scheduled_dir) {
-  tt <- as.POSIXlt(target_time)
+  # launchd reads these digits in the system zone when the job fires, so they
+  # come from the system's own clock, not R's session zone or tz database.
+  tt <- system_wall_clock(target_time)
   out_log <- file.path(scheduled_dir, paste0(label, ".out"))
   err_log <- file.path(scheduled_dir, paste0(label, ".err"))
 
@@ -186,11 +204,11 @@ launchd_plist <- function(label, target_time, rscript_path, args_json_path,
     "  </array>",
     "  <key>StartCalendarInterval</key>",
     "  <dict>",
-    paste0("    <key>Year</key><integer>", tt$year + 1900, "</integer>"),
-    paste0("    <key>Month</key><integer>", tt$mon + 1, "</integer>"),
-    paste0("    <key>Day</key><integer>", tt$mday, "</integer>"),
-    paste0("    <key>Hour</key><integer>", tt$hour, "</integer>"),
-    paste0("    <key>Minute</key><integer>", tt$min, "</integer>"),
+    paste0("    <key>Year</key><integer>", tt[["year"]], "</integer>"),
+    paste0("    <key>Month</key><integer>", tt[["month"]], "</integer>"),
+    paste0("    <key>Day</key><integer>", tt[["day"]], "</integer>"),
+    paste0("    <key>Hour</key><integer>", tt[["hour"]], "</integer>"),
+    paste0("    <key>Minute</key><integer>", tt[["minute"]], "</integer>"),
     "  </dict>",
     "  <key>RunAtLoad</key><false/>",
     paste0("  <key>StandardOutPath</key><string>", out_log, "</string>"),
@@ -216,21 +234,32 @@ launchd_plist <- function(label, target_time, rscript_path, args_json_path,
 #'
 #' @noRd
 schedule_at <- function(target_time, args) {
+  # Linux defaults to this backend (#8), and `at` is not installed on every
+  # image; without this check system2() fails with an empty message.
+  if (Sys.which("at") == "") {
+    stop(
+      "`at` not found on PATH - required by the at backend, the default on ",
+      "Linux. Install it and start atd (e.g. apt-get install at), or pass ",
+      "scheduler = \"callr\".",
+      call. = FALSE
+    )
+  }
   uuid <- generate_send_uuid()
   scheduled_dir <- file.path(Sys.getenv("HOME"), ".mc", "scheduled")
   if (!dir.exists(scheduled_dir)) dir.create(scheduled_dir, recursive = TRUE)
 
   args_path <- file.path(scheduled_dir, paste0(uuid, ".json"))
-  jsonlite::write_json(args, args_path, auto_unbox = TRUE, null = "null")
+  write_scheduled_args(args, target_time, args_path)
 
   rscript <- Sys.which("Rscript")
   if (rscript == "") {
-    stop("Rscript not found on PATH — required by at backend.",
+    stop("Rscript not found on PATH - required by at backend.",
          call. = FALSE)
   }
 
   # at -t accepts: [[CC]YY]MMDDhhmm[.ss]
-  at_time <- format(target_time, "%Y%m%d%H%M.%S")
+  # at reads this as machine-local time (see launchd_plist()).
+  at_time <- format(target_time, "%Y%m%d%H%M.%S", tz = "")
 
   # Body of the at job — single Rscript invocation that reads the args
   # JSON and runs the send. The args path is written by us above, so
@@ -250,6 +279,22 @@ schedule_at <- function(target_time, args) {
     unlink(args_path)
     stop("at command failed: ", paste(res, collapse = " "),
          call. = FALSE)
+  }
+
+  # A stopped atd accepts the job and never runs it. Where pgrep exists, say
+  # so now rather than at the missed send time.
+  if (Sys.which("pgrep") != "") {
+    atd <- suppressWarnings(
+      system2("pgrep", c("-x", "atd"), stdout = TRUE, stderr = TRUE)
+    )
+    atd_status <- attr(atd, "status")
+    if (!is.null(atd_status) && atd_status != 0) {
+      warning(
+        "atd does not appear to be running: the send is queued but will ",
+        "not fire until atd starts (e.g. systemctl enable --now atd).",
+        call. = FALSE
+      )
+    }
   }
 
   # `at` typically prints "job N at <time>" to stderr; capture the job
@@ -284,6 +329,35 @@ schedule_at <- function(target_time, args) {
 run_scheduled_send <- function(args_json_path) {
   args <- jsonlite::read_json(args_json_path, simplifyVector = TRUE)
   on.exit(cleanup_scheduled_send(args_json_path), add = TRUE)
+
+  # launchd and atd both run a job missed while asleep at the next wake, so
+  # skip a send past its grace period, as the callr backend does. Args written
+  # before the target was carried have no `.target_time` and are not checked.
+  target <- args$.target_time
+  grace <- args$.grace_secs %||% send_grace_secs()
+  args$.target_time <- NULL
+  args$.grace_secs <- NULL
+  if (!is.null(target)) {
+    target <- as.POSIXct(target, origin = "1970-01-01")
+    late <- as.numeric(difftime(Sys.time(), target, units = "secs"))
+    # Early: launchd has no seconds field, and a Mac that changed zone since
+    # scheduling fires hours off. Wait for the target, then check again.
+    if (late < 0) {
+      Sys.sleep(-late)
+      late <- as.numeric(difftime(Sys.time(), target, units = "secs"))
+    }
+    if (late > grace) {
+      msg <- paste0(
+        "Scheduled send SKIPPED. Fired ", round(late / 60, 1),
+        " min past target time ",
+        format(target, "%Y-%m-%d %H:%M:%S %Z", tz = ""),
+        ". Not sent to protect against stale context."
+      )
+      send_log(args$subject, args$to, "SKIPPED", msg)
+      send_notify(paste0("SKIPPED: ", args$subject), msg)
+      return(invisible(NULL))
+    }
+  }
 
   send_log(args$subject, args$to, "STARTED")
 
@@ -340,6 +414,53 @@ cleanup_scheduled_send <- function(args_json_path) {
   }
 
   invisible(NULL)
+}
+
+
+#' Wall-clock digits of an instant in the system zone (macOS)
+#'
+#' launchd reads `StartCalendarInterval` in the system zone, which R's session
+#' zone need not match: `TZ` may be set, and with `TZ` set R uses its bundled
+#' tz database rather than the system's. So ask the system's own `date`, with
+#' `TZ` unset, by absolute path (a GNU `date` may come first on `PATH`).
+#' Seconds are dropped: launchd has no seconds field, and
+#' `run_scheduled_send()` waits out the rest.
+#'
+#' @return Named integer vector: year, month, day, hour, minute.
+#' @noRd
+system_wall_clock <- function(target_time) {
+  secs <- sprintf("%.0f", floor(as.numeric(target_time)))
+  cmd <- paste("/usr/bin/env -u TZ /bin/date -r", secs,
+               shQuote("+%Y %m %d %H %M"))
+  out <- suppressWarnings(system(cmd, intern = TRUE))
+  digits <- suppressWarnings(as.integer(strsplit(out[1], " ")[[1]]))
+  if (length(digits) != 5 || anyNA(digits)) {
+    stop("Could not read the system clock for the launchd job (",
+         cmd, " returned: ", paste(out, collapse = " "), ").",
+         call. = FALSE)
+  }
+  stats::setNames(digits, c("year", "month", "day", "hour", "minute"))
+}
+
+
+#' Seconds past its target time after which a scheduled send is skipped
+#' @noRd
+send_grace_secs <- function() 300
+
+
+#' Write scheduled-send args to JSON, with the target time and grace period
+#'
+#' `.target_time` (epoch seconds) and `.grace_secs` are read back and removed
+#' by `run_scheduled_send()` before it calls [mc_send()], which does not take
+#' them. The one writer for both OS-native backends.
+#' @noRd
+write_scheduled_args <- function(args, target_time, path) {
+  # JSON writes a zero-length vector as [], which reads back as list() and
+  # fails mc_send()'s checks; NULL means the same here and round-trips.
+  args <- lapply(args, function(v) if (length(v) == 0) NULL else v)
+  args <- c(args, list(.target_time = as.numeric(target_time),
+                       .grace_secs = send_grace_secs()))
+  jsonlite::write_json(args, path, auto_unbox = TRUE, null = "null")
 }
 
 

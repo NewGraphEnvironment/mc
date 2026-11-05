@@ -46,9 +46,12 @@
 #'   or a numeric number of minutes from now. Default `NULL` (send now).
 #'   Scheduling is inherently a send, which is why it lives here and not on
 #'   [mc_draft()].
-#' @param scheduler Backend for scheduled send. One of `"callr"` (default),
-#'   `"auto"` (OS-native: `launchd` on macOS, `at` on Linux), `"launchd"`, or
-#'   `"at"`. Ignored when `send_at` is `NULL`.
+#' @param scheduler Backend for scheduled send. One of `"auto"` (OS-native:
+#'   `launchd` on macOS, `at` on Linux), `"callr"`, `"launchd"`, or `"at"`.
+#'   Default `NULL` uses `"auto"` on macOS and Linux, where the OS owns the job
+#'   and it survives the R session exiting, and `"callr"` elsewhere, with a
+#'   warning that its send can be dropped. An explicit `"auto"` errors on a
+#'   platform with no OS-native backend. Ignored when `send_at` is `NULL`.
 #'
 #' @return The Gmail thread ID of the sent message, invisibly. When `send_at`
 #'   is set, returns a backend-specific scheduler handle invisibly instead.
@@ -92,7 +95,7 @@ mc_send <- function(path = NULL,
                     labels_create = TRUE,
                     html = NULL,
                     send_at = NULL,
-                    scheduler = c("callr", "auto", "launchd", "at")) {
+                    scheduler = NULL) {
   mc_deliver(
     path = path, to = to, subject = subject, cc = cc, bcc = bcc, from = from,
     thread_id = thread_id, to_self = to_self, sig = sig, sig_path = sig_path,

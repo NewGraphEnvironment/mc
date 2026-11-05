@@ -1,3 +1,37 @@
+# mc 0.4.0
+
+## Behaviour change
+
+* **Scheduled sends go through the operating system by default.**
+  * `mc_send(send_at = ...)` now uses launchd on macOS and `at` on Linux, so a send scheduled from `Rscript` or cron no longer dies with the R session that made it (#8).
+  * `scheduler` defaults to `NULL`. That resolves to `"auto"` on macOS and Linux, and elsewhere to `"callr"`, with its existing warning.
+  * An explicit `scheduler = "auto"` still errors where no OS-native backend exists.
+* **launchd and `at` handle a missed or early send time.**
+  * A send that fires more than five minutes late (the machine was asleep) is skipped and logged as `SKIPPED`, as the callr backend already did.
+  * A send that fires early waits for its time.
+  * The send time is right whatever time zone `send_at` or the session uses.
+  * Attachments are carried as absolute paths.
+* `send_log` lines name their time zone.
+
+## New
+
+* **`mc_auth_check()`** says why an unattended send will not find its cached Gmail token. That happens after an rlang upgrade: gargle names the OAuth client with `rlang::hash()`, whose output changed in rlang 1.3.0. The README has a Troubleshooting section (#38).
+* `citation("mc")` and `CITATION.cff` cite the package by its Zenodo concept DOI, which resolves to every archived release.
+
+## Fixes
+
+* `mc_thread_modify()` no longer fetches user labels when every label is a system label written in mixed case, such as `"Starred"`.
+* `mc_draft()` and `mc_send()` report a missing `path` or `html` before looking up the sender.
+* R CMD check runs on every pull request (#47).
+
+# mc 0.3.1
+
+No change to the package's functions. This release exists so the package has a citable, archived version.
+
+- **Citation.** The maintainer is the author, and New Graph Environment Ltd. the copyright holder and funder (`cph`, `fnd` in `Authors@R`) and the publisher in `CITATION.cff`. `citation("mc")` and `knitr::write_bib()` give the entry the stable key `mc`.
+- `CITATION.cff` is regenerated from DESCRIPTION by the `update-citation-cff` workflow and is kept out of the build tarball.
+- The build excludes a git worktree's `.git` file.
+
 # mc 0.3.0
 
 ## Breaking changes

@@ -67,6 +67,10 @@ labels in \code{labels} are auto-created via \code{\link[=mc_label_ensure]{mc_la
 
 \item{html}{Optional pre-rendered HTML body. If provided, \code{path} is ignored
 and this HTML is used directly.}
+
+\item{...}{Not used. Present only so that passing \code{send_at} or \code{scheduler}
+errors with a pointer to \code{\link[=mc_send]{mc_send()}} rather than R's generic unused-argument
+error. Any other argument errors as unused.}
 }
 \value{
 The Gmail thread ID of the resulting draft, invisibly. May be \code{NULL}

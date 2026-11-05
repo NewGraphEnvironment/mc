@@ -80,7 +80,7 @@ md_dispatch_args <- function(path, to_self = FALSE, override = list()) {
 
   if ("path" %in% names(override)) {
     stop(
-      "`override` cannot change `path` — frontmatter is already read from ",
+      "`override` cannot change `path` - frontmatter is already read from ",
       "the original file. Call the function on the new path instead.",
       call. = FALSE
     )

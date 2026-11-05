@@ -3,6 +3,10 @@
 # gm_send_message() to stop() and assert the call still succeeds.
 
 test_that("mc_draft errors without path or html", {
+  # No sender configured, as on a CI runner: the argument error must still be
+  # the one reported, not the sender lookup (#47).
+  withr::local_options(mc.from = NULL)
+  withr::local_envvar(MC_FROM = NA)
   expect_error(
     mc_draft(to = "test@test.com", subject = "test"),
     "Provide either"
