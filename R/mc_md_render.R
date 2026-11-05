@@ -213,7 +213,7 @@ inject_link_target <- function(html) {
 #'
 #' As an HTML reader tokenizes it: a name, which may contain a stray quote
 #' (`pipe"`), then optionally `=` and a value. A quote starts a value only
-#' after `=`. Shared by [start_tag_regex()] and [tag_attrs()], so the two agree
+#' after `=`. Shared by `start_tag_regex()` and `tag_attrs()`, so the two agree
 #' about where every value ends.
 #'
 #' @param capture Capture the name (group 1) and raw value (group 2)?
@@ -227,12 +227,12 @@ html_attr_regex <- function(capture = FALSE) {
 
 #' A regex for any HTML start tag, outside comments and raw text (internal)
 #'
-#' Attributes are consumed by [html_attr_regex()], so a `>` or a stray quote
+#' Attributes are consumed by `html_attr_regex()`, so a `>` or a stray quote
 #' inside a value (kableExtra writes tooltips unescaped) does not end the tag.
 #' Comments, CDATA and the contents of `<script>` and `<style>` are skipped,
 #' as a reader skips them. It matches every tag name, so a scan consumes each
 #' tag whole and never reads markup inside another tag's value; pick a tag by
-#' name afterwards, as [rewrite_start_tags()] does.
+#' name afterwards, as `rewrite_start_tags()` does.
 #'
 #' @return A PCRE pattern matching one whole start tag.
 #' @noRd
