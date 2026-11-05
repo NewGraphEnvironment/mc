@@ -99,3 +99,23 @@ plist and JSON removed. Gmail stored `text/html` + `image/png` with `Content-Id:
 Branch vs `origin/main` worktree, per file / linter / source line: the only added lints were in
 `tests/testthat/test-inline_images.R` (semicolons, one-line braces, hanging indent); fixed. The
 standing count elsewhere is main's.
+
+## Chip check (Phase 6), 2026-11-05
+
+Owner looked at the to-self messages ("mc chip check", the scheduled one, and probe B without a
+filename) in Gmail web and on their phone: **no attachment card on any of them**. The issue's
+acceptance ("not also listed as a separate attachment") is met inside gmailr's `multipart/mixed`;
+gate decision 3 (document + upstream draft) is not needed. `name =`/`filename =` stay on the part.
+
+## Code-check round 1 (review-round1.md)
+
+Four fragile findings, all reproduced by the reviewer and fixed:
+- Preview `file://` URL not percent-encoded, and Windows backslashes read as regex escapes in the
+  replacement: new `file_url()` (forward slashes, per-segment `URLencode(reserved = TRUE)`).
+- Three findings were one mechanism: **attributes read by a regex over the whole tag text** (or the
+  whole body), so text inside a quoted value or a code span was read as an attribute. Enumerated
+  every attribute reader in the branch: `style_tag()` (style detection and unquoted-style quoting),
+  `inject_link_target()` (`has()` and the fragment check), `check_inline_images()` (the `cid:`
+  scan). All now go through `tag_attrs()`, a left-to-right tokenizer in which each quoted value is
+  consumed by its own attribute; the `cid:` scan reads only start tags (`cid_refs()`).
+- Integration assertion `expect_length(gregexpr(...)[[1]], 1)` passed on zero matches: now counts.

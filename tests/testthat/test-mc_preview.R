@@ -104,3 +104,15 @@ test_that("mc_preview shows frontmatter inline images in the body and the envelo
   expect_match(out, paste0('src="file://', normalizePath(img), '"'), fixed = TRUE)
   expect_match(out, ">Inline</th>", fixed = TRUE)
 })
+
+test_that("a preview image path is percent-encoded into its file URL", {
+  dir <- file.path(withr::local_tempdir(), "My Drive #1")
+  dir.create(dir)
+  img <- file.path(dir, "fig 100%.png")
+  writeBin(as.raw(1:10), img)
+  out <- mc:::preview_inline_images('<img src="cid:card">', list(card = img))
+  url <- sub('.*src="([^"]*)".*', "\\1", out)
+  expect_match(url, "^file:///")
+  expect_false(grepl("[ #%]1|[ #]", sub("%[0-9A-F]{2}", "", url)))
+  expect_identical(utils::URLdecode(sub("^file://", "", url)), normalizePath(img, winslash = "/"))
+})

@@ -189,3 +189,15 @@ test_that("background, url() and unquoted src are cid references; data-src is no
   # A lazy-load attribute is not what the client draws
   expect_no_error(send('<img data-src="cid:gone">'))
 })
+
+test_that("text that is not an attribute is not a cid reference", {
+  env <- new.env()
+  capture_send(env)
+  send <- function(html) {
+    mc_send(html = html, to = "bob@example.com", subject = "x",
+            from = "alice@example.com", sig = FALSE)
+  }
+  # A code span showing the syntax, and an attribute value that mentions it
+  expect_no_error(send("<p><code>src=cid:q</code> and url(cid:q) in prose</p>"))
+  expect_no_error(send('<img title="src=cid:q" src="https://e.com/a.png">'))
+})

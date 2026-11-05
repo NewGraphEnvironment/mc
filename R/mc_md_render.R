@@ -163,16 +163,18 @@ style_tag <- function(html, tag, css) {
   m <- gregexpr(paste0("<", tag, "(\\s[^>]*)?>"), html, perl = TRUE, ignore.case = TRUE)
   regmatches(html, m) <- lapply(regmatches(html, m), function(tags) {
     vapply(tags, function(t) {
-      # An unquoted style (style=color:red) is quoted first, so it is merged
-      t <- sub("(\\sstyle\\s*=\\s*)([^\"'\\s>]+)", '\\1"\\2"', t, perl = TRUE, ignore.case = TRUE)
-      style <- "(\\sstyle\\s*=\\s*)([\"'])"
-      if (!grepl(style, t, perl = TRUE, ignore.case = TRUE)) {
+      a <- tag_attrs(t)
+      i <- match("style", a$name)
+      if (is.na(i)) {
         return(sub("\\s*/?>$", paste0(' style="', css, '">'), t, perl = TRUE))
       }
-      if (grepl(paste0("\\sstyle\\s*=\\s*[\"']\\Q", css, "\\E"), t, perl = TRUE, ignore.case = TRUE)) {
-        return(t)
+      if (startsWith(a$value[i], css)) return(t)
+      # Rewrite the style value in place, quoted, our declarations first
+      new <- paste0('"', css, if (nzchar(a$value[i])) " ", gsub('"', "&quot;", a$value[i], fixed = TRUE), '"')
+      if (nzchar(a$quote[i]) && a$quote[i] == "'") {
+        new <- paste0("'", css, if (nzchar(a$value[i])) " ", a$value[i], "'")
       }
-      sub(style, paste0("\\1\\2", css, " "), t, perl = TRUE, ignore.case = TRUE)
+      paste0(substr(t, 1, a$vstart[i] - 1), new, substr(t, a$vstart[i] + a$vlen[i], nchar(t)))
     }, character(1), USE.NAMES = FALSE)
   })
   html
@@ -192,20 +194,53 @@ inject_link_target <- function(html) {
   m <- gregexpr("<a\\s[^>]*>", html, perl = TRUE, ignore.case = TRUE)
   regmatches(html, m) <- lapply(regmatches(html, m), function(tags) {
     vapply(tags, function(t) {
-      # Attribute names are read with quoted values blanked out, so text such
-      # as title="target=x" is not mistaken for an attribute
-      bare <- gsub("\"[^\"]*\"|'[^']*'", "\"\"", t, perl = TRUE)
-      has <- function(attr) grepl(paste0("\\s", attr, "\\s*="), bare, perl = TRUE, ignore.case = TRUE)
-      if (!has("href")) return(t)
-      # A link within the message (href="#notes") stays in the message
-      if (grepl("\\shref\\s*=\\s*[\"']?#", t, perl = TRUE, ignore.case = TRUE)) return(t)
+      a <- tag_attrs(t)
+      href <- a$value[match("href", a$name)]
+      # Not a link, or a link within the message, which stays in the message
+      if (is.na(href) || startsWith(trimws(href), "#")) return(t)
       add <- c(
-        if (!has("target")) 'target="_blank"',
-        if (!has("rel")) 'rel="noopener noreferrer"'
+        if (!"target" %in% a$name) 'target="_blank"',
+        if (!"rel" %in% a$name) 'rel="noopener noreferrer"'
       )
       if (length(add) == 0) return(t)
       sub("\\s*>$", paste0(" ", paste(add, collapse = " "), ">"), t, perl = TRUE)
     }, character(1), USE.NAMES = FALSE)
   })
   html
+}
+
+
+#' Read the attributes of one HTML start tag (internal)
+#'
+#' Tokenizes left to right, so a quoted value is consumed by the attribute it
+#' belongs to and text inside it (`title="a style=b"`) is never read as an
+#' attribute of its own.
+#'
+#' @param tag One start tag, e.g. `'<td align="left" style="x">'`.
+#' @return Data frame: `name` (lower case), `value` (unquoted, `""` when
+#'   absent), `quote` (`"\""`, `"'"` or `""`), and `vstart`/`vlen`, the
+#'   position and length of the raw value in `tag` (`NA` when absent).
+#' @noRd
+tag_attrs <- function(tag) {
+  body_start <- regexpr("^<[A-Za-z][A-Za-z0-9-]*", tag, perl = TRUE)
+  offset <- attr(body_start, "match.length")
+  rest <- substr(tag, offset + 1, nchar(tag))
+  m <- gregexpr(
+    "\\s+([^\\s\"'>/=]+)(?:\\s*=\\s*(\"[^\"]*\"|'[^']*'|[^\\s\"'>]+))?",
+    rest, perl = TRUE
+  )[[1]]
+  empty <- data.frame(name = character(), value = character(), quote = character(),
+                      vstart = integer(), vlen = integer())
+  if (m[1] == -1) return(empty)
+  cs <- attr(m, "capture.start")
+  cl <- attr(m, "capture.length")
+  name <- tolower(substring(rest, cs[, 1], cs[, 1] + cl[, 1] - 1))
+  raw <- ifelse(cl[, 2] > 0, substring(rest, cs[, 2], cs[, 2] + cl[, 2] - 1), "")
+  quote <- ifelse(grepl("^[\"']", raw), substr(raw, 1, 1), "")
+  value <- ifelse(nzchar(quote), substr(raw, 2, nchar(raw) - 1), raw)
+  data.frame(
+    name = name, value = value, quote = quote,
+    vstart = ifelse(cl[, 2] > 0, cs[, 2] + offset, NA_integer_),
+    vlen = ifelse(cl[, 2] > 0, cl[, 2], NA_integer_)
+  )
 }

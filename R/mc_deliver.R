@@ -366,14 +366,10 @@ resolve_send_at <- function(send_at) {
 #' @keywords internal
 check_inline_images <- function(inline_images, html) {
   # A reference is what a client draws: a src or background attribute, or a
-  # CSS url(), quoted or not. "cid:" in prose is not, nor is data-src.
-  refs <- regmatches(
-    html,
-    gregexpr(
-      "(?i)(?:(?<![\\w-])(?:src|background)\\s*=\\s*[\"']?|url\\(\\s*[\"']?)cid:\\K[A-Za-z0-9._@-]+",
-      html, perl = TRUE
-    )
-  )[[1]]
+  # CSS url() in a style attribute, read from tags only, so "cid:" in prose,
+  # in a code span or inside another attribute's value is not one, nor is
+  # data-src.
+  refs <- cid_refs(html)
   refs <- unique(refs)
   if (is.null(inline_images)) {
     if (length(refs)) stop("HTML references cid: ", paste(refs, collapse = ", "),
@@ -396,4 +392,25 @@ check_inline_images <- function(inline_images, html) {
   if (length(unused)) warning("Inline image(s) not referenced in the HTML: ",
                               paste(unused, collapse = ", "), call. = FALSE)
   invisible(NULL)
+}
+
+
+#' The Content-IDs an HTML body references (internal)
+#'
+#' @param html The HTML body.
+#' @return Character vector of Content-IDs, in order, possibly repeated.
+#' @noRd
+cid_refs <- function(html) {
+  tok <- "[A-Za-z0-9._@-]+"
+  tags <- regmatches(html, gregexpr("<[A-Za-z][^>]*>", html, perl = TRUE))[[1]]
+  unlist(lapply(tags, function(t) {
+    a <- tag_attrs(t)
+    direct <- a$value[a$name %in% c("src", "background")]
+    direct <- regmatches(direct, regexpr(paste0("(?i)^\\s*cid:\\K", tok), direct, perl = TRUE))
+    styles <- a$value[a$name == "style"]
+    css <- unlist(regmatches(styles, gregexpr(
+      paste0("(?i)url\\(\\s*[\"']?cid:\\K", tok), styles, perl = TRUE
+    )))
+    c(direct, css)
+  }))
 }

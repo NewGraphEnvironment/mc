@@ -149,3 +149,13 @@ test_that("an unquoted style attribute is merged, not duplicated", {
   html <- mc:::inline_table_styles("<td style=color:red>1</td>")
   expect_identical(html, '<td style="border: 1px solid #ddd; padding: 8px; color:red">1</td>')
 })
+
+test_that("text inside a quoted attribute value is never read as an attribute", {
+  html <- mc:::inline_table_styles('<td title="a style=b">1</td><th title="x style=\'y\'">h</th>')
+  expect_identical(html, paste0(
+    '<td title="a style=b" style="border: 1px solid #ddd; padding: 8px;">1</td>',
+    '<th title="x style=\'y\'" style="border: 1px solid #ddd; padding: 8px;">h</th>'
+  ))
+  link <- mc:::inject_link_target('<a title="see href=#top" href="https://a.com">a</a>')
+  expect_match(link, 'target="_blank" rel="noopener noreferrer">a</a>', fixed = TRUE)
+})

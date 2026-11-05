@@ -435,7 +435,7 @@ test_that("mc_send from a .md file with the signature: header, links, tables and
   )
   # Each table declaration once; aligned cells styled
   table_tag <- regmatches(html, regexpr("<table[^>]*>", html))
-  expect_length(gregexpr("border-collapse", table_tag, fixed = TRUE)[[1]], 1)
+  expect_equal(sum(gregexpr("border-collapse", table_tag, fixed = TRUE)[[1]] > 0), 1)
   expect_match(html, '<th align="left" style="border: 1px solid #ddd; padding: 8px;">', fixed = TRUE)
   expect_match(html, '<td align="right" style="border: 1px solid #ddd; padding: 8px;">', fixed = TRUE)
   # Image arrives as an inline part named by its Content-ID

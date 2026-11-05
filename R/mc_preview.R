@@ -68,10 +68,27 @@ preview_inline_images <- function(html, inline_images) {
   imgs <- unlist(inline_images)
   for (id in names(imgs)) {
     if (!file.exists(imgs[[id]])) next
-    url <- paste0("file://", normalizePath(imgs[[id]]))
-    html <- gsub(paste0("cid:\\Q", id, "\\E(?![A-Za-z0-9._@-])"), url, html, perl = TRUE)
+    html <- gsub(paste0("cid:\\Q", id, "\\E(?![A-Za-z0-9._@-])"), file_url(imgs[[id]]), html, perl = TRUE)
   }
   html
+}
+
+
+#' A file:// URL for a local path, percent-encoded (internal)
+#'
+#' Forward slashes on every platform and each path segment percent-encoded,
+#' so a space, `#`, `?`, `%` or `"` in a name cannot change the URL or end the
+#' attribute, and the result is safe as a regex replacement.
+#' @param path Existing file path.
+#' @return Character `file:///...` URL.
+#' @noRd
+file_url <- function(path) {
+  p <- normalizePath(path, winslash = "/")
+  segs <- strsplit(p, "/", fixed = TRUE)[[1]]
+  drive <- grepl("^[A-Za-z]:$", segs)
+  segs[!drive] <- vapply(segs[!drive], utils::URLencode, "", reserved = TRUE, USE.NAMES = FALSE)
+  out <- paste(segs, collapse = "/")
+  paste0("file://", if (startsWith(out, "/")) "" else "/", out)
 }
 
 

@@ -86,8 +86,8 @@ Approved by the owner at the plan gate, 2026-11-05.
 - [x] Run `MC_RUN_INTEGRATION=true devtools::test(filter = "integration")` before the PR; test mail trashed by the existing safeguards
 
 ## Phase 6: The chip check (#43 acceptance)
-- [ ] Send one `to_self = TRUE` message with an inline PNG; look at Gmail web (Chrome) and ask you to check Apple Mail
-- [ ] Record the result in `findings.md`; apply gate decision 3 if a chip shows
+- [x] Send one `to_self = TRUE` message with an inline PNG; look at Gmail web (Chrome) and ask you to check Apple Mail
+- [x] Record the result in `findings.md`; apply gate decision 3 if a chip shows
 
 ## Phase 7: Wrap-up
 - [ ] PR #44: retitle, extend body (Fixes #35/#42/#10, what changed), remove the session link
