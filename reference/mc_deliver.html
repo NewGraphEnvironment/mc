@@ -36,7 +36,7 @@ according to .draft."><meta property="og:image" content="https://newgraphenviron
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Build and deliver a message (internal)</h1>
-      <small class="dont-index">Source: <a href="https://github.com/NewGraphEnvironment/mc/blob/v0.4.0/R/mc_deliver.R" class="external-link"><code>R/mc_deliver.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/NewGraphEnvironment/mc/blob/main/R/mc_deliver.R" class="external-link"><code>R/mc_deliver.R</code></a></small>
       <div class="d-none name"><code>mc_deliver.Rd</code></div>
     </div>
 
@@ -61,6 +61,7 @@ according to <code>.draft</code>.</p>
 <span>  sig <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  sig_path <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  attachments <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  inline_images <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  labels <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  labels_create <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  html <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -128,7 +129,22 @@ Ignored when <code>sig = FALSE</code> or when <code>html</code> is provided.</p>
 
 <dt id="arg-attachments">attachments<a class="anchor" aria-label="anchor" href="#arg-attachments"></a></dt>
 <dd><p>Optional character vector of file paths to attach.
-Each file is attached via <code><a href="https://gmailr.r-lib.org/reference/gm_mime.html" class="external-link">gmailr::gm_attach_file()</a></code>. Default <code>NULL</code>.</p></dd>
+Each file is attached via <code><a href="https://gmailr.r-lib.org/reference/gm_mime.html" class="external-link">gmailr::gm_attach_file()</a></code>. Default <code>NULL</code>.
+A scheduled send reads the files when it fires, so they must still
+exist then (not a <code><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile()</a></code> from a session that has ended).</p></dd>
+
+
+<dt id="arg-inline-images">inline_images<a class="anchor" aria-label="anchor" href="#arg-inline-images"></a></dt>
+<dd><p>Optional named character vector of image paths to
+show in the body: each name is a Content-ID the HTML references as
+<code>&lt;img src="cid:name"&gt;</code>, or in markdown as <code>![alt](cid:name)</code>. Names use
+letters, digits and <code>. _ @ -</code>. A <code>cid:</code> reference (in <code>src</code>,
+<code>background</code> or a CSS <code><a href="https://rdrr.io/r/base/connections.html" class="external-link">url()</a></code>) with no matching image is an error; an
+image the HTML never references is a warning. Kept when
+<code>to_self = TRUE</code>. In YAML frontmatter, give a mapping
+(<code>inline_images:</code> then <code>  card: fig/card.png</code>), not a list. Paths
+resolve against the working directory, and a scheduled send reads the
+files when it fires, as for <code>attachments</code>.</p></dd>
 
 
 <dt id="arg-labels">labels<a class="anchor" aria-label="anchor" href="#arg-labels"></a></dt>

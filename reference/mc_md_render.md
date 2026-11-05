@@ -37,6 +37,10 @@ Gmail strips `<style>` blocks from HTML emails. This function adds
 inline styles to `<table>`, `<th>`, and `<td>` elements so tables render
 correctly.
 
+Every link gets `target="_blank" rel="noopener noreferrer"`, so a reader
+clicking it in webmail opens a new tab rather than leaving their inbox.
+A link that already sets `target` or `rel` keeps its own value.
+
 The markdown file should follow the compost template format:
 
     # Email to Recipient - Topic

@@ -19,6 +19,7 @@ mc_draft(
   sig = TRUE,
   sig_path = NULL,
   attachments = NULL,
+  inline_images = NULL,
   labels = NULL,
   labels_create = TRUE,
   html = NULL,
@@ -83,7 +84,24 @@ mc_draft(
   Optional character vector of file paths to attach. Each file is
   attached via
   [`gmailr::gm_attach_file()`](https://gmailr.r-lib.org/reference/gm_mime.html).
-  Default `NULL`.
+  Default `NULL`. A scheduled send reads the files when it fires, so
+  they must still exist then (not a
+  [`tempfile()`](https://rdrr.io/r/base/tempfile.html) from a session
+  that has ended).
+
+- inline_images:
+
+  Optional named character vector of image paths to show in the body:
+  each name is a Content-ID the HTML references as
+  `<img src="cid:name">`, or in markdown as `![alt](cid:name)`. Names
+  use letters, digits and `. _ @ -`. A `cid:` reference (in `src`,
+  `background` or a CSS
+  [`url()`](https://rdrr.io/r/base/connections.html)) with no matching
+  image is an error; an image the HTML never references is a warning.
+  Kept when `to_self = TRUE`. In YAML frontmatter, give a mapping
+  (`inline_images:` then ` card: fig/card.png`), not a list. Paths
+  resolve against the working directory, and a scheduled send reads the
+  files when it fires, as for `attachments`.
 
 - labels:
 

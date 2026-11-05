@@ -36,7 +36,7 @@ styles for Gmail compatibility, and appends the New Graph signature."><meta prop
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Render a markdown draft to HTML email body</h1>
-      <small class="dont-index">Source: <a href="https://github.com/NewGraphEnvironment/mc/blob/v0.4.0/R/mc_md_render.R" class="external-link"><code>R/mc_md_render.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/NewGraphEnvironment/mc/blob/main/R/mc_md_render.R" class="external-link"><code>R/mc_md_render.R</code></a></small>
       <div class="d-none name"><code>mc_md_render.Rd</code></div>
     </div>
 
@@ -76,6 +76,9 @@ uses the bundled New Graph signature. Ignored when <code>sig = FALSE</code>.</p>
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>Gmail strips <code>&lt;style&gt;</code> blocks from HTML emails. This function adds inline
 styles to <code>&lt;table&gt;</code>, <code>&lt;th&gt;</code>, and <code>&lt;td&gt;</code> elements so tables render correctly.</p>
+<p>Every link gets <code>target="_blank" rel="noopener noreferrer"</code>, so a reader
+clicking it in webmail opens a new tab rather than leaving their inbox. A
+link that already sets <code>target</code> or <code>rel</code> keeps its own value.</p>
 <p>The markdown file should follow the compost template format:</p>
 <p></p><div class="sourceCode"><pre><code><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="co"># Email to Recipient - Topic</span></span>
 <span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a></span>

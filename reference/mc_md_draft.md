@@ -1,8 +1,8 @@
 # Create a Gmail draft from a markdown file with YAML frontmatter
 
 Reads metadata (`to`, `subject`, optional `cc`, `bcc`, `thread_id`,
-`attachments`, `labels`, `from`) from the YAML frontmatter at the top of
-a markdown draft and dispatches to
+`attachments`, `inline_images`, `labels`, `from`) from the YAML
+frontmatter at the top of a markdown draft and dispatches to
 [`mc_draft()`](https://newgraphenvironment.github.io/mc/reference/mc_draft.md).
 
 ## Usage

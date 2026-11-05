@@ -65,7 +65,10 @@ For tables that look good in email:
   for horizontal/vertical scrolling
 
 `mc_compose()` automatically adds border and padding inline styles to
-all `<table>`, `<th>`, and `<td>` elements for Gmail compatibility.
+all `<table>`, `<th>`, and `<td>` elements for Gmail compatibility, and
+opens every link in a new tab, as
+[`mc_md_render()`](https://newgraphenvironment.github.io/mc/reference/mc_md_render.md)
+does.
 
 ## Examples
 
