@@ -32,6 +32,12 @@ scopes a token was granted, so a token whose client name matches but which
 was minted with narrower scopes than gmailr requests is still not found.
 Tokens for the same email minted by other Google packages, under other OAuth
 clients, are ignored.
+
+The check is for the account named by \code{email}. A scheduled send that fires
+later authenticates through gmailr's own default, the \code{GMAILR_EMAIL}
+environment variable or the \code{gargle_oauth_email} option, and with neither
+set gargle takes the first matching cached token. Set \code{GMAILR_EMAIL} to the
+same address for unattended sends, so the token checked is the one used.
 }
 \section{Troubleshooting}{
 

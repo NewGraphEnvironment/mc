@@ -85,7 +85,7 @@ schedule_callr <- function(target_time, args) {
         msg <- paste0(
           "Scheduled send SKIPPED. Machine woke ",
           round(late / 60, 1), " min past target time ",
-          format(target_time, "%H:%M:%S"),
+          format(target_time, "%Y-%m-%d %H:%M:%S %Z", tz = ""),
           ". Draft not sent to protect against stale context."
         )
         mc:::send_log(args$subject, args$to, "SKIPPED", msg)
@@ -181,9 +181,9 @@ schedule_launchd <- function(target_time, args) {
 #' @noRd
 launchd_plist <- function(label, target_time, rscript_path, args_json_path,
                           scheduled_dir) {
-  # launchd reads these digits as machine-local time, so take them in the
-  # machine's zone, not the zone `target_time` happens to carry.
-  tt <- as.POSIXlt(target_time, tz = "")
+  # launchd reads these digits in the system zone when the job fires, so they
+  # come from the system's own clock, not R's session zone or tz database.
+  tt <- system_wall_clock(target_time)
   out_log <- file.path(scheduled_dir, paste0(label, ".out"))
   err_log <- file.path(scheduled_dir, paste0(label, ".err"))
 
@@ -202,11 +202,11 @@ launchd_plist <- function(label, target_time, rscript_path, args_json_path,
     "  </array>",
     "  <key>StartCalendarInterval</key>",
     "  <dict>",
-    paste0("    <key>Year</key><integer>", tt$year + 1900, "</integer>"),
-    paste0("    <key>Month</key><integer>", tt$mon + 1, "</integer>"),
-    paste0("    <key>Day</key><integer>", tt$mday, "</integer>"),
-    paste0("    <key>Hour</key><integer>", tt$hour, "</integer>"),
-    paste0("    <key>Minute</key><integer>", tt$min, "</integer>"),
+    paste0("    <key>Year</key><integer>", tt[["year"]], "</integer>"),
+    paste0("    <key>Month</key><integer>", tt[["month"]], "</integer>"),
+    paste0("    <key>Day</key><integer>", tt[["day"]], "</integer>"),
+    paste0("    <key>Hour</key><integer>", tt[["hour"]], "</integer>"),
+    paste0("    <key>Minute</key><integer>", tt[["minute"]], "</integer>"),
     "  </dict>",
     "  <key>RunAtLoad</key><false/>",
     paste0("  <key>StandardOutPath</key><string>", out_log, "</string>"),
@@ -338,10 +338,17 @@ run_scheduled_send <- function(args_json_path) {
   if (!is.null(target)) {
     target <- as.POSIXct(target, origin = "1970-01-01")
     late <- as.numeric(difftime(Sys.time(), target, units = "secs"))
+    # Early: launchd has no seconds field, and a Mac that changed zone since
+    # scheduling fires hours off. Wait for the target, then check again.
+    if (late < 0) {
+      Sys.sleep(-late)
+      late <- as.numeric(difftime(Sys.time(), target, units = "secs"))
+    }
     if (late > grace) {
       msg <- paste0(
         "Scheduled send SKIPPED. Fired ", round(late / 60, 1),
-        " min past target time ", format(target, "%Y-%m-%d %H:%M:%S"),
+        " min past target time ",
+        format(target, "%Y-%m-%d %H:%M:%S %Z", tz = ""),
         ". Not sent to protect against stale context."
       )
       send_log(args$subject, args$to, "SKIPPED", msg)
@@ -405,6 +412,32 @@ cleanup_scheduled_send <- function(args_json_path) {
   }
 
   invisible(NULL)
+}
+
+
+#' Wall-clock digits of an instant in the system zone (macOS)
+#'
+#' launchd reads `StartCalendarInterval` in the system zone, which R's session
+#' zone need not match: `TZ` may be set, and with `TZ` set R uses its bundled
+#' tz database rather than the system's. So ask the system's own `date`, with
+#' `TZ` unset, by absolute path (a GNU `date` may come first on `PATH`).
+#' Seconds are dropped: launchd has no seconds field, and
+#' `run_scheduled_send()` waits out the rest.
+#'
+#' @return Named integer vector: year, month, day, hour, minute.
+#' @noRd
+system_wall_clock <- function(target_time) {
+  secs <- sprintf("%.0f", floor(as.numeric(target_time)))
+  cmd <- paste("/usr/bin/env -u TZ /bin/date -r", secs,
+               shQuote("+%Y %m %d %H %M"))
+  out <- suppressWarnings(system(cmd, intern = TRUE))
+  digits <- suppressWarnings(as.integer(strsplit(out[1], " ")[[1]]))
+  if (length(digits) != 5 || anyNA(digits)) {
+    stop("Could not read the system clock for the launchd job (",
+         cmd, " returned: ", paste(out, collapse = " "), ").",
+         call. = FALSE)
+  }
+  stats::setNames(digits, c("year", "month", "day", "hour", "minute"))
 }
 
 

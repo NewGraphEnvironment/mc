@@ -23,6 +23,12 @@
 #' Tokens for the same email minted by other Google packages, under other OAuth
 #' clients, are ignored.
 #'
+#' The check is for the account named by `email`. A scheduled send that fires
+#' later authenticates through gmailr's own default, the `GMAILR_EMAIL`
+#' environment variable or the `gargle_oauth_email` option, and with neither
+#' set gargle takes the first matching cached token. Set `GMAILR_EMAIL` to the
+#' same address for unattended sends, so the token checked is the one used.
+#'
 #' @section Troubleshooting:
 #' **Upgrading rlang invalidates the gargle token cache.** gargle names the
 #' OAuth client `<project_id>_<hash>`, where the hash comes from

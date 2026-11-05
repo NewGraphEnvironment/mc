@@ -111,6 +111,13 @@ test_that("schedule_at unlinks args JSON and stops on at command failure", {
 
 test_that("launchd_plist embeds target time + ProgramArguments correctly", {
   target <- as.POSIXct("2026-12-25 14:30:00", tz = "UTC")
+  # The digits come from the system clock (system_wall_clock(), tested below)
+  local_mocked_bindings(
+    system_wall_clock = function(target_time) {
+      c(year = 2026L, month = 12L, day = 25L, hour = 6L, minute = 30L)
+    },
+    .package = "mc"
+  )
   xml <- mc:::launchd_plist(
     label = "com.newgraph.mc.send-test",
     target_time = target,
@@ -130,13 +137,12 @@ test_that("launchd_plist embeds target time + ProgramArguments correctly", {
   expect_match(xml, "<string>-e</string>", fixed = TRUE)
   expect_match(xml, 'run_scheduled_send(\"/tmp/test-args.json\")', fixed = TRUE)
 
-  # StartCalendarInterval — local time decomposition matches target
-  tt <- as.POSIXlt(target, tz = "")
-  yr <- paste0("<key>Year</key><integer>", tt$year + 1900, "</integer>")
-  mo <- paste0("<key>Month</key><integer>", tt$mon + 1, "</integer>")
-  dy <- paste0("<key>Day</key><integer>", tt$mday, "</integer>")
-  hr <- paste0("<key>Hour</key><integer>", tt$hour, "</integer>")
-  mn <- paste0("<key>Minute</key><integer>", tt$min, "</integer>")
+  # StartCalendarInterval — the system-clock digits, not the target's zone
+  yr <- "<key>Year</key><integer>2026</integer>"
+  mo <- "<key>Month</key><integer>12</integer>"
+  dy <- "<key>Day</key><integer>25</integer>"
+  hr <- "<key>Hour</key><integer>6</integer>"
+  mn <- "<key>Minute</key><integer>30</integer>"
   expect_match(xml, yr, fixed = TRUE)
   expect_match(xml, mo, fixed = TRUE)
   expect_match(xml, dy, fixed = TRUE)
@@ -522,19 +528,13 @@ test_that("schedule_at warns when atd is not running", {
   )
 })
 
-test_that("launchd and at take the fire time's digits in the machine's zone", {
-  # launchd and at read wall-clock digits as machine-local time; the stale-send
+test_that("at takes the fire time's digits in the process zone, not the target's", {
+  # at inherits the R process's TZ and stores an absolute time; the stale-send
   # guard compares instants. A target carrying another zone must still fire at
   # its instant (#47 code-check round 2).
   # Tokyo has no DST, so the expected digits do not depend on tz data.
   withr::local_timezone("Asia/Tokyo")
   target <- as.POSIXct("2026-11-05 09:00:00", tz = "UTC") # 18:00 JST
-
-  xml <- mc:::launchd_plist("lbl", target, "/usr/bin/Rscript", "/tmp/a.json",
-                            "/tmp/s")
-  expect_match(xml, "<key>Day</key><integer>5</integer>", fixed = TRUE)
-  expect_match(xml, "<key>Hour</key><integer>18</integer>", fixed = TRUE)
-  expect_match(xml, "<key>Minute</key><integer>0</integer>", fixed = TRUE)
 
   at_args <- NULL
   local_mocked_bindings(
@@ -548,4 +548,32 @@ test_that("launchd and at take the fire time's digits in the machine's zone", {
   withr::local_envvar(HOME = withr::local_tempdir())
   mc:::schedule_at(target, list(to = "x@x.com", subject = "x"))
   expect_equal(at_args[2], "202611051800.00")
+})
+
+test_that("system_wall_clock reads the system zone, whatever the session's TZ", {
+  # launchd reads StartCalendarInterval in the system zone at fire time. With
+  # TZ set, R's own zone and tz database can both differ from it (#47 round 3).
+  skip_on_os(c("windows", "linux", "solaris"))
+  target <- as.POSIXct("2026-11-05 09:00:00", tz = "UTC")
+  unset <- withr::with_envvar(c(TZ = NA), mc:::system_wall_clock(target))
+  tokyo <- withr::with_timezone("Asia/Tokyo", mc:::system_wall_clock(target))
+  utc <- withr::with_timezone("UTC", mc:::system_wall_clock(target))
+  expect_equal(tokyo, unset)
+  expect_equal(utc, unset)
+  expect_named(unset, c("year", "month", "day", "hour", "minute"))
+  # With TZ unset R reads the system database, so it must agree
+  lt <- withr::with_envvar(c(TZ = NA), as.POSIXlt(target, tz = ""))
+  expect_equal(unname(unset[c("hour", "minute")]), c(lt$hour, lt$min))
+})
+
+test_that("run_scheduled_send waits for the target when fired early", {
+  slept <- NULL
+  local_mocked_bindings(
+    Sys.sleep = function(time) slept <<- time,
+    .package = "base"
+  )
+  calls <- run_with_target(120)
+  expect_true(!is.null(slept) && slept > 100 && slept <= 120)
+  expect_length(calls$send, 1)
+  expect_equal(calls$log, c("STARTED", "SENT"))
 })

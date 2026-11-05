@@ -422,9 +422,27 @@ test_that("mc_send writes SCHEDULED log entry at submission time", {
   expect_equal(scheduled[[1]]$subject, "scheduled subject")
   expect_equal(scheduled[[1]]$to, "test@test.com")
   expect_match(scheduled[[1]]$detail, "^target=")
-  # Machine-local with the zone named, whatever zone send_at carried
-  expect_match(scheduled[[1]]$detail,
-               paste0("^target=.* ", format(Sys.time(), "%Z"), " "))
+})
+
+test_that("the scheduled time is shown in the process zone, whatever send_at carries", {
+  log_detail <- NULL
+  local_mocked_bindings(
+    schedule_send = function(target_time, args, scheduler) list(),
+    send_log = function(subject, to, status, detail = "") log_detail <<- detail,
+    .package = "mc"
+  )
+  withr::local_timezone("Asia/Tokyo") # no DST, so JST whatever the tz data
+  target <- as.POSIXct(format(Sys.time() + 3600, tz = "UTC"), tz = "UTC")
+  msgs <- testthat::capture_messages(
+    mc_send(html = "<p>x</p>", to = "t@t.com", subject = "s",
+            from = "f@f.com", send_at = target, scheduler = "launchd")
+  )
+  expect_match(log_detail, "^target=.* JST scheduler=launchd$")
+  expect_match(paste(msgs, collapse = ""), "Scheduled to send at .* JST")
+  expect_equal(
+    sub("^target=(.*) JST.*$", "\\1", log_detail),
+    format(target, "%Y-%m-%d %H:%M:%S", tz = "Asia/Tokyo")
+  )
 })
 
 test_that("mc_send rejects the removed draft and test arguments", {
