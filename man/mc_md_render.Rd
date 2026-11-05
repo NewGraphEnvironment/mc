@@ -26,6 +26,10 @@ styles for Gmail compatibility, and appends the New Graph signature.
 Gmail strips \verb{<style>} blocks from HTML emails. This function adds inline
 styles to \verb{<table>}, \verb{<th>}, and \verb{<td>} elements so tables render correctly.
 
+Every link gets \verb{target="_blank" rel="noopener noreferrer"}, so a reader
+clicking it in webmail opens a new tab rather than leaving their inbox. A
+link that already sets \code{target} or \code{rel} keeps its own value.
+
 The markdown file should follow the compost template format:
 
 \if{html}{\out{<div class="sourceCode">}}\preformatted{# Email to Recipient - Topic

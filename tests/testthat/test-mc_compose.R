@@ -109,3 +109,11 @@ test_that("inline_table_styles handles kableExtra class tables", {
   expect_match(styled, "border-collapse")
   expect_match(styled, "width: auto")
 })
+
+test_that("mc_compose opens links in a new tab, in markdown and raw HTML parts", {
+  md <- tempfile(fileext = ".md")
+  writeLines("[doc](https://a.com)", md)
+  body <- mc_compose(md, '<p><a href="https://b.com">b</a></p>', sig = FALSE)
+  expect_match(body, '<a href="https://a.com" target="_blank" rel="noopener noreferrer">', fixed = TRUE)
+  expect_match(body, '<a href="https://b.com" target="_blank" rel="noopener noreferrer">', fixed = TRUE)
+})

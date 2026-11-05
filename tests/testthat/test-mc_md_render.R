@@ -100,3 +100,37 @@ test_that("styling is idempotent, so a styled body passed through mc_compose is 
   once <- mc:::inline_table_styles('<table><tr><th>a</th><td align="left">1</td></tr></table>')
   expect_identical(mc:::inline_table_styles(once), once)
 })
+
+test_that("markdown links of every kind open in a new tab", {
+  md <- tempfile(fileext = ".md")
+  writeLines(c(
+    "[plain](https://a.com) [titled](https://b.com \"T\")",
+    "<https://c.com> www.d.com [mail](mailto:x@y.com)"
+  ), md)
+  html <- mc_md_render(md, sig = FALSE)
+  anchors <- regmatches(html, gregexpr("<a\\s[^>]*>", html, perl = TRUE))[[1]]
+  expect_length(anchors, 5)
+  for (a in anchors) {
+    expect_equal(count_fixed(a, 'target="_blank"'), 1, info = a)
+    expect_equal(count_fixed(a, 'rel="noopener noreferrer"'), 1, info = a)
+  }
+  expect_match(html, '<a href="https://b.com" title="T" target="_blank" rel="noopener noreferrer">', fixed = TRUE)
+})
+
+test_that("a link that already sets target or rel is not given a second one", {
+  html <- mc:::inject_link_target(paste0(
+    '<a href="https://a.com" target="_self">a</a>',
+    "<a href='https://b.com' rel='nofollow'>b</a>",
+    '<a name="top">c</a>'
+  ))
+  expect_match(html, '<a href="https://a.com" target="_self" rel="noopener noreferrer">', fixed = TRUE)
+  expect_match(html, "<a href='https://b.com' rel='nofollow' target=\"_blank\">", fixed = TRUE)
+  # An anchor with no href is not a link
+  expect_match(html, '<a name="top">', fixed = TRUE)
+  expect_identical(mc:::inject_link_target(html), html)
+})
+
+test_that("HTML without links is unchanged", {
+  x <- "<p>no links, <abbr>abbr</abbr> and <address>here</address></p>"
+  expect_identical(mc:::inject_link_target(x), x)
+})

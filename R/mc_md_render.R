@@ -15,6 +15,10 @@
 #' Gmail strips `<style>` blocks from HTML emails. This function adds inline
 #' styles to `<table>`, `<th>`, and `<td>` elements so tables render correctly.
 #'
+#' Every link gets `target="_blank" rel="noopener noreferrer"`, so a reader
+#' clicking it in webmail opens a new tab rather than leaving their inbox. A
+#' link that already sets `target` or `rel` keeps its own value.
+#'
 #' The markdown file should follow the compost template format:
 #'
 #' ```
@@ -59,8 +63,9 @@ mc_md_render <- function(path, sig = TRUE, sig_path = NULL) {
   # Convert markdown to HTML
   body_html <- commonmark::markdown_html(body_md, extensions = TRUE)
 
-  # Inline table styles for Gmail compatibility
+  # Inline table styles for Gmail compatibility, and links in a new tab
   body_html <- inline_table_styles(body_html)
+  body_html <- inject_link_target(body_html)
 
   # Append signature
 
@@ -166,6 +171,32 @@ style_tag <- function(html, tag, css) {
         return(t)
       }
       sub(style, paste0("\\1\\2", css, " "), t, perl = TRUE, ignore.case = TRUE)
+    }, character(1), USE.NAMES = FALSE)
+  })
+  html
+}
+
+
+#' Open every link in a new tab (internal)
+#'
+#' Adds `target="_blank"` and `rel="noopener noreferrer"` to each `<a>` tag
+#' that has an `href`, leaving any `target` or `rel` it already sets.
+#'
+#' @param html Character string of HTML.
+#' @return HTML with each link opening in a new tab.
+#' @noRd
+inject_link_target <- function(html) {
+  m <- gregexpr("<a\\s[^>]*>", html, perl = TRUE, ignore.case = TRUE)
+  regmatches(html, m) <- lapply(regmatches(html, m), function(tags) {
+    vapply(tags, function(t) {
+      has <- function(attr) grepl(paste0("\\s", attr, "\\s*="), t, perl = TRUE, ignore.case = TRUE)
+      if (!has("href")) return(t)
+      add <- c(
+        if (!has("target")) 'target="_blank"',
+        if (!has("rel")) 'rel="noopener noreferrer"'
+      )
+      if (length(add) == 0) return(t)
+      sub("\\s*>$", paste0(" ", paste(add, collapse = " "), ">"), t, perl = TRUE)
     }, character(1), USE.NAMES = FALSE)
   })
   html

@@ -28,7 +28,8 @@
 #' - Wrap large tables in [mc_scroll()] for horizontal/vertical scrolling
 #'
 #' `mc_compose()` automatically adds border and padding inline styles
-#' to all `<table>`, `<th>`, and `<td>` elements for Gmail compatibility.
+#' to all `<table>`, `<th>`, and `<td>` elements for Gmail compatibility,
+#' and opens every link in a new tab, as [mc_md_render()] does.
 #'
 #' @examples
 #' \dontrun{
@@ -67,6 +68,7 @@ mc_compose <- function(..., sig = TRUE, sig_path = NULL) {
 
   body_html <- paste(html_parts, collapse = "\n")
   body_html <- inline_table_styles(body_html)
+  body_html <- inject_link_target(body_html)
 
   if (sig) {
     body_html <- paste0(body_html, "\n", mc_sig(path = sig_path))

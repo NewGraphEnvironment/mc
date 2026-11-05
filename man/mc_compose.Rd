@@ -41,7 +41,8 @@ stripped by Gmail
 }
 
 \code{mc_compose()} automatically adds border and padding inline styles
-to all \verb{<table>}, \verb{<th>}, and \verb{<td>} elements for Gmail compatibility.
+to all \verb{<table>}, \verb{<th>}, and \verb{<td>} elements for Gmail compatibility,
+and opens every link in a new tab, as \code{\link[=mc_md_render]{mc_md_render()}} does.
 }
 \examples{
 \dontrun{

@@ -68,9 +68,9 @@ Approved by the owner at the plan gate, 2026-11-05.
 - [x] Rewrite `inline_table_styles()` as one pass per tag: bare tag, tag with attributes and no style, tag with style (mutually exclusive)
 
 ## Phase 4: Links open in a new tab (#35)
-- [ ] Tests: `[t](u)`, titled link, autolink and `www.` link gain `target="_blank" rel="noopener noreferrer"`; an `<a>` already carrying `target=` is left alone; `mailto:` links too; no-link HTML unchanged; `mc_compose()` output also rewritten
-- [ ] `inject_link_target()` in `R/mc_md_render.R`: every `<a ` tag with `href` and no `target`; called from both `mc_md_render()` and `mc_compose()` next to `inline_table_styles()`
-- [ ] Roxygen `@details` of `mc_md_render()` mentions it
+- [x] Tests: `[t](u)`, titled link, autolink and `www.` link gain `target="_blank" rel="noopener noreferrer"`; an `<a>` already carrying `target=` is left alone; `mailto:` links too; no-link HTML unchanged; `mc_compose()` output also rewritten
+- [x] `inject_link_target()` in `R/mc_md_render.R`: every `<a ` tag with `href` and no `target`; called from both `mc_md_render()` and `mc_compose()` next to `inline_table_styles()`
+- [x] Roxygen `@details` of `mc_md_render()` mentions it
 
 ## Phase 5: Integration tests from a `.md` file (#10)
 - [ ] `test-integration.R`: `mc_send(path = <tmp .md>, sig = TRUE)` to al@ with a markdown link, an aligned table and an inline image (frontmatter `inline_images:` via `mc_md_send()` too); read the message back with `gmailr::gm_message()` and assert the signature, `target="_blank"`, each table declaration once, and an inline part with `Content-Id`
