@@ -4,8 +4,11 @@
 #' finding the `thread_id` to pass to [mc_send()] when replying into
 #' an existing conversation.
 #'
-#' @param query Gmail search query. Supports the same syntax as the Gmail
-#'   search box (e.g., `"from:brandon subject:cottonwood"`).
+#' @param query Gmail search query. Takes the same search operators as the
+#'   Gmail search box, such as `from:`, `to:`, `subject:`, `has:attachment`,
+#'   `newer_than:7d`, `is:unread` and `in:drafts`, combined with spaces
+#'   (and), `OR`, `-` (not) and quotes for exact phrases. The full list is in
+#'   Google's [search operator reference](https://support.google.com/mail/answer/7190).
 #' @param n Maximum number of results. Default `5`.
 #' @param after,before Optional date filters. `Date` object or character
 #'   string in `"YYYY-MM-DD"` form. Translated to Gmail's `after:` / `before:`
@@ -17,8 +20,19 @@
 #'
 #' @examples
 #' \dontrun{
+#' # One sender, one topic
 #' mc_thread_find("from:brandon.geldart subject:cottonwood")
+#'
+#' # Recent mail only
 #' mc_thread_find("from:brandon newer_than:7d")
+#'
+#' # Mail with an attachment, an exact phrase, and a word left out
+#' mc_thread_find('has:attachment "site plan" -invoice')
+#'
+#' # Either of two senders, unread
+#' mc_thread_find("from:(brandon OR cindy) is:unread", n = 10)
+#'
+#' # Date filters as arguments
 #' mc_thread_find("newsletter", after = Sys.Date() - 7)
 #' }
 #'

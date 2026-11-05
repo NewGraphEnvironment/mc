@@ -52,7 +52,7 @@ That is easy to get wrong. A filter on the To header alone also matches drafts t
 
 ## Phase 4: Query docs (#29)
 
-- [ ] `mc_thread_find()` roxygen: one sentence saying `query` takes Gmail search operators, a link to https://support.google.com/mail/answer/7190, and examples with `from:`, `newer_than:`, `has:attachment` and a combined query. `mc_message_find()` points to it.
+- [x] `mc_thread_find()` roxygen: one sentence saying `query` takes Gmail search operators, a link to https://support.google.com/mail/answer/7190, and examples with `from:`, `newer_than:`, `has:attachment` and a combined query. `mc_message_find()` points to it.
 
 ## Phase 5: Docs, NEWS, integration
 
