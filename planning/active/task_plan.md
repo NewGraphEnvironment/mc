@@ -54,8 +54,8 @@ Plan approved by the user 2026-11-04 (plan mode, `/planning-init 47`).
 
 ## Phase 1: Fold in the CI workflow
 
-- [ ] `git merge origin/ci-r-cmd-check` into the move branch, bringing in `.github/workflows/R-CMD-check.yaml`
-- [ ] Add `^\.lintr$` and `^\.claude$` to `.Rbuildignore`
+- [x] `git merge origin/ci-r-cmd-check` into the move branch, bringing in `.github/workflows/R-CMD-check.yaml`
+- [x] Add `^\.lintr$` and `^\.claude$` to `.Rbuildignore`
 
 ## Phase 2: Tests run without a sender or credentials (#47)
 
