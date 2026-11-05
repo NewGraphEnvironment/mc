@@ -10,12 +10,18 @@ png_file <- function() {
 }
 
 capture_send <- function(env) {
-  local_mocked_bindings(gm_send_message = function(msg, ...) { env$msg <- msg; list(threadId = "t1") },
-                        .package = "gmailr", .env = parent.frame())
+  local_mocked_bindings(
+    gm_send_message = function(msg, ...) {
+      env$msg <- msg
+      list(threadId = "t1")
+    },
+    .package = "gmailr", .env = parent.frame()
+  )
 }
 
 test_that("an inline image becomes an inline part with its Content-Id", {
-  env <- new.env(); capture_send(env)
+  env <- new.env()
+  capture_send(env)
   img <- png_file()
   mc_send(html = '<p><img src="cid:card"></p>', to = "bob@example.com", subject = "x",
           from = "alice@example.com", sig = FALSE, inline_images = c(card = img))
@@ -26,7 +32,8 @@ test_that("an inline image becomes an inline part with its Content-Id", {
 })
 
 test_that("inline images are kept under to_self, where cc and bcc are dropped", {
-  env <- new.env(); capture_send(env)
+  env <- new.env()
+  capture_send(env)
   suppressMessages(mc_send(html = '<img src="cid:card">', to = "bob@example.com", subject = "x",
                            from = "alice@example.com", sig = FALSE, bcc = "dave@example.com",
                            to_self = TRUE, inline_images = c(card = png_file())))
@@ -37,17 +44,25 @@ test_that("inline images are kept under to_self, where cc and bcc are dropped", 
 
 test_that("drafts carry inline images too", {
   env <- new.env()
-  local_mocked_bindings(gm_create_draft = function(msg, ...) { env$msg <- msg; list(message = list(threadId = "t")) },
-                        .package = "gmailr")
+  local_mocked_bindings(
+    gm_create_draft = function(msg, ...) {
+      env$msg <- msg
+      list(message = list(threadId = "t"))
+    },
+    .package = "gmailr"
+  )
   suppressMessages(mc_draft(html = '<img src="cid:card">', to = "bob@example.com", subject = "x",
                             from = "alice@example.com", sig = FALSE, inline_images = c(card = png_file())))
   expect_match(as.character(env$msg), "Content-Id: <card>", fixed = TRUE)
 })
 
 test_that("argument checks: names, files, and cid references", {
-  env <- new.env(); capture_send(env)
-  send <- function(html, imgs) mc_send(html = html, to = "bob@example.com", subject = "x",
-                                       from = "alice@example.com", sig = FALSE, inline_images = imgs)
+  env <- new.env()
+  capture_send(env)
+  send <- function(html, imgs) {
+    mc_send(html = html, to = "bob@example.com", subject = "x",
+            from = "alice@example.com", sig = FALSE, inline_images = imgs)
+  }
   img <- png_file()
   expect_error(send('<img src="cid:a">', unname(img)), "must be named")
   expect_error(send('<img src="cid:a">', c(a = img, a = img)), "unique")
@@ -61,7 +76,13 @@ test_that("argument checks: names, files, and cid references", {
 
 test_that("a failed check sends nothing", {
   sent <- FALSE
-  local_mocked_bindings(gm_send_message = function(...) { sent <<- TRUE; list(threadId = "t") }, .package = "gmailr")
+  local_mocked_bindings(
+    gm_send_message = function(...) {
+      sent <<- TRUE
+      list(threadId = "t")
+    },
+    .package = "gmailr"
+  )
   expect_error(mc_send(html = '<img src="cid:b">', to = "bob@example.com", subject = "x",
                        from = "alice@example.com", sig = FALSE, inline_images = c(a = png_file())))
   expect_false(sent)
@@ -134,10 +155,13 @@ test_that("inline images reach the fired send by name through the args JSON", {
 })
 
 test_that("only a src attribute counts as a cid reference", {
-  env <- new.env(); capture_send(env)
-  send <- function(html, imgs = NULL) mc_send(html = html, to = "bob@example.com", subject = "x",
-                                              from = "alice@example.com", sig = FALSE,
-                                              inline_images = imgs)
+  env <- new.env()
+  capture_send(env)
+  send <- function(html, imgs = NULL) {
+    mc_send(html = html, to = "bob@example.com", subject = "x",
+            from = "alice@example.com", sig = FALSE,
+            inline_images = imgs)
+  }
   # Prose that contains "cid:" is not a reference
   expect_no_error(send("<p>Placid:calm. Write cid:card to reference it.</p>"))
   # Single quotes, spaces around = and upper case are references
@@ -148,10 +172,13 @@ test_that("only a src attribute counts as a cid reference", {
 })
 
 test_that("background, url() and unquoted src are cid references; data-src is not", {
-  env <- new.env(); capture_send(env)
-  send <- function(html, imgs = NULL) mc_send(html = html, to = "bob@example.com", subject = "x",
-                                              from = "alice@example.com", sig = FALSE,
-                                              inline_images = imgs)
+  env <- new.env()
+  capture_send(env)
+  send <- function(html, imgs = NULL) {
+    mc_send(html = html, to = "bob@example.com", subject = "x",
+            from = "alice@example.com", sig = FALSE,
+            inline_images = imgs)
+  }
   for (html in c('<td background="cid:gone">', '<div style="background: url(cid:gone)">',
                  "<div style=\"background: url('cid:gone')\">", "<img src=cid:gone>")) {
     expect_error(send(html), "no inline_images", info = html)

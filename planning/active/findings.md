@@ -85,3 +85,17 @@ Plan agent, background, 2026-11-05; it reported after Phases 1-4 had landed. Act
   absolute vector; `r_bg` passes R objects through RDS, which keeps names. Not exercised live.
 - Deferred to the chip result: dropping `name =`/`filename =` on the inline part, which some
   clients use to decide on a chip; needs the owner's word (gate decision 3 says no workaround).
+
+## Live launchd scheduled send with an inline image (2026-11-05)
+
+Installed the branch (`R CMD INSTALL .`, launchd runs the installed package), scheduled from the
+scratchpad with a relative image path, `send_at = 2`, `to_self = TRUE`. The args JSON held
+`{"card": "<absolute path>"}`. Send log: SCHEDULED 07:09:52Z, STARTED 07:11:52Z, SENT 07:11:54Z;
+plist and JSON removed. Gmail stored `text/html` + `image/png` with `Content-Id: <card>` and
+`Content-Disposition: inline; filename=sched_card.png`.
+
+## Lint
+
+Branch vs `origin/main` worktree, per file / linter / source line: the only added lints were in
+`tests/testthat/test-inline_images.R` (semicolons, one-line braces, hanging indent); fixed. The
+standing count elsewhere is main's.

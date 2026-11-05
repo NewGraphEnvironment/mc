@@ -79,7 +79,7 @@ Approved by the owner at the plan gate, 2026-11-05.
 - [x] `mc_preview()`: frontmatter `cid:` images shown from their files; envelope lists `Inline`
 - [x] Docs: `@param inline_images` (markdown form, YAML mapping, fire-time read), `@param attachments` (fire-time read), frontmatter key lists in `mc_md_send()`/`mc_md_draft()`, CLAUDE.md scheduled-args line
 - [x] Round-trip guard covers a Content-ID with `.` and `@`; comment on why normalising sits before the `list()`
-- [ ] One live launchd scheduled send (`send_at`, `to_self`) with an inline image, checked in the send log and in Gmail
+- [x] One live launchd scheduled send (`send_at`, `to_self`) with an inline image, checked in the send log and in Gmail
 
 ## Phase 5: Integration tests from a `.md` file (#10)
 - [x] `test-integration.R`: `mc_send(path = <tmp .md>, sig = TRUE)` to al@ with a markdown link, an aligned table and an inline image (frontmatter `inline_images:` via `mc_md_send()` too); read the message back with `gmailr::gm_message()` and assert the signature, `target="_blank"`, each table declaration once, and an inline part with `Content-Id`
