@@ -30,6 +30,7 @@ Mail Composer — compose, draft, and send emails from markdown via the Gmail AP
 - **Default sender:** `default_from()` in `mc_auth.R` checks `getOption("mc.from")` → `MC_FROM` env → fallback
 - **Header stripping:** `strip_md_header()` in `mc_md_render.R` shared by `mc_md_render()` and `mc_compose()` — must stay in lockstep
 - **Scheduled send:** `send_at` param on `mc_send()`. `scheduler = NULL` (default) resolves via `default_scheduler()` in `mc_schedule.R` to `"auto"` (OS-native `launchd` / `at`) on macOS and Linux, `"callr"` (`callr::r_bg()` + `caffeinate`) elsewhere; an explicit `"auto"` still errors off those platforms
+- **Scheduled-send context:** a launchd or `at` job is another process, started later, in its own context (launchd: cwd `/`, system zone, `~/.Renviron` only, user library). Anything carried to it goes through `write_scheduled_args()` (the one JSON writer: absolute paths, empty vectors as NULL, `.target_time`/`.grace_secs` stripped by `run_scheduled_send()`), and launchd's digits come from `system_wall_clock()`. See `planning/archive/2026-11-issue-47-run-mc-unattended/`
 - **Send notifications:** `send_log()` writes to `~/.mc/send_log.txt`; `send_notify()` fires macOS notification
 - **MIME parsing:** `extract_body()` recursively walks nested multipart for thread reading
 - **Custom `%||%`:** in `mc_thread_find.R` — masks base R 4.4+ version, also catches length-0 (don't replace with base)
