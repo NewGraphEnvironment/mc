@@ -26,6 +26,13 @@ fails with gargle's generic "Can't get Google credentials", even though the
 token is still valid. \code{mc_auth_check()} compares the two names and, when they
 differ, says which they are and how to fix it.
 }
+\details{
+The check is necessary, not sufficient. gargle's cache key also covers the
+scopes a token was granted, so a token whose client name matches but which
+was minted with narrower scopes than gmailr requests is still not found.
+Tokens for the same email minted by other Google packages, under other OAuth
+clients, are ignored.
+}
 \section{Troubleshooting}{
 
 \strong{Upgrading rlang invalidates the gargle token cache.} gargle names the

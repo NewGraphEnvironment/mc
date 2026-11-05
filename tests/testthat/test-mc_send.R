@@ -297,13 +297,17 @@ test_that("caffeinate is not called when send_at is NULL", {
     },
     .package = "mc"
   )
+  # The send itself is mocked: without it, a machine with a sender and a Gmail
+  # token would really send, and one without would stop before the code under
+  # test (#47).
+  local_mocked_bindings(
+    gm_send_message = function(msg, ...) list(threadId = "tid_caf"),
+    .package = "gmailr"
+  )
   # Normal send (send_at = NULL) should never hit caffeinate_send
-  # Use html to skip file read, will error at gmailr but that's after
-  # the send_at check
-  tryCatch(
+  suppressMessages(
     mc_send(html = "<p>test</p>", to = "test@test.com",
-            subject = "test", send_at = NULL),
-    error = function(e) NULL
+            subject = "test", from = "a@b.com", send_at = NULL)
   )
   expect_false(called)
 })

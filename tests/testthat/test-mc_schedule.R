@@ -34,6 +34,7 @@ test_that("resolve_scheduler errors on auto for unsupported platform", {
 test_that("schedule_at writes args JSON and pipes Rscript invocation to at", {
   at_calls <- list()
   local_mocked_bindings(
+    Sys.which = function(names) stats::setNames(paste0("/usr/bin/", names), names),
     system2 = function(command, args, ...) {
       kwargs <- list(...)
       at_calls[[length(at_calls) + 1]] <<-
@@ -77,6 +78,7 @@ test_that("schedule_at writes args JSON and pipes Rscript invocation to at", {
 
 test_that("schedule_at unlinks args JSON and stops on at command failure", {
   local_mocked_bindings(
+    Sys.which = function(names) stats::setNames(paste0("/usr/bin/", names), names),
     system2 = function(command, args, ...) {
       result <- "at: bad time specification"
       attr(result, "status") <- 1L
@@ -409,4 +411,25 @@ test_that("an explicit scheduler = 'auto' still errors on an unsupported platfor
     capture_default_scheduler("Windows", scheduler = "auto"),
     "scheduler 'auto' not supported on Windows"
   )
+})
+
+test_that("schedule_at says how to fix a missing at before writing anything", {
+  system2_called <- FALSE
+  local_mocked_bindings(
+    Sys.which = function(names) stats::setNames(rep("", length(names)), names),
+    system2 = function(...) {
+      system2_called <<- TRUE
+      ""
+    },
+    .package = "base"
+  )
+  tmp_home <- withr::local_tempdir()
+  withr::local_envvar(HOME = tmp_home)
+
+  expect_error(
+    mc:::schedule_at(Sys.time() + 300, list(to = "x@x.com", subject = "x")),
+    "`at` not found on PATH.*scheduler = \"callr\""
+  )
+  expect_false(system2_called)
+  expect_false(dir.exists(file.path(tmp_home, ".mc", "scheduled")))
 })

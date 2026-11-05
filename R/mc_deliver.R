@@ -94,8 +94,8 @@ mc_deliver <- function(path = NULL,
         "callr background process can be cleaned up before fire time, ",
         "silently dropping the send. Heartbeat log entries (SCHEDULED at ",
         "submission, STARTED at fire) make missed fires auditable from ",
-        "~/.mc/send_log.txt. Use scheduler = \"auto\" for OS-native ",
-        "scheduling (launchd / at) - see ",
+        "~/.mc/send_log.txt. On macOS and Linux, scheduler = \"auto\" ",
+        "(the default there) uses OS-native scheduling (launchd / at) - see ",
         "https://github.com/NewGraphEnvironment/mc/issues/36",
         call. = FALSE
       )

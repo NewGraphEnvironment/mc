@@ -16,6 +16,13 @@
 #' @return `TRUE`, invisibly, when a cached token for `email` matches the
 #'   session's OAuth client. Errors otherwise.
 #'
+#' @details
+#' The check is necessary, not sufficient. gargle's cache key also covers the
+#' scopes a token was granted, so a token whose client name matches but which
+#' was minted with narrower scopes than gmailr requests is still not found.
+#' Tokens for the same email minted by other Google packages, under other OAuth
+#' clients, are ignored.
+#'
 #' @section Troubleshooting:
 #' **Upgrading rlang invalidates the gargle token cache.** gargle names the
 #' OAuth client `<project_id>_<hash>`, where the hash comes from
@@ -59,22 +66,36 @@ mc_auth_check <- function(email = default_from(), cache = NULL) {
     )
   }
 
-  expected <- auth_client_name()
+  client <- auth_client()
+  expected <- client$name
 
-  files <- list.files(dir)
+  # gargle names cache files <hash>_<email>.
+  files <- list.files(dir, pattern = "^[0-9a-f]+_")
   files <- files[endsWith(files, paste0("_", email))]
+
+  # The cache is shared with other Google packages, so keep only tokens minted
+  # for this OAuth client (same id). A stale token has the same id and a
+  # different name.
+  toks <- lapply(files, function(f) {
+    tryCatch(readRDS(file.path(dir, f)), error = function(e) NULL)
+  })
+  ids <- vapply(toks, function(tok) {
+    scalar_chr(tok$client$id %||% tok$app$key)
+  }, character(1))
+  same_client <- !is.na(ids) & ids == client$id
+  files <- files[same_client]
+  toks <- toks[same_client]
+
   if (length(files) == 0) {
     stop(
-      "No cached token for ", email, " in ", dir, ". Run mc_auth(\"", email,
-      "\") from an interactive session.",
+      "No cached gmailr token for ", email, " in ", dir, ". Run mc_auth(\"",
+      email, "\") from an interactive session.",
       call. = FALSE
     )
   }
 
-  stored <- vapply(files, function(f) {
-    tok <- tryCatch(readRDS(file.path(dir, f)), error = function(e) NULL)
-    nm <- tok$client$name %||% tok$app$appname %||% tok$app$name
-    if (is.character(nm) && length(nm) == 1) nm else NA_character_
+  stored <- vapply(toks, function(tok) {
+    scalar_chr(tok$client$name %||% tok$app$appname %||% tok$app$name)
   }, character(1))
 
   if (expected %in% stored) {
@@ -98,12 +119,20 @@ mc_auth_check <- function(email = default_from(), cache = NULL) {
 }
 
 
-#' Name of the OAuth client this session would authenticate with
+#' A single string, or `NA` for anything else
+#' @noRd
+scalar_chr <- function(x) {
+  if (is.character(x) && length(x) == 1 && !is.na(x)) x else NA_character_
+}
+
+
+#' OAuth client this session would authenticate with
 #'
 #' The configured client when there is one, else the one gmailr would
-#' configure from its default JSON, as `gmailr::gm_auth()` does.
+#' configure from its default JSON, as `gmailr::gm_auth()` does. Returns
+#' `list(name, id)`.
 #' @noRd
-auth_client_name <- function() {
+auth_client <- function() {
   client <- gmailr::gm_oauth_client()
   if (is.null(client)) {
     path <- gmailr::gm_default_oauth_client()
@@ -116,7 +145,7 @@ auth_client_name <- function() {
     }
     client <- gargle::gargle_oauth_client_from_json(path)
   }
-  client$name
+  list(name = client$name, id = client$id)
 }
 
 

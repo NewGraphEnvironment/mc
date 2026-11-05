@@ -229,6 +229,16 @@ launchd_plist <- function(label, target_time, rscript_path, args_json_path,
 #'
 #' @noRd
 schedule_at <- function(target_time, args) {
+  # Linux defaults to this backend (#8), and `at` is not installed on every
+  # image; without this check system2() fails with an empty message.
+  if (Sys.which("at") == "") {
+    stop(
+      "`at` not found on PATH - required by the at backend, the default on ",
+      "Linux. Install it and start atd (e.g. apt-get install at), or pass ",
+      "scheduler = \"callr\".",
+      call. = FALSE
+    )
+  }
   uuid <- generate_send_uuid()
   scheduled_dir <- file.path(Sys.getenv("HOME"), ".mc", "scheduled")
   if (!dir.exists(scheduled_dir)) dir.create(scheduled_dir, recursive = TRUE)
