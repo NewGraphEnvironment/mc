@@ -223,13 +223,14 @@ test_that("mc_draft applies labels to a draft thread", {
     tryCatch(gmailr::gm_delete_label(label_id), error = function(e) NULL)
   )
 
-  thread_id <- mc_draft(
+  res <- mc_draft(
     html = paste0("<p>Labels draft test: ", test_tag, "</p><pre>", test_meta, "</pre>"),
     to = "al@newgraphenvironment.com",
     subject = paste("Labels draft", test_tag),
     labels = label_name,
     sig = FALSE
   )
+  thread_id <- res$thread_id
 
   Sys.sleep(3)
 

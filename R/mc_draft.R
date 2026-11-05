@@ -6,18 +6,27 @@
 #' @inheritParams mc_send
 #' @param to_self Logical. If `TRUE`, address the draft to `from` and drop
 #'   `cc`, `bcc` and `thread_id`. Default `FALSE`.
+#' @param draft_id `NULL` (default) to create a new draft, or the id of a draft
+#'   to replace in place, as returned in `draft_id` by an earlier call. Only
+#'   that draft changes, and it keeps its id. If Gmail no longer has it (it was
+#'   sent or deleted), a warning is given and a new draft is created.
 #' @param ... Not used. Present only so that passing `send_at` or `scheduler`
 #'   errors with a pointer to [mc_send()] rather than R's generic unused-argument
 #'   error. Any other argument errors as unused.
 #'
-#' @return The Gmail thread ID of the resulting draft, invisibly. May be `NULL`
-#'   if the gmailr response did not include one.
+#' @return A list, invisibly, with `draft_id` (pass it back as `draft_id` to
+#'   replace this draft), `thread_id` and `message_id`. An element is `NULL`
+#'   when Gmail's response did not include it.
 #'
 #' @details
 #' `gmailr::gm_create_draft()` does not accept a `thread_id`, so drafts always
 #' land outside the conversation. Supplying `thread_id` warns. Either move the
 #' draft into the thread from the Gmail UI before sending, or use [mc_send()]
 #' to deliver straight into the thread.
+#'
+#' mc never deletes a draft. To regenerate one (a re-rendered attachment, an
+#' edited body), pass the `draft_id` it returned; nothing else in the mailbox
+#' is touched.
 #'
 #' `send_at` and `scheduler` are not accepted here. A scheduled message is by
 #' definition one that gets sent, so scheduling lives on [mc_send()].
@@ -29,6 +38,15 @@
 #' mc_draft("communications/newsletter.md",
 #'          to = "someone@example.com",
 #'          subject = "Spring newsletter")
+#'
+#' # Replace that draft after editing the file: same draft, same id
+#' d <- mc_draft("communications/newsletter.md",
+#'               to = "someone@example.com",
+#'               subject = "Spring newsletter")
+#' mc_draft("communications/newsletter.md",
+#'          to = "someone@example.com",
+#'          subject = "Spring newsletter",
+#'          draft_id = d$draft_id)
 #'
 #' # Draft addressed to yourself, to check the rendering
 #' mc_draft("communications/newsletter.md",
@@ -45,6 +63,7 @@ mc_draft <- function(path = NULL,
                      bcc = NULL,
                      from = default_from(),
                      thread_id = NULL,
+                     draft_id = NULL,
                      to_self = FALSE,
                      sig = TRUE,
                      sig_path = NULL,
@@ -75,7 +94,8 @@ mc_draft <- function(path = NULL,
   }
   mc_deliver(
     path = path, to = to, subject = subject, cc = cc, bcc = bcc, from = from,
-    thread_id = thread_id, to_self = to_self, sig = sig, sig_path = sig_path,
+    thread_id = thread_id, draft_id = draft_id, to_self = to_self, sig = sig,
+    sig_path = sig_path,
     attachments = attachments, inline_images = inline_images,
     labels = labels, labels_create = labels_create,
     html = html, send_at = NULL, scheduler = "callr",

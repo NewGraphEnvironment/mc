@@ -131,6 +131,53 @@ parse_frontmatter <- function(path) {
 }
 
 
+#' Set one top-level key in a markdown file's YAML frontmatter (internal)
+#'
+#' Replaces the line `key: ...` in the frontmatter block, or adds it as the
+#' block's last line, and leaves every other byte of the file as it was
+#' (line endings included). The block is the one `parse_frontmatter()` reads.
+#' The file is written to a temporary file beside it and moved into place.
+#'
+#' @param path Path to the markdown file.
+#' @param key Top-level key, e.g. `"draft_id"`.
+#' @param value A string of letters, digits, `_` and `-`, written quoted.
+#' @return `path`, invisibly.
+#' @noRd
+frontmatter_set <- function(path, key, value) {
+  if (!grepl("^[A-Za-z0-9_-]+$", value)) {
+    stop("Refusing to write ", key, " value '", value, "' to ", path, call. = FALSE)
+  }
+  txt <- rawToChar(readBin(path, "raw", file.size(path)))
+  # The block parse_frontmatter() reads, with its line endings kept
+  hit <- regmatches(txt, regexec(
+    "^(---[ \\t]*\\r?\\n)([\\s\\S]*?)(\\r?\\n---[ \\t]*(?:\\r?\\n|$))([\\s\\S]*)$",
+    txt, perl = TRUE, useBytes = TRUE
+  ))[[1]]
+  if (length(hit) == 0) {
+    stop("No YAML frontmatter block found in ", path, call. = FALSE)
+  }
+  block <- hit[3]
+  eol <- if (grepl("\\r\\n$", hit[2], useBytes = TRUE)) "\r\n" else "\n"
+  line <- paste0(key, ': "', value, '"')
+  pattern <- paste0("(?m)^", key, ":[^\\r\\n]*")
+  n <- lengths(regmatches(block, gregexpr(pattern, block, perl = TRUE, useBytes = TRUE)))
+  if (n > 1) stop("More than one `", key, ":` line in ", path, call. = FALSE)
+  block <- if (n == 1) {
+    sub(pattern, line, block, perl = TRUE, useBytes = TRUE)
+  } else {
+    paste0(block, eol, line)
+  }
+  tmp <- tempfile(tmpdir = dirname(path), fileext = ".md")
+  writeBin(charToRaw(paste0(hit[2], block, hit[4], hit[5])), tmp)
+  Sys.chmod(tmp, file.info(path)$mode)
+  if (!file.rename(tmp, path)) {
+    unlink(tmp)
+    stop("Could not write ", path, call. = FALSE)
+  }
+  invisible(path)
+}
+
+
 #' Add inline styles to HTML tables for Gmail
 #'
 #' Gmail strips `<style>` blocks so table styling must be inline.

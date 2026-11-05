@@ -24,16 +24,16 @@ That is easy to get wrong. A filter on the To header alone also matches drafts t
 
 ## Phase 2: Return and replace a draft by id (#51)
 
-- [ ] Internal `gmail_draft_request(raw, thread_id = NULL, draft_id = NULL)` in `R/mc_deliver.R`: POST `drafts` (create) or PUT `drafts/{id}` (update), with a JSON body `{message: {raw, threadId?}}` (`id` added on update), through `httr` + `gmailr::gm_token()` + `gargle::response_process()`, like `mc_thread_modify()`. A 404 on update is returned as a classed condition so the caller can fall back.
-- [ ] Tests first (`local_mocked_bindings` on `gmail_draft_request` and `gm_create_draft`):
+- [x] Internal `gmail_draft_request(raw, thread_id = NULL, draft_id = NULL)` in `R/mc_deliver.R`: POST `drafts` (create) or PUT `drafts/{id}` (update), with a JSON body `{message: {raw, threadId?}}` (`id` added on update), through `httr` + `gmailr::gm_token()` + `gargle::response_process()`, like `mc_thread_modify()`. A 404 on update is returned as a classed condition so the caller can fall back.
+- [x] Tests first (`local_mocked_bindings` on `gmail_draft_request` and `gm_create_draft`):
   - a plain draft still goes through `gm_create_draft()`, so the request is unchanged (#55 item 4), and returns `list(draft_id, thread_id, message_id)`
   - `draft_id = "r1"` sends a PUT for `r1` and returns `r1`
   - a 404 on update warns, creates a new draft and returns the new id
   - `mc_send()` never reaches `gmail_draft_request()`, and `mc_draft()` never reaches `gm_send_message()`
-- [ ] `mc_deliver()` gains `draft_id` (with a chk check). Draft branch: if `draft_id` or `thread_id` is given, use `gmail_draft_request()`, otherwise `gm_create_draft()`. Return the list for drafts. Labels still apply by thread id. Message: `Draft created` or `Draft <id> updated`.
-- [ ] `mc_draft()` gains `draft_id = NULL` with docs; `to_self` keeps `draft_id` (it names our own draft, not a recipient).
-- [ ] `mc_md_draft()`: `md_dispatch_args()` passes `meta$draft_id`. After a draft is created or replaced with a new id, write `draft_id:` into the frontmatter through one helper, `frontmatter_set()`, in `R/mc_md_render.R`: it replaces an existing `draft_id:` line or adds one before the closing `---`, and leaves the body and every other line byte for byte. Tests: round trip through `parse_frontmatter()`, an existing line replaced rather than duplicated, the body untouched (md5 of the part after the YAML block), CRLF and no trailing newline. `mc_md_send()` ignores `draft_id`.
-- [ ] Update every existing test that reads the old return value (`expect_equal(res, "draft_thread_001")` and the like).
+- [x] `mc_deliver()` gains `draft_id` (with a chk check). Draft branch: if `draft_id` or `thread_id` is given, use `gmail_draft_request()`, otherwise `gm_create_draft()`. Return the list for drafts. Labels still apply by thread id. Message: `Draft created` or `Draft <id> updated`.
+- [x] `mc_draft()` gains `draft_id = NULL` with docs; `to_self` keeps `draft_id` (it names our own draft, not a recipient).
+- [x] `mc_md_draft()`: `md_dispatch_args()` passes `meta$draft_id`. After a draft is created or replaced with a new id, write `draft_id:` into the frontmatter through one helper, `frontmatter_set()`, in `R/mc_md_render.R`: it replaces an existing `draft_id:` line or adds one before the closing `---`, and leaves the body and every other line byte for byte. Tests: round trip through `parse_frontmatter()`, an existing line replaced rather than duplicated, the body untouched (md5 of the part after the YAML block), CRLF and no trailing newline. `mc_md_send()` ignores `draft_id`.
+- [x] Update every existing test that reads the old return value (`expect_equal(res, "draft_thread_001")` and the like).
 
 ## Phase 3: A draft joins its thread, with reply headers on drafts and sends (#55)
 

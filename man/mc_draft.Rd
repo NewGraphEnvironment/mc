@@ -12,6 +12,7 @@ mc_draft(
   bcc = NULL,
   from = default_from(),
   thread_id = NULL,
+  draft_id = NULL,
   to_self = FALSE,
   sig = TRUE,
   sig_path = NULL,
@@ -39,6 +40,11 @@ then the \code{MC_FROM} environment variable. Errors if neither is set.}
 
 \item{thread_id}{Gmail thread ID to reply into. Default \code{NULL} (new thread).
 Use \code{\link[=mc_thread_find]{mc_thread_find()}} to look up thread IDs.}
+
+\item{draft_id}{\code{NULL} (default) to create a new draft, or the id of a draft
+to replace in place, as returned in \code{draft_id} by an earlier call. Only
+that draft changes, and it keeps its id. If Gmail no longer has it (it was
+sent or deleted), a warning is given and a new draft is created.}
 
 \item{to_self}{Logical. If \code{TRUE}, address the draft to \code{from} and drop
 \code{cc}, \code{bcc} and \code{thread_id}. Default \code{FALSE}.}
@@ -81,8 +87,9 @@ errors with a pointer to \code{\link[=mc_send]{mc_send()}} rather than R's gener
 error. Any other argument errors as unused.}
 }
 \value{
-The Gmail thread ID of the resulting draft, invisibly. May be \code{NULL}
-if the gmailr response did not include one.
+A list, invisibly, with \code{draft_id} (pass it back as \code{draft_id} to
+replace this draft), \code{thread_id} and \code{message_id}. An element is \code{NULL}
+when Gmail's response did not include it.
 }
 \description{
 Creates a draft for review. Nothing passed to this function sends — to
@@ -94,6 +101,10 @@ land outside the conversation. Supplying \code{thread_id} warns. Either move the
 draft into the thread from the Gmail UI before sending, or use \code{\link[=mc_send]{mc_send()}}
 to deliver straight into the thread.
 
+mc never deletes a draft. To regenerate one (a re-rendered attachment, an
+edited body), pass the \code{draft_id} it returned; nothing else in the mailbox
+is touched.
+
 \code{send_at} and \code{scheduler} are not accepted here. A scheduled message is by
 definition one that gets sent, so scheduling lives on \code{\link[=mc_send]{mc_send()}}.
 }
@@ -102,6 +113,15 @@ definition one that gets sent, so scheduling lives on \code{\link[=mc_send]{mc_s
 mc_draft("communications/newsletter.md",
          to = "someone@example.com",
          subject = "Spring newsletter")
+
+# Replace that draft after editing the file: same draft, same id
+d <- mc_draft("communications/newsletter.md",
+              to = "someone@example.com",
+              subject = "Spring newsletter")
+mc_draft("communications/newsletter.md",
+         to = "someone@example.com",
+         subject = "Spring newsletter",
+         draft_id = d$draft_id)
 
 # Draft addressed to yourself, to check the rendering
 mc_draft("communications/newsletter.md",

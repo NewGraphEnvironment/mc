@@ -1,18 +1,27 @@
 #' Create a Gmail draft from a markdown file with YAML frontmatter
 #'
 #' Reads metadata (`to`, `subject`, optional `cc`, `bcc`, `thread_id`,
-#' `attachments`, `inline_images`, `labels`, `from`) from the YAML frontmatter at the top of a
-#' markdown draft and dispatches to [mc_draft()].
+#' `draft_id`, `attachments`, `inline_images`, `labels`, `from`) from the YAML
+#' frontmatter at the top of a markdown draft and dispatches to [mc_draft()].
 #'
 #' Drafts only. Nothing passed here sends — use [mc_md_send()] to deliver.
 #'
 #' @inheritParams mc_md_send
 #'
-#' @return Invisibly returns whatever [mc_draft()] returns.
+#' @return Invisibly returns what [mc_draft()] returns: a list with
+#'   `draft_id`, `thread_id` and `message_id`.
 #'
 #' @details
 #' Required frontmatter fields: `to`, `subject`. Missing either triggers an
 #' error that names the file.
+#'
+#' The file keeps track of its own draft. When a draft is created, its id is
+#' written into the frontmatter as `draft_id:` (that one line is added or
+#' changed; the rest of the file is left as it was). Running the same file
+#' again replaces that draft in place, and only that draft. If the draft has
+#' since been sent or deleted, a new one is created and its id written in.
+#' Delete the `draft_id:` line to start a fresh draft. [mc_md_send()] ignores
+#' `draft_id`.
 #'
 #' A `thread_id` in the frontmatter warns: `gmailr::gm_create_draft()` cannot
 #' thread a draft. See [mc_draft()].
@@ -28,7 +37,30 @@
 #' @export
 mc_md_draft <- function(path, to_self = FALSE, override = list()) {
   args <- md_dispatch_args(path, to_self = to_self, override = override)
-  invisible(do.call(mc_draft, args))
+  # Read here rather than in md_dispatch_args(), which mc_md_send() shares:
+  # a send has no draft to replace.
+  file_id <- mc_md_meta(path)$draft_id
+  if (is.null(args$draft_id)) args$draft_id <- file_id
+  res <- do.call(mc_draft, args)
+  new_id <- res$draft_id
+  if (is.character(new_id) && length(new_id) == 1 &&
+        !identical(new_id, file_id)) {
+    # The draft exists by now, so a failed write warns rather than errors:
+    # the caller still gets the id, and the warning carries it.
+    tryCatch(
+      {
+        frontmatter_set(path, "draft_id", new_id)
+        message("Recorded draft_id ", new_id, " in ", path)
+      },
+      error = function(e) {
+        warning(
+          "Draft ", new_id, " created, but its id was not recorded in ",
+          path, ": ", conditionMessage(e), call. = FALSE
+        )
+      }
+    )
+  }
+  invisible(res)
 }
 
 

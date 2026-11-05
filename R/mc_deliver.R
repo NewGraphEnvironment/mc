@@ -11,7 +11,10 @@
 #' @inheritParams mc_send
 #' @param .draft Logical. `TRUE` creates a Gmail draft, `FALSE` sends.
 #'   Supplied by the wrapper, never by the caller.
-#' @return Gmail thread ID, invisibly.
+#' @param draft_id `NULL`, or the id of a draft to replace in place. Drafts
+#'   only.
+#' @return For a send, the Gmail thread ID, invisibly. For a draft, a list with
+#'   `draft_id`, `thread_id` and `message_id`, invisibly.
 #' @keywords internal
 #' @importFrom chk chk_null_or chk_character chk_string chk_flag vld_string
 #'   vld_character
@@ -24,6 +27,7 @@ mc_deliver <- function(path = NULL,
                        bcc = NULL,
                        from = default_from(),
                        thread_id = NULL,
+                       draft_id = NULL,
                        .draft,
                        to_self = FALSE,
                        sig = TRUE,
@@ -56,7 +60,11 @@ mc_deliver <- function(path = NULL,
   chk::chk_null_or(bcc, vld = chk::vld_character)
   chk::chk_string(from)
   chk::chk_null_or(thread_id, vld = chk::vld_string)
+  chk::chk_null_or(draft_id, vld = chk::vld_string)
   chk::chk_flag(.draft)
+  if (!is.null(draft_id) && !.draft) {
+    stop("`draft_id` applies to drafts only.", call. = FALSE)
+  }
   chk::chk_flag(to_self)
   chk::chk_flag(sig)
   chk::chk_null_or(sig_path, vld = chk::vld_string)
@@ -202,9 +210,14 @@ mc_deliver <- function(path = NULL,
         call. = FALSE
       )
     }
-    res <- gmailr::gm_create_draft(msg)
+    written <- write_draft(msg, draft_id = draft_id)
+    res <- written$res
     sent_thread_id <- extract_thread_id(res)
-    message("Draft created in Gmail. To: ", paste(to, collapse = ", "))
+    if (written$updated) {
+      message("Draft ", draft_id, " updated in Gmail. To: ", paste(to, collapse = ", "))
+    } else {
+      message("Draft created in Gmail. To: ", paste(to, collapse = ", "))
+    }
   } else {
     if (!is.null(thread_id)) {
       res <- gmailr::gm_send_message(msg, thread_id = thread_id)
@@ -252,9 +265,99 @@ mc_deliver <- function(path = NULL,
     }
   }
 
+  if (.draft) {
+    return(invisible(list(
+      draft_id = res[["id"]],
+      thread_id = sent_thread_id,
+      message_id = res[["message"]][["id"]]
+    )))
+  }
   invisible(sent_thread_id)
 }
 
+
+#' Create a draft, or replace one in place by its id (internal)
+#'
+#' With no `draft_id`, the draft is created through
+#' [gmailr::gm_create_draft()], unchanged. With one, that draft, and only that
+#' draft, is replaced through Gmail's `drafts.update`, so its id stays the
+#' same. A `draft_id` Gmail no longer knows (the draft was sent or deleted)
+#' warns and creates a new draft. Nothing here deletes a draft.
+#'
+#' @param msg A gmailr mime object.
+#' @param draft_id `NULL` or a draft id.
+#' @return List: `res`, the Gmail draft resource; `updated`, `TRUE` when an
+#'   existing draft was replaced.
+#' @noRd
+write_draft <- function(msg, draft_id = NULL) {
+  if (!is.null(draft_id)) {
+    res <- tryCatch(
+      gmail_draft_request(as.character(msg), draft_id = draft_id),
+      mc_draft_not_found = function(e) NULL
+    )
+    if (!is.null(res)) return(list(res = res, updated = TRUE))
+    warning(
+      "Draft ", draft_id, " was not found in Gmail (sent or deleted). ",
+      "Creating a new draft.",
+      call. = FALSE
+    )
+  }
+  list(res = gmailr::gm_create_draft(msg), updated = FALSE)
+}
+
+
+#' Create or update a Gmail draft through the API directly (internal)
+#'
+#' gmailr 3.0.0 has no `drafts.update`, and its `gm_create_draft()` cannot
+#' place a draft in a thread. This sends the draft resource as JSON, the shape
+#' [gmailr::gm_send_message()] uses for a send: `POST drafts` to create,
+#' `PUT drafts/{id}` to replace.
+#'
+#' @param raw The RFC 822 message, as a string.
+#' @param thread_id `NULL` or the thread to place the draft in.
+#' @param draft_id `NULL` to create, or the id of the draft to replace.
+#' @return The Gmail draft resource, a list.
+#' @noRd
+gmail_draft_request <- function(raw, thread_id = NULL, draft_id = NULL) {
+  message_part <- list(raw = base64url_padded(raw))
+  if (!is.null(thread_id)) message_part$threadId <- thread_id
+  body <- list(message = message_part)
+  url <- "https://www.googleapis.com/gmail/v1/users/me/drafts"
+  json <- jsonlite::toJSON(body, auto_unbox = TRUE)
+  if (is.null(draft_id)) {
+    req <- httr::POST(url, body = json, httr::content_type_json(),
+                      gmailr::gm_token())
+  } else {
+    body$id <- draft_id
+    json <- jsonlite::toJSON(body, auto_unbox = TRUE)
+    req <- httr::PUT(
+      paste0(url, "/", utils::URLencode(draft_id, reserved = TRUE)),
+      body = json, httr::content_type_json(), gmailr::gm_token()
+    )
+    if (httr::status_code(req) == 404) {
+      stop(structure(
+        class = c("mc_draft_not_found", "error", "condition"),
+        list(message = paste0("Draft not found: ", draft_id), call = NULL)
+      ))
+    }
+  }
+  httr::stop_for_status(req)
+  httr::content(req, "parsed")
+}
+
+
+#' Base64url with padding, on one line (internal)
+#'
+#' The encoding [gmailr::gm_send_message()] gives a message's `raw` field.
+#' `jsonlite::base64url_enc()` wraps lines and drops the padding.
+#' @param x A string.
+#' @return A string.
+#' @noRd
+base64url_padded <- function(x) {
+  enc <- gsub("\n", "", jsonlite::base64url_enc(x))
+  pad <- (4 - nchar(enc) %% 4) %% 4
+  paste0(enc, strrep("=", pad))
+}
 
 
 #' Pull threadId out of a gmailr draft or message resource
