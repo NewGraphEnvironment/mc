@@ -136,8 +136,7 @@ schedule_launchd <- function(target_time, args) {
   if (!dir.exists(scheduled_dir)) dir.create(scheduled_dir, recursive = TRUE)
 
   args_path <- file.path(scheduled_dir, paste0(uuid, ".json"))
-  jsonlite::write_json(with_fire_window(args, target_time), args_path,
-                       auto_unbox = TRUE, null = "null")
+  write_scheduled_args(args, target_time, args_path)
 
   label <- paste0("com.newgraph.mc.send-", uuid)
   agents_dir <- file.path(Sys.getenv("HOME"), "Library", "LaunchAgents")
@@ -182,7 +181,9 @@ schedule_launchd <- function(target_time, args) {
 #' @noRd
 launchd_plist <- function(label, target_time, rscript_path, args_json_path,
                           scheduled_dir) {
-  tt <- as.POSIXlt(target_time)
+  # launchd reads these digits as machine-local time, so take them in the
+  # machine's zone, not the zone `target_time` happens to carry.
+  tt <- as.POSIXlt(target_time, tz = "")
   out_log <- file.path(scheduled_dir, paste0(label, ".out"))
   err_log <- file.path(scheduled_dir, paste0(label, ".err"))
 
@@ -246,8 +247,7 @@ schedule_at <- function(target_time, args) {
   if (!dir.exists(scheduled_dir)) dir.create(scheduled_dir, recursive = TRUE)
 
   args_path <- file.path(scheduled_dir, paste0(uuid, ".json"))
-  jsonlite::write_json(with_fire_window(args, target_time), args_path,
-                       auto_unbox = TRUE, null = "null")
+  write_scheduled_args(args, target_time, args_path)
 
   rscript <- Sys.which("Rscript")
   if (rscript == "") {
@@ -256,7 +256,8 @@ schedule_at <- function(target_time, args) {
   }
 
   # at -t accepts: [[CC]YY]MMDDhhmm[.ss]
-  at_time <- format(target_time, "%Y%m%d%H%M.%S")
+  # at reads this as machine-local time (see launchd_plist()).
+  at_time <- format(target_time, "%Y%m%d%H%M.%S", tz = "")
 
   # Body of the at job — single Rscript invocation that reads the args
   # JSON and runs the send. The args path is written by us above, so
@@ -412,14 +413,16 @@ cleanup_scheduled_send <- function(args_json_path) {
 send_grace_secs <- function() 300
 
 
-#' Add the target time and grace period to scheduled-send args
+#' Write scheduled-send args to JSON, with the target time and grace period
 #'
-#' Read back and removed by `run_scheduled_send()` before it calls
-#' [mc_send()], which does not take them.
+#' `.target_time` (epoch seconds) and `.grace_secs` are read back and removed
+#' by `run_scheduled_send()` before it calls [mc_send()], which does not take
+#' them. The one writer for both OS-native backends.
 #' @noRd
-with_fire_window <- function(args, target_time) {
-  c(args, list(.target_time = as.numeric(target_time),
-               .grace_secs = send_grace_secs()))
+write_scheduled_args <- function(args, target_time, path) {
+  args <- c(args, list(.target_time = as.numeric(target_time),
+                       .grace_secs = send_grace_secs()))
+  jsonlite::write_json(args, path, auto_unbox = TRUE, null = "null")
 }
 
 

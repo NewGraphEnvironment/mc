@@ -131,7 +131,7 @@ test_that("launchd_plist embeds target time + ProgramArguments correctly", {
   expect_match(xml, 'run_scheduled_send(\"/tmp/test-args.json\")', fixed = TRUE)
 
   # StartCalendarInterval — local time decomposition matches target
-  tt <- as.POSIXlt(target)
+  tt <- as.POSIXlt(target, tz = "")
   yr <- paste0("<key>Year</key><integer>", tt$year + 1900, "</integer>")
   mo <- paste0("<key>Month</key><integer>", tt$mon + 1, "</integer>")
   dy <- paste0("<key>Day</key><integer>", tt$mday, "</integer>")
@@ -456,11 +456,15 @@ run_with_target <- function(target_offset_secs, grace = NULL) {
     .env = parent.frame()
   )
   args <- list(to = "r@x.com", subject = "s", from = "f@x.com",
-               html = "<p>b</p>",
-               .target_time = as.numeric(Sys.time()) + target_offset_secs)
-  if (!is.null(grace)) args$.grace_secs <- grace
+               html = "<p>b</p>")
   path <- tempfile(fileext = ".json")
-  jsonlite::write_json(args, path, auto_unbox = TRUE, digits = NA)
+  # Through the production writer, so its precision is what is tested
+  mc:::write_scheduled_args(args, Sys.time() + target_offset_secs, path)
+  if (!is.null(grace)) {
+    stored <- jsonlite::read_json(path, simplifyVector = TRUE)
+    stored$.grace_secs <- grace
+    jsonlite::write_json(stored, path, auto_unbox = TRUE, digits = NA)
+  }
   withr::defer(unlink(path), envir = parent.frame())
   mc:::run_scheduled_send(path)
   calls$path <- path
@@ -475,7 +479,7 @@ test_that("run_scheduled_send skips a send fired past its grace period", {
 })
 
 test_that("run_scheduled_send sends within grace and strips the fire window", {
-  calls <- run_with_target(-60)
+  calls <- run_with_target(-250)
   expect_length(calls$send, 1)
   expect_equal(calls$log, c("STARTED", "SENT"))
   expect_false(any(c(".target_time", ".grace_secs") %in% names(calls$send[[1]])))
@@ -497,7 +501,8 @@ test_that("schedule_at writes the target time and grace into the args JSON", {
   target <- Sys.time() + 600
   handle <- mc:::schedule_at(target, list(to = "x@x.com", subject = "x"))
   back <- jsonlite::read_json(handle$args_path, simplifyVector = TRUE)
-  expect_equal(back$.target_time, as.numeric(target), tolerance = 1e-6)
+  # Absolute, not testthat's relative tolerance: 1e-6 of an epoch is ~30 min
+  expect_lt(abs(back$.target_time - as.numeric(target)), 0.01)
   expect_equal(back$.grace_secs, 300)
 })
 
@@ -515,4 +520,32 @@ test_that("schedule_at warns when atd is not running", {
     mc:::schedule_at(Sys.time() + 600, list(to = "x@x.com", subject = "x")),
     "atd does not appear to be running"
   )
+})
+
+test_that("launchd and at take the fire time's digits in the machine's zone", {
+  # launchd and at read wall-clock digits as machine-local time; the stale-send
+  # guard compares instants. A target carrying another zone must still fire at
+  # its instant (#47 code-check round 2).
+  # Tokyo has no DST, so the expected digits do not depend on tz data.
+  withr::local_timezone("Asia/Tokyo")
+  target <- as.POSIXct("2026-11-05 09:00:00", tz = "UTC") # 18:00 JST
+
+  xml <- mc:::launchd_plist("lbl", target, "/usr/bin/Rscript", "/tmp/a.json",
+                            "/tmp/s")
+  expect_match(xml, "<key>Day</key><integer>5</integer>", fixed = TRUE)
+  expect_match(xml, "<key>Hour</key><integer>18</integer>", fixed = TRUE)
+  expect_match(xml, "<key>Minute</key><integer>0</integer>", fixed = TRUE)
+
+  at_args <- NULL
+  local_mocked_bindings(
+    Sys.which = function(names) stats::setNames(paste0("/usr/bin/", names), names),
+    system2 = function(command, args, ...) {
+      if (identical(command, "at")) at_args <<- args
+      "job 9 at Thu Nov  5 18:00:00 2026"
+    },
+    .package = "base"
+  )
+  withr::local_envvar(HOME = withr::local_tempdir())
+  mc:::schedule_at(target, list(to = "x@x.com", subject = "x"))
+  expect_equal(at_args[2], "202611051800.00")
 })
