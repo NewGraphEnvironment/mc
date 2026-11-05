@@ -1,3 +1,16 @@
+# mc 0.4.1
+
+## New
+
+* **Inline images.** `inline_images = c(card = "fig/card.png")` on `mc_send()`, `mc_draft()`, `mc_md_send()` and `mc_md_draft()` shows an image in the body. The body references it as `<img src="cid:card">`, or in markdown as `![alt](cid:card)`; YAML frontmatter takes a mapping. A `cid:` reference with no matching image stops the send, and an image the body never references is a warning. Scheduled sends carry the images, and `mc_preview()` shows them. Gmail displays them in the body with no attachment card (#43).
+* **Links open in a new tab.** Every link from markdown, or from an HTML part of `mc_compose()`, gets `target="_blank" rel="noopener noreferrer"`, unless it sets its own `target` or `rel` or points at an anchor in the message (#35).
+
+## Fixes
+
+* Each table style declaration is written once, and the cells of aligned columns get their border and padding, which they never had (#42).
+* Table styles, link targets and the `cid:` check leave markup inside a quoted attribute value alone, so kableExtra tooltips and popovers come through intact.
+* Integration tests send from a `.md` file with the signature (#10).
+
 # mc 0.4.0
 
 ## Behaviour change

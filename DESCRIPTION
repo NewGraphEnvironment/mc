@@ -1,6 +1,6 @@
 Package: mc
 Title: Mail Composer - Email Composition and Delivery
-Version: 0.4.0
+Version: 0.4.1
 Date: 2026-11-05
 Authors@R: c(
     person("Allan", "Irvine", , "al@newgraphenvironment.com", role = c("aut", "cre"),
