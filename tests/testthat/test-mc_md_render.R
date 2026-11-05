@@ -170,3 +170,24 @@ test_that("a > inside a quoted value does not end the tag", {
     '<a href="https://a.com" title="flow > 5 m3/s" target="_blank" rel="noopener noreferrer">site</a>'
   )
 })
+
+test_that("a stray quote inside a value does not unbalance the tag", {
+  # kableExtra::cell_spec(tooltip = ) writes a " into title="..." unescaped
+  expect_identical(
+    mc:::inline_table_styles('<td title="5" pipe">1</td><td>2</td>'),
+    paste0('<td title="5" pipe" style="border: 1px solid #ddd; padding: 8px;">1</td>',
+           '<td style="border: 1px solid #ddd; padding: 8px;">2</td>')
+  )
+})
+
+test_that("a valueless style attribute is replaced, not spliced at NA", {
+  expect_identical(mc:::inline_table_styles("<td style>x</td>"),
+                   '<td style="border: 1px solid #ddd; padding: 8px;">x</td>')
+  expect_identical(mc:::inline_table_styles("<td style=>x</td>"),
+                   '<td style="border: 1px solid #ddd; padding: 8px;">x</td>')
+})
+
+test_that("tags inside comments and script or style content are left alone", {
+  x <- '<!-- <a href="https://a.com">old</a> --><style>td{}</style><script>var s = "<td>";</script>'
+  expect_identical(mc:::inject_link_target(mc:::inline_table_styles(x)), x)
+})

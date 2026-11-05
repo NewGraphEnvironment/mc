@@ -19,3 +19,4 @@
 - Live launchd scheduled send with an inline image: SENT, MIME correct (findings.md). Lint added by the branch fixed. Full unit suite 568 pass, 0 fail
 - Phase 6: owner saw no attachment card in Gmail web or on the phone (findings.md). Code-check round 1: 4 fragile, fixed via `tag_attrs()` tokenizer and `file_url()`; regression tests watched red first
 - Code-check round 2: 2 bugs + 1 fragile, all inside round 1 fixes; fixed via `start_tag_regex()` + `cid_walk()` + `repeated = TRUE`; enumeration recorded in findings.md; tests watched red first
+- Code-check round 3: 2 bugs + 2 fragile, inside round 2 fixes; one attribute grammar shared by tag regex and tokenizer, comments/raw text skipped, valueless attrs, invalid UTF-8; tests watched red first

@@ -212,3 +212,26 @@ test_that("a > inside another attribute does not hide a cid reference", {
   expect_error(send('<img alt="flow > 5" src="cid:missing">'), "no inline_images")
   expect_no_warning(send('<img alt="a > b" src="cid:card">', c(card = png_file())))
 })
+
+test_that("a stray quote in another attribute does not hide a cid reference", {
+  expect_identical(mc:::cid_refs('<img alt="6" pipe" src="cid:card">'), "card")
+})
+
+test_that("a commented-out image is not a reference", {
+  env <- new.env()
+  capture_send(env)
+  html <- '<p>hi</p><!-- <img src="cid:logo"> dropped for now -->'
+  expect_no_error(mc_send(html = html, to = "bob@example.com", subject = "x",
+                          from = "alice@example.com", sig = FALSE))
+  expect_warning(
+    mc_send(html = paste0(html, "<p>x</p>"), to = "bob@example.com", subject = "x",
+            from = "alice@example.com", sig = FALSE, inline_images = c(logo = png_file())),
+    "not referenced"
+  )
+})
+
+test_that("invalid UTF-8 in the body does not blind the cid check", {
+  html <- paste0('<img src="cid:missing"><p>caf', rawToChar(as.raw(0xe9)), "</p>")
+  expect_false(validUTF8(html))
+  expect_error(suppressWarnings(mc:::check_inline_images(NULL, html)), "no inline_images")
+})

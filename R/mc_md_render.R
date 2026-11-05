@@ -168,6 +168,11 @@ style_tag <- function(html, tag, css) {
       if (is.na(i)) {
         return(sub("\\s*/?>$", paste0(' style="', css, '">'), t, perl = TRUE))
       }
+      # Valueless (`style`, `style=`): replace the whole attribute
+      if (is.na(a$vstart[i])) {
+        return(paste0(substr(t, 1, a$astart[i] - 1), ' style="', css, '"',
+                      substr(t, a$astart[i] + a$alen[i], nchar(t))))
+      }
       if (startsWith(a$value[i], css)) return(t)
       # Rewrite the style value in place, quoted, our declarations first
       new <- paste0('"', css, if (nzchar(a$value[i])) " ", gsub('"', "&quot;", a$value[i], fixed = TRUE), '"')
@@ -210,16 +215,35 @@ inject_link_target <- function(html) {
 }
 
 
-#' A regex for an HTML start tag that consumes quoted values (internal)
+#' The grammar of one HTML attribute (internal)
 #'
-#' A `>` inside a quoted value (`title="flow > 5"`, which kableExtra writes
-#' unescaped) does not end the tag. `"th"` does not match `<thead>`.
+#' As an HTML reader tokenizes it: a name, which may contain a stray quote
+#' (`pipe"`), then optionally `=` and a value. A quote starts a value only
+#' after `=`. Shared by [start_tag_regex()] and [tag_attrs()], so the two agree
+#' about where every value ends.
+#'
+#' @param capture Capture the name (group 1) and raw value (group 2)?
+#' @return A PCRE fragment.
+#' @noRd
+html_attr_regex <- function(capture = FALSE) {
+  g <- if (capture) "(" else "(?:"
+  paste0(g, "[^\\s/>=]++)(?:\\s*=\\s*", g, "\"[^\"]*\"|'[^']*'|[^\\s>]*))?")
+}
+
+
+#' A regex for an HTML start tag, outside comments and raw text (internal)
+#'
+#' Attributes are consumed by [html_attr_regex()], so a `>` or a stray quote
+#' inside a value (kableExtra writes tooltips unescaped) does not end the tag.
+#' Comments, CDATA and the contents of `<script>` and `<style>` are skipped,
+#' as a reader skips them. `"th"` does not match `<thead>`.
 #'
 #' @param name Element name, or a regex for any name (the default).
 #' @return A PCRE pattern matching one whole start tag.
 #' @noRd
 start_tag_regex <- function(name = "[A-Za-z][A-Za-z0-9-]*") {
-  paste0("<(?:", name, ")(?:\\s(?:[^\"'>]|\"[^\"]*\"|'[^']*')*)?/?>")
+  skip <- "(?:<!--.*?-->|<!\\[CDATA\\[.*?\\]\\]>|<(script|style)\\b.*?</\\1\\s*>)(*SKIP)(*FAIL)|"
+  paste0("(?s)", skip, "<(?:", name, ")(?:\\s+", html_attr_regex(), ")*+\\s*/?>")
 }
 
 
@@ -231,29 +255,32 @@ start_tag_regex <- function(name = "[A-Za-z][A-Za-z0-9-]*") {
 #'
 #' @param tag One start tag, e.g. `'<td align="left" style="x">'`.
 #' @return Data frame: `name` (lower case), `value` (unquoted, `""` when
-#'   absent), `quote` (`"\""`, `"'"` or `""`), and `vstart`/`vlen`, the
-#'   position and length of the raw value in `tag` (`NA` when absent).
+#'   absent), `quote` (`"\""`, `"'"` or `""`), `vstart`/`vlen`, the position
+#'   and length of the raw value in `tag` (`NA` when there is none, as in
+#'   `style` or `style=`), and `astart`/`alen`, the whole attribute with its
+#'   leading space.
 #' @noRd
 tag_attrs <- function(tag) {
   body_start <- regexpr("^<[A-Za-z][A-Za-z0-9-]*", tag, perl = TRUE)
   offset <- attr(body_start, "match.length")
   rest <- substr(tag, offset + 1, nchar(tag))
-  m <- gregexpr(
-    "\\s+([^\\s\"'>/=]+)(?:\\s*=\\s*(\"[^\"]*\"|'[^']*'|[^\\s\"'>]+))?",
-    rest, perl = TRUE
-  )[[1]]
+  # \G: each attribute starts where the last one ended, as in start_tag_regex()
+  m <- gregexpr(paste0("\\G\\s+", html_attr_regex(capture = TRUE)), rest, perl = TRUE)[[1]]
   empty <- data.frame(name = character(), value = character(), quote = character(),
-                      vstart = integer(), vlen = integer())
+                      vstart = integer(), vlen = integer(), astart = integer(), alen = integer())
   if (m[1] == -1) return(empty)
   cs <- attr(m, "capture.start")
   cl <- attr(m, "capture.length")
   name <- tolower(substring(rest, cs[, 1], cs[, 1] + cl[, 1] - 1))
-  raw <- ifelse(cl[, 2] > 0, substring(rest, cs[, 2], cs[, 2] + cl[, 2] - 1), "")
-  quote <- ifelse(grepl("^[\"']", raw), substr(raw, 1, 1), "")
+  has_value <- cl[, 2] > 0
+  raw <- ifelse(has_value, substring(rest, cs[, 2], cs[, 2] + cl[, 2] - 1), "")
+  quote <- ifelse(grepl("^[\"']", raw) & nchar(raw) >= 2 & substr(raw, 1, 1) == substring(raw, nchar(raw)),
+                  substr(raw, 1, 1), "")
   value <- ifelse(nzchar(quote), substr(raw, 2, nchar(raw) - 1), raw)
   data.frame(
     name = name, value = value, quote = quote,
-    vstart = ifelse(cl[, 2] > 0, cs[, 2] + offset, NA_integer_),
-    vlen = ifelse(cl[, 2] > 0, cl[, 2], NA_integer_)
+    vstart = ifelse(has_value, cs[, 2] + offset, NA_integer_),
+    vlen = ifelse(has_value, cl[, 2], NA_integer_),
+    astart = as.integer(m) + offset, alen = attr(m, "match.length")
   )
 }

@@ -369,7 +369,10 @@ check_inline_images <- function(inline_images, html) {
   # CSS url() in a style attribute, read from tags only, so "cid:" in prose,
   # in a code span or inside another attribute's value is not one, nor is
   # data-src.
-  refs <- cid_refs(html)
+  # Read invalid UTF-8 (a latin1 signature, say) with the bad bytes escaped,
+  # rather than let the regex fail and the check pass by seeing nothing
+  scan <- if (validUTF8(html)) html else iconv(html, "UTF-8", "UTF-8", sub = "byte")
+  refs <- cid_refs(scan)
   refs <- unique(refs)
   if (is.null(inline_images)) {
     if (length(refs)) stop("HTML references cid: ", paste(refs, collapse = ", "),

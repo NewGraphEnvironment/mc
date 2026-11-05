@@ -143,3 +143,22 @@ Fix and **enumeration** (terminal, per /code-check's stopping rule):
 - Attribute readers: 3, all through `tag_attrs()`; `grep` finds no attribute regex outside it.
 - `cid:` readers: 1, `cid_walk()`, shared by `cid_refs()` (the send check) and
   `preview_inline_images()`.
+
+## Code-check round 3 (review-round3.md): defects inside round 2's fix
+
+Mechanism, narrower than round 2's: the shared tag grammar did not match an HTML reader's. A quote
+started a value anywhere, not only after `=` (kableExtra puts a stray `"` in `title=`), so a tag
+failed to match or swallowed the next; comments, CDATA and `<script>`/`<style>` content were read as
+tags (a commented-out `<img src="cid:logo">` stopped a send); a valueless `style` had no value
+position and `style_tag()` spliced at `NA`. Also: invalid UTF-8 (a latin1 signature) made the regex
+fail and the cid check pass by seeing nothing.
+
+Fix: one attribute grammar, `html_attr_regex()`, used by both `start_tag_regex()` and
+`tag_attrs()` (now `\G`-anchored), so the two agree on where values end; `start_tag_regex()` skips
+comments, CDATA and raw-text elements with `(*SKIP)(*FAIL)`; `tag_attrs()` reports the whole
+attribute's span for a valueless attribute; the cid check scans invalid UTF-8 with bad bytes
+escaped. Timing on hostile inputs: all under 0.02 s; 120 KB of styled cells 1.9 s (per-tag data
+frame; noted, not a defect).
+
+Enumeration unchanged and still complete: 3 start-tag finders, 3 attribute readers, 1 cid walker
+(2 consumers), all through the shared helpers; the tag grammar itself now has one definition.
