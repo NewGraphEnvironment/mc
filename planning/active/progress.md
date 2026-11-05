@@ -21,3 +21,4 @@
 - Code-check round 2: 2 bugs + 1 fragile, all inside round 1 fixes; fixed via `start_tag_regex()` + `cid_walk()` + `repeated = TRUE`; enumeration recorded in findings.md; tests watched red first
 - Code-check round 3: 2 bugs + 2 fragile, inside round 2 fixes; one attribute grammar shared by tag regex and tokenizer, comments/raw text skipped, valueless attrs, invalid UTF-8; tests watched red first
 - Code-check round 4: 1 bug + 2 fragile (per-name walks, UTF-8 fix in one caller, sub="byte"); one walker `rewrite_start_tags()` for all three; terminal enumeration in findings.md; tests watched red first
+- Integration re-run after review fixes: 38 pass. Validation boxes ticked; next: archive, push, update PR #44 and issue #43

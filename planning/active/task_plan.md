@@ -95,10 +95,10 @@ Approved by the owner at the plan gate, 2026-11-05.
 
 ## Validation
 
-- [ ] Tests pass (`devtools::document() && devtools::test() && lintr::lint_package()`)
-- [x] Integration tests pass with `MC_RUN_INTEGRATION=true` (2026-11-05: 38 pass, 0 fail)
-- [ ] `/code-check branch` clean (three-round floor)
-- [ ] PWF checkboxes match landed work
+- [x] Tests pass (`devtools::document() && devtools::test() && lintr::lint_package()`): 600 pass, 0 fail; no lints added vs main
+- [x] Integration tests pass with `MC_RUN_INTEGRATION=true` (2026-11-05: 38 pass, 0 fail; re-run after review fixes 08:08Z: 38 pass)
+- [x] `/code-check branch`: four rounds, ended by enumeration (findings.md)
+- [x] PWF checkboxes match landed work
 - [ ] `/planning-archive`, then push and update PR #44
 
 **How each change is proved:** Phase 1 by a round-trip test that fails on the merged tree before the fix;
