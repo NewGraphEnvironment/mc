@@ -31,7 +31,9 @@
 #'
 #' The check reads the context of the R process it runs in: its OAuth client,
 #' its cache option and the rlang it has loaded. Run it the way the send will
-#' run, from a fresh process (`Rscript -e 'mc::mc_auth_check()'`), and keep
+#' run: from a fresh process started in your home directory
+#' (`cd ~ && Rscript -e 'mc::mc_auth_check()'`), because a launchd job starts
+#' in `/` and reads `~/.Renviron` and `~/.Rprofile`, never a project's. Keep
 #' `GMAILR_OAUTH_CLIENT`, `GMAILR_EMAIL` and `MC_FROM` in `~/.Renviron`: a
 #' launchd job does not see variables exported from a shell profile.
 #'

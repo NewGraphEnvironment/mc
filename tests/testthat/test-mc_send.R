@@ -495,7 +495,32 @@ test_that("a scheduled send carries attachments as absolute paths", {
             send_at = 5, scheduler = "launchd")
   )
   expect_equal(captured$attachments,
-               normalizePath(file.path(dir, "report.txt")))
+               file.path(normalizePath(dir), "report.txt"))
+})
+
+test_that("a scheduled attachment keeps the name it was given through a symlink", {
+  # gmailr names the attachment after the basename (#47 round 5)
+  captured <- NULL
+  local_mocked_bindings(
+    schedule_send = function(target_time, args, scheduler) {
+      captured <<- args
+      list()
+    },
+    send_log = function(...) invisible(NULL),
+    .package = "mc"
+  )
+  dir <- withr::local_tempdir()
+  dir.create(file.path(dir, "build"))
+  writeLines("x", file.path(dir, "build", "report_8f3a.pdf"))
+  file.symlink(file.path(dir, "build", "report_8f3a.pdf"),
+               file.path(dir, "report.pdf"))
+  suppressMessages(
+    mc_send(html = "<p>x</p>", to = "t@t.com", subject = "s",
+            from = "f@f.com", attachments = file.path(dir, "report.pdf"),
+            send_at = 5, scheduler = "launchd")
+  )
+  expect_equal(basename(captured$attachments), "report.pdf")
+  expect_true(file.exists(captured$attachments))
 })
 
 test_that("send_log lines name their zone", {

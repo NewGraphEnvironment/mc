@@ -41,7 +41,9 @@ same address for unattended sends, so the token checked is the one used.
 
 The check reads the context of the R process it runs in: its OAuth client,
 its cache option and the rlang it has loaded. Run it the way the send will
-run, from a fresh process (\verb{Rscript -e 'mc::mc_auth_check()'}), and keep
+run: from a fresh process started in your home directory
+(\verb{cd ~ && Rscript -e 'mc::mc_auth_check()'}), because a launchd job starts
+in \code{/} and reads \verb{~/.Renviron} and \verb{~/.Rprofile}, never a project's. Keep
 \code{GMAILR_OAUTH_CLIENT}, \code{GMAILR_EMAIL} and \code{MC_FROM} in \verb{~/.Renviron}: a
 launchd job does not see variables exported from a shell profile.
 }

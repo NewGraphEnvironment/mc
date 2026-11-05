@@ -577,3 +577,47 @@ test_that("run_scheduled_send waits for the target when fired early", {
   expect_length(calls$send, 1)
   expect_equal(calls$log, c("STARTED", "SENT"))
 })
+
+test_that("every scheduled-send field survives the JSON round trip mc_send() checks", {
+  # The fired job calls mc_send() with what write_scheduled_args() wrote, read
+  # back as run_scheduled_send() reads it. Walk every field mc_deliver() puts in
+  # schedule_args through each shape it can take, and require it to read back
+  # as the value mc_send() would have been given (#47 round 5).
+  fields <- list(
+    to = list("a@b.com", c("a@b.com", "c@d.com")),
+    subject = list("s"),
+    cc = list(NULL, character(0), "c@d.com", c("c@d.com", "e@f.com")),
+    bcc = list(NULL, character(0), "c@d.com", c("c@d.com", "e@f.com")),
+    from = list("f@x.com"),
+    thread_id = list(NULL, "abc123"),
+    to_self = list(TRUE, FALSE),
+    sig = list(TRUE, FALSE),
+    sig_path = list(NULL, "/tmp/sig.html"),
+    attachments = list(NULL, character(0), "/tmp/a.txt", c("/tmp/a", "/tmp/b")),
+    labels = list(NULL, character(0), "x", c("x", "y")),
+    labels_create = list(TRUE, FALSE),
+    html = list("<p>b</p>")
+  )
+  # Every field mc_deliver() schedules is covered, and nothing else
+  body_txt <- paste(deparse(body(mc:::mc_deliver)), collapse = "\n")
+  sched <- regmatches(body_txt, regexpr("schedule_args <- list\\([^)]*\\)", body_txt))
+  sched_names <- trimws(sub("=.*", "", strsplit(sub("^schedule_args <- list\\(", "",
+                                                    sub("\\)$", "", sched)), ",")[[1]]))
+  expect_setequal(names(fields), sched_names)
+
+  for (field in names(fields)) {
+    for (value in fields[[field]]) {
+      args <- lapply(fields, `[[`, 1)
+      args[field] <- list(value)
+      path <- tempfile(fileext = ".json")
+      mc:::write_scheduled_args(args, Sys.time() + 60, path)
+      back <- jsonlite::read_json(path, simplifyVector = TRUE)
+      unlink(path)
+      back$.target_time <- NULL
+      back$.grace_secs <- NULL
+      expected <- if (length(value) == 0) NULL else value
+      expect_identical(back[[field]], expected,
+                       info = paste(field, deparse(value)))
+    }
+  }
+})

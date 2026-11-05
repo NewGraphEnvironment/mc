@@ -117,8 +117,13 @@ mc_deliver <- function(path = NULL,
     )
     # The send runs later in another process: a launchd job starts in `/`, so
     # a relative attachment path that resolves here would not resolve there.
+    # Only the directory is resolved: gmailr names the attachment after the
+    # basename, which normalizePath() would change through a symlink.
     if (!is.null(attachments)) {
-      attachments <- normalizePath(attachments, mustWork = TRUE)
+      attachments <- file.path(
+        normalizePath(dirname(attachments), mustWork = TRUE),
+        basename(attachments)
+      )
     }
     schedule_args <- list(
       to = to, subject = subject, cc = cc, bcc = bcc, from = from,

@@ -237,10 +237,11 @@ nothing delivered at all, use `mc_draft()`.
 cache: gargle names the OAuth client with `rlang::hash()`, whose output changed
 in rlang 1.3.0, so a token minted before the upgrade is no longer found by a
 non-interactive session. Check before you rely on an unattended send, from a
-fresh process so the check sees what the send will see:
+fresh process in your home directory, so the check reads the same startup
+files as a scheduled send's job:
 
 ```
-Rscript -e 'mc::mc_auth_check()'
+cd ~ && Rscript -e 'mc::mc_auth_check()'
 ```
 
 If it reports a mismatch, start a fresh R session (one opened before the

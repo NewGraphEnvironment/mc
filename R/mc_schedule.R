@@ -455,6 +455,9 @@ send_grace_secs <- function() 300
 #' them. The one writer for both OS-native backends.
 #' @noRd
 write_scheduled_args <- function(args, target_time, path) {
+  # JSON writes a zero-length vector as [], which reads back as list() and
+  # fails mc_send()'s checks; NULL means the same here and round-trips.
+  args <- lapply(args, function(v) if (length(v) == 0) NULL else v)
   args <- c(args, list(.target_time = as.numeric(target_time),
                        .grace_secs = send_grace_secs()))
   jsonlite::write_json(args, path, auto_unbox = TRUE, null = "null")
