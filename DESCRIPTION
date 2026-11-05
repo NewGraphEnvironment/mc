@@ -35,8 +35,10 @@ Imports:
     chk,
     cli,
     commonmark,
+    gargle,
     gmailr,
     httr,
     jsonlite,
+    rappdirs,
     yaml
 VignetteBuilder: knitr

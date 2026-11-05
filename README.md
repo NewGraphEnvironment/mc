@@ -230,6 +230,22 @@ mc_send("draft.md",
 It caps who receives the message — it does not stop the send. If you want
 nothing delivered at all, use `mc_draft()`.
 
+## Troubleshooting
+
+**Sending works from RStudio but fails from `Rscript`, cron or CI with
+"Can't get Google credentials".** Upgrading rlang invalidates gargle's token
+cache: gargle names the OAuth client with `rlang::hash()`, whose output changed
+in rlang 1.3.0, so a token minted before the upgrade is no longer found by a
+non-interactive session. Check before you rely on an unattended send:
+
+```r
+mc_auth_check()
+```
+
+If it reports a mismatch, start a fresh R session (one opened before the
+upgrade writes the token under the old name again), move the token file it
+names out of the cache, and run `mc_auth()`. `?mc_auth_check` has the details.
+
 ## License
 
 MIT

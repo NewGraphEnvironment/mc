@@ -10,3 +10,4 @@
 - Phase 2: the three tests went red with the sender unset and `gm_labels` mocked to stop, then green with the path/html check moved first and `toupper()` in `mc_thread_modify()`
 - Phase 3: six string-literal em dashes made ASCII (`.check_package_ASCII_code` now empty, no test matched those messages); `...` documented in `mc_draft()`, `checkDocFiles` clean
 - Phase 4: four scheduler-default tests (macOS and Linux red before the change; the Windows fallback and explicit-`auto` error already held); `scheduler = NULL` resolved by `default_scheduler()`; the two callr-warning tests now name `scheduler = "callr"`; README, `@param` and CLAUDE.md updated
+- Phase 5: `mc_auth_check()` with 9 tests on fake tokens in a temp cache; four planted defects (always pass, email suffix without `_`, `$client` only, option handling dropped) each turned a test red. `rappdirs` added to Imports beside `gargle`. README Troubleshooting section.

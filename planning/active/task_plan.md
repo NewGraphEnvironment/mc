@@ -84,18 +84,18 @@ Plan approved by the user 2026-11-04 (plan mode, `/planning-init 47`).
 
 ## Phase 5: Auth preflight and troubleshooting (#38)
 
-- [ ] Failing tests first, in `test-mc_auth_check.R`, against a temp cache dir holding fake token RDS files (`list(app = list(appname = ...))`) and a mocked client name:
+- [x] Failing tests first, in `test-mc_auth_check.R`, against a temp cache dir holding fake token RDS files (`list(app = list(appname = ...))`) and a mocked client name:
   - matching name → `TRUE`
   - mismatched name → error naming both names and `mc_auth()`
   - no token for the email → error
-- [ ] Write `R/mc_auth_check.R`:
+- [x] Write `R/mc_auth_check.R`:
   - The expected name comes from `gmailr::gm_oauth_client()$name`, or else from `gargle::gargle_oauth_client_from_json(gmailr::gm_default_oauth_client())$name`.
   - The stored name comes from `tok$app$appname`, falling back to `tok$app$name`.
   - It reads token files with `readRDS` from `gargle::gargle_oauth_cache()`.
   - Arguments are checked with `chk`.
   - The roxygen includes `@section Troubleshooting` (upgrading rlang invalidates the gargle token cache; re-auth from a freshly started session) and a `\dontrun{}` example, since it needs real credentials.
-- [ ] Add `gargle` to Imports
-- [ ] README: a short "Troubleshooting" section before License, pointing to `mc_auth_check()`
+- [x] Add `gargle` to Imports (and `rappdirs`, for gargle's default cache dir without calling a gargle internal; both already hard dependencies of gmailr)
+- [x] README: a short "Troubleshooting" section before License, pointing to `mc_auth_check()`
 
 ## Owed at the end (reported, done after merge)
 
