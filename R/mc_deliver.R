@@ -102,14 +102,17 @@ mc_deliver <- function(path = NULL,
     }
     send_time <- resolve_send_at(send_at)
     delay_min <- as.numeric(difftime(send_time, Sys.time(), units = "mins"))
+    # Machine-local, with the zone named: the time the backend will fire at
+    # and the zone the send log's own timestamps use.
+    target_label <- format(send_time, "%Y-%m-%d %H:%M:%S %Z", tz = "")
     message(
-      "Scheduled to send at ", format(send_time, "%Y-%m-%d %H:%M:%S"),
+      "Scheduled to send at ", target_label,
       " (", round(delay_min, 1), " min from now)",
       "\nTo: ", paste(to, collapse = ", ")
     )
     send_log(
       subject, to, "SCHEDULED",
-      paste0("target=", format(send_time, "%Y-%m-%d %H:%M:%S"),
+      paste0("target=", target_label,
              " scheduler=", scheduler)
     )
     schedule_args <- list(

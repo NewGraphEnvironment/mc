@@ -422,6 +422,9 @@ test_that("mc_send writes SCHEDULED log entry at submission time", {
   expect_equal(scheduled[[1]]$subject, "scheduled subject")
   expect_equal(scheduled[[1]]$to, "test@test.com")
   expect_match(scheduled[[1]]$detail, "^target=")
+  # Machine-local with the zone named, whatever zone send_at carried
+  expect_match(scheduled[[1]]$detail,
+               paste0("^target=.* ", format(Sys.time(), "%Z"), " "))
 })
 
 test_that("mc_send rejects the removed draft and test arguments", {
