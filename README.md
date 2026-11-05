@@ -141,33 +141,33 @@ will match by subject line if it starts with "Re:").
 ## Scheduled send
 
 Send an email later with `send_at` — either minutes from now or a specific
-time. Use `scheduler = "auto"` for durable OS-native scheduling (recommended):
+time. On macOS and Linux the operating system schedules the send, so it fires
+even after the R session that made it has exited:
 
 ```r
 # Send in 10 minutes via launchd (macOS) or atd (Linux)
 mc_send("draft.md",
         to = "brandon@example.com",
         subject = "Cottonwood plugs",
-        send_at = 10,
-        scheduler = "auto")
+        send_at = 10)
 
 # Send at a specific time
 mc_send("draft.md",
         to = "brandon@example.com",
         subject = "Cottonwood plugs",
-        send_at = as.POSIXct("2026-02-24 09:11:00"),
-        scheduler = "auto")
+        send_at = as.POSIXct("2026-02-24 09:11:00"))
 ```
 
-The `scheduler` argument selects the backend:
+The `scheduler` argument selects the backend. Left unset, it is `"auto"` on
+macOS and Linux and `"callr"` elsewhere:
 
-- `"callr"` (default for backward compatibility) — `callr::r_bg` background R
-  process. Survives some session lifecycles but **can be cleaned up if its
-  parent context exits** (one-shot `Rscript -e`, RStudio sessions that close,
-  CI). Emits a `warning()` on use steering you toward `"auto"`.
 - `"auto"` — resolves to `launchd` on macOS or `at` on Linux. The OS-native
   daemon owns the job lifecycle independent of any R session — survives
   shell exit, parent process death, and (on macOS) sleep/wake cycles.
+- `"callr"` — `callr::r_bg` background R process, the fallback where no
+  OS-native backend exists. **Can be cleaned up if its parent context exits**
+  (one-shot `Rscript -e`, RStudio sessions that close, CI), and emits a
+  `warning()` saying so.
 - `"launchd"` / `"at"` — force a specific backend.
 
 Heartbeat log entries land in `~/.mc/send_log.txt` so missed fires are
@@ -180,10 +180,10 @@ auditable from the log alone:
 A `SCHEDULED` line with no follow-up `STARTED` means the bg process died
 before firing — the failure mode that the OS-native backends solve.
 
-On macOS, `caffeinate` keeps the machine awake until the email sends (callr
-backend only — launchd handles wake/sleep itself). If the machine sleeps
-through the send window with the callr backend, a 5-minute grace period
-applies — past that, the send is skipped to prevent stale emails.
+If the machine is asleep at the send time, the send fires when it wakes,
+within a 5-minute grace period; past that it is skipped and logged as
+`SKIPPED`, so a stale email never goes out hours late. With the callr backend,
+`caffeinate` also keeps a Mac awake until the email sends.
 
 Outcomes also trigger a macOS desktop notification on success, skip, or failure.
 
@@ -229,6 +229,26 @@ mc_send("draft.md",
 
 It caps who receives the message — it does not stop the send. If you want
 nothing delivered at all, use `mc_draft()`.
+
+## Troubleshooting
+
+**Sending works from RStudio but fails from `Rscript`, cron or CI with
+"Can't get Google credentials".** Upgrading rlang invalidates gargle's token
+cache: gargle names the OAuth client with `rlang::hash()`, whose output changed
+in rlang 1.3.0, so a token minted before the upgrade is no longer found by a
+non-interactive session. Check before you rely on an unattended send, from a
+fresh process in your home directory, so the check reads the same startup
+files as a scheduled send's job:
+
+```
+cd ~ && Rscript -e 'mc::mc_auth_check()'
+```
+
+If it reports a mismatch, start a fresh R session (one opened before the
+upgrade writes the token under the old name again), move the token file it
+names out of the cache, and run `mc_auth()`. Keep `GMAILR_OAUTH_CLIENT`,
+`GMAILR_EMAIL` and `MC_FROM` in `~/.Renviron`, where a scheduled send's job can
+read them. `?mc_auth_check` has the details.
 
 ## License
 

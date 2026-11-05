@@ -1,4 +1,8 @@
 test_that("mc_send errors without path or html", {
+  # No sender configured, as on a CI runner: the argument error must still be
+  # the one reported, not the sender lookup (#47).
+  withr::local_options(mc.from = NULL)
+  withr::local_envvar(MC_FROM = NA)
   expect_error(
     mc_send(to = "test@test.com", subject = "test"),
     "Provide either"
@@ -293,13 +297,17 @@ test_that("caffeinate is not called when send_at is NULL", {
     },
     .package = "mc"
   )
+  # The send itself is mocked: without it, a machine with a sender and a Gmail
+  # token would really send, and one without would stop before the code under
+  # test (#47).
+  local_mocked_bindings(
+    gm_send_message = function(msg, ...) list(threadId = "tid_caf"),
+    .package = "gmailr"
+  )
   # Normal send (send_at = NULL) should never hit caffeinate_send
-  # Use html to skip file read, will error at gmailr but that's after
-  # the send_at check
-  tryCatch(
+  suppressMessages(
     mc_send(html = "<p>test</p>", to = "test@test.com",
-            subject = "test", send_at = NULL),
-    error = function(e) NULL
+            subject = "test", from = "a@b.com", send_at = NULL)
   )
   expect_false(called)
 })
@@ -377,7 +385,7 @@ test_that("mc_send warns when send_at is non-NULL (lifecycle caveat)", {
     mc_send(
       html = "<p>x</p>", to = "test@test.com",
       subject = "scheduled", from = "test@test.com",
-      send_at = 5
+      send_at = 5, scheduler = "callr"
     ),
     "scheduled-send is unreliable"
   )
@@ -405,7 +413,7 @@ test_that("mc_send writes SCHEDULED log entry at submission time", {
     mc_send(
       html = "<p>x</p>", to = "test@test.com",
       subject = "scheduled subject", from = "test@test.com",
-      send_at = 5
+      send_at = 5, scheduler = "callr"
     )
   )
   # Exactly one SCHEDULED entry should land at submission, with target= detail
@@ -414,6 +422,27 @@ test_that("mc_send writes SCHEDULED log entry at submission time", {
   expect_equal(scheduled[[1]]$subject, "scheduled subject")
   expect_equal(scheduled[[1]]$to, "test@test.com")
   expect_match(scheduled[[1]]$detail, "^target=")
+})
+
+test_that("the scheduled time is shown in the process zone, whatever send_at carries", {
+  log_detail <- NULL
+  local_mocked_bindings(
+    schedule_send = function(target_time, args, scheduler) list(),
+    send_log = function(subject, to, status, detail = "") log_detail <<- detail,
+    .package = "mc"
+  )
+  withr::local_timezone("Asia/Tokyo") # no DST, so JST whatever the tz data
+  target <- as.POSIXct(format(Sys.time() + 3600, tz = "UTC"), tz = "UTC")
+  msgs <- testthat::capture_messages(
+    mc_send(html = "<p>x</p>", to = "t@t.com", subject = "s",
+            from = "f@f.com", send_at = target, scheduler = "launchd")
+  )
+  expect_match(log_detail, "^target=.* JST scheduler=launchd$")
+  expect_match(paste(msgs, collapse = ""), "Scheduled to send at .* JST")
+  expect_equal(
+    sub("^target=(.*) JST.*$", "\\1", log_detail),
+    format(target, "%Y-%m-%d %H:%M:%S", tz = "Asia/Tokyo")
+  )
 })
 
 test_that("mc_send rejects the removed draft and test arguments", {
@@ -443,4 +472,61 @@ test_that("mc_send never calls gm_create_draft", {
       subject = "no draft", from = "alice@example.com"
     )
   )
+})
+
+test_that("a scheduled send carries attachments as absolute paths", {
+  # The fired job runs elsewhere (a launchd job starts in /), so a relative
+  # path that resolves at scheduling time must not reach it (#47 round 4).
+  captured <- NULL
+  local_mocked_bindings(
+    schedule_send = function(target_time, args, scheduler) {
+      captured <<- args
+      list()
+    },
+    send_log = function(...) invisible(NULL),
+    .package = "mc"
+  )
+  dir <- withr::local_tempdir()
+  writeLines("x", file.path(dir, "report.txt"))
+  withr::local_dir(dir)
+  suppressMessages(
+    mc_send(html = "<p>x</p>", to = "t@t.com", subject = "s",
+            from = "f@f.com", attachments = "report.txt",
+            send_at = 5, scheduler = "launchd")
+  )
+  expect_equal(captured$attachments,
+               file.path(normalizePath(dir), "report.txt"))
+})
+
+test_that("a scheduled attachment keeps the name it was given through a symlink", {
+  # gmailr names the attachment after the basename (#47 round 5)
+  captured <- NULL
+  local_mocked_bindings(
+    schedule_send = function(target_time, args, scheduler) {
+      captured <<- args
+      list()
+    },
+    send_log = function(...) invisible(NULL),
+    .package = "mc"
+  )
+  dir <- withr::local_tempdir()
+  dir.create(file.path(dir, "build"))
+  writeLines("x", file.path(dir, "build", "report_8f3a.pdf"))
+  file.symlink(file.path(dir, "build", "report_8f3a.pdf"),
+               file.path(dir, "report.pdf"))
+  suppressMessages(
+    mc_send(html = "<p>x</p>", to = "t@t.com", subject = "s",
+            from = "f@f.com", attachments = file.path(dir, "report.pdf"),
+            send_at = 5, scheduler = "launchd")
+  )
+  expect_equal(basename(captured$attachments), "report.pdf")
+  expect_true(file.exists(captured$attachments))
+})
+
+test_that("send_log lines name their zone", {
+  withr::local_envvar(HOME = withr::local_tempdir())
+  withr::local_timezone("Asia/Tokyo")
+  mc:::send_log("s", "t@t.com", "SENT")
+  line <- readLines(file.path(Sys.getenv("HOME"), ".mc", "send_log.txt"))
+  expect_match(line, "^[0-9-]+ [0-9:]+ JST [|] SENT [|]")
 })

@@ -13,3 +13,5 @@
 ^\.Rproj\.user$
 ^\.git$
 ^CITATION\.cff$
+^\.lintr$
+^\.claude$

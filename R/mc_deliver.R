@@ -33,9 +33,20 @@ mc_deliver <- function(path = NULL,
                        labels_create = TRUE,
                        html = NULL,
                        send_at = NULL,
-                       scheduler = c("callr", "auto", "launchd", "at")) {
+                       scheduler = NULL) {
 
-  scheduler <- match.arg(scheduler)
+  scheduler <- if (is.null(scheduler)) {
+    default_scheduler()
+  } else {
+    match.arg(scheduler, c("auto", "callr", "launchd", "at"))
+  }
+
+  # Before the chk block: `from` defaults to default_from(), and chk_string(from)
+  # forces it. A call missing its body is an argument error, and it should be
+  # reported as one even where no sender is configured (#47).
+  if (is.null(html) && is.null(path)) {
+    stop("Provide either `path` to a markdown file or `html`.", call. = FALSE)
+  }
 
   chk::chk_null_or(path, vld = chk::vld_string)
   chk::chk_character(to)
@@ -71,9 +82,6 @@ mc_deliver <- function(path = NULL,
   # and means the launchd plist's R invocation does not need filesystem
   # access to the original draft.
   if (is.null(html)) {
-    if (is.null(path)) {
-      stop("Provide either `path` to a markdown file or `html`.", call. = FALSE)
-    }
     html <- mc_md_render(path, sig = sig, sig_path = sig_path)
   }
 
@@ -86,24 +94,37 @@ mc_deliver <- function(path = NULL,
         "callr background process can be cleaned up before fire time, ",
         "silently dropping the send. Heartbeat log entries (SCHEDULED at ",
         "submission, STARTED at fire) make missed fires auditable from ",
-        "~/.mc/send_log.txt. Use scheduler = \"auto\" for OS-native ",
-        "scheduling (launchd / at) — see ",
+        "~/.mc/send_log.txt. On macOS and Linux, scheduler = \"auto\" ",
+        "(the default there) uses OS-native scheduling (launchd / at) - see ",
         "https://github.com/NewGraphEnvironment/mc/issues/36",
         call. = FALSE
       )
     }
     send_time <- resolve_send_at(send_at)
     delay_min <- as.numeric(difftime(send_time, Sys.time(), units = "mins"))
+    # In this process's zone, with the zone named, so it reads correctly beside
+    # send log lines a launchd job later writes in the system zone.
+    target_label <- format(send_time, "%Y-%m-%d %H:%M:%S %Z", tz = "")
     message(
-      "Scheduled to send at ", format(send_time, "%Y-%m-%d %H:%M:%S"),
+      "Scheduled to send at ", target_label,
       " (", round(delay_min, 1), " min from now)",
       "\nTo: ", paste(to, collapse = ", ")
     )
     send_log(
       subject, to, "SCHEDULED",
-      paste0("target=", format(send_time, "%Y-%m-%d %H:%M:%S"),
+      paste0("target=", target_label,
              " scheduler=", scheduler)
     )
+    # The send runs later in another process: a launchd job starts in `/`, so
+    # a relative attachment path that resolves here would not resolve there.
+    # Only the directory is resolved: gmailr names the attachment after the
+    # basename, which normalizePath() would change through a symlink.
+    if (!is.null(attachments)) {
+      attachments <- file.path(
+        normalizePath(dirname(attachments), mustWork = TRUE),
+        basename(attachments)
+      )
+    }
     schedule_args <- list(
       to = to, subject = subject, cc = cc, bcc = bcc, from = from,
       thread_id = thread_id, to_self = to_self, sig = sig,
@@ -234,7 +255,7 @@ caffeinate_send <- function(proc) {
   pid <- proc$get_pid()
   system2("caffeinate", args = c("-i", "-w", pid), wait = FALSE,
           stdout = FALSE, stderr = FALSE)
-  message("caffeinate active (PID ", pid, ") — machine will stay awake")
+  message("caffeinate active (PID ", pid, ") - machine will stay awake")
   invisible(NULL)
 }
 
@@ -251,7 +272,9 @@ send_log <- function(subject, to, status, detail = "") {
   log_dir <- file.path(Sys.getenv("HOME"), ".mc")
   if (!dir.exists(log_dir)) dir.create(log_dir, recursive = TRUE)
   line <- paste0(
-    format(Sys.time(), "%Y-%m-%d %H:%M:%S"), " | ",
+    # Zone named: lines come from the scheduling session and from the fired
+    # job, whose zones can differ.
+    format(Sys.time(), "%Y-%m-%d %H:%M:%S %Z"), " | ",
     status, " | ",
     "To: ", paste(to, collapse = ", "), " | ",
     "Subject: ", subject,
