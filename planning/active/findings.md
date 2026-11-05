@@ -156,7 +156,18 @@ mc's docs obvious.
 - No repo outside mc uses the return value of `mc_draft()` / `mc_md_draft()` (grepped `~/Projects/repo`).
 - Tests: `local_mocked_bindings(.package = "gmailr")` in the draft/send tests, `mockery::stub` in the thread/message tests. `test-mc_send.R:463` asserts mc_send never drafts; `test-mc_draft.R` asserts mc_draft never sends.
 
+## Live Gmail measurements (integration run 2026-11-05 23:51Z, `MC_RUN_INTEGRATION=true`, 67 pass)
+
+Answers to the plan review's assumptions, measured by `tests/testthat/test-integration.R` (the `# --- Drafts by id` block):
+
+- **A1 (JSON route size):** an 8 MB random attachment survives `gm_create_draft()` and then `PUT drafts/{id}` with the message as base64url JSON on the non-upload endpoint; the replaced draft's attachment part reports > 7.9e6 bytes. No multipart-upload fallback needed at this size.
+- **A2 (thread on replace):** a `PUT` that carries `threadId` keeps the draft in its thread; a `PUT` without one (an explicit `mc_draft(draft_id =, to_self = TRUE)`) moved it to a new thread. Documented on `mc_draft()`: pass the same `thread_id` when replacing; `mc_md_draft(to_self = TRUE)` never touches the tracked draft.
+- **A3 (labels on replace):** a label given again on replace is on the new message; a replace without `labels` dropped it. Documented.
+- **A4 (malformed id):** a message id (`1a1a3d39782240d9`) passed as `draft_id` gets the same 404 as a deleted draft, so it warns and creates a new draft. Documented ("the id is not a draft id").
+- Stale id (deleted by id, then replaced): warns, new id. `mc_message_find(status = "draft")` with a subject query returned exactly the one tagged draft. A threaded draft got `Subject: Re: …`, `In-Reply-To` and `References`, and `mc_thread_read(drafts = TRUE)` listed it once as a draft. No test drafts were left in the mailbox afterwards.
+
 ## Errors Encountered
 
 | Error | Resolution |
 |-------|------------|
+| Python heredoc edits turned R's `"\\s\\S"` into `"\s\S"` (an R parse error) | Restored with `sed`; check regex escapes after any Python-driven edit of R strings |

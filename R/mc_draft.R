@@ -8,8 +8,9 @@
 #'   `cc`, `bcc` and `thread_id`. Default `FALSE`.
 #' @param draft_id `NULL` (default) to create a new draft, or the id of a draft
 #'   to replace in place, as returned in `draft_id` by an earlier call. Only
-#'   that draft changes, and it keeps its id. If Gmail no longer has it (it was
-#'   sent or deleted), a warning is given and a new draft is created.
+#'   that draft changes, and it keeps its id. If Gmail does not know the id
+#'   (the draft was sent or deleted, or the id is not a draft id), a warning is
+#'   given and a new draft is created.
 #' @param ... Not used. Present only so that passing `send_at` or `scheduler`
 #'   errors with a pointer to [mc_send()] rather than R's generic unused-argument
 #'   error. Any other argument errors as unused.
@@ -30,7 +31,9 @@
 #' mc never deletes a draft. To regenerate one (a re-rendered attachment, an
 #' edited body), pass the `draft_id` it returned; nothing else in the mailbox
 #' is touched. Replacing overwrites the draft as it stands, including any
-#' edits made to it in Gmail.
+#' edits made to it in Gmail. Pass the same `thread_id` and `labels` as when
+#' the draft was made: a replacement without `thread_id` takes the draft out of
+#' its thread, and labels not given again are dropped.
 #'
 #' `send_at` and `scheduler` are not accepted here. A scheduled message is by
 #' definition one that gets sent, so scheduling lives on [mc_send()].

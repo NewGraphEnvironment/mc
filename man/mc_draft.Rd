@@ -47,8 +47,9 @@ read first; if it cannot be read, nothing is sent.}
 
 \item{draft_id}{\code{NULL} (default) to create a new draft, or the id of a draft
 to replace in place, as returned in \code{draft_id} by an earlier call. Only
-that draft changes, and it keeps its id. If Gmail no longer has it (it was
-sent or deleted), a warning is given and a new draft is created.}
+that draft changes, and it keeps its id. If Gmail does not know the id
+(the draft was sent or deleted, or the id is not a draft id), a warning is
+given and a new draft is created.}
 
 \item{to_self}{Logical. If \code{TRUE}, address the draft to \code{from} and drop
 \code{cc}, \code{bcc} and \code{thread_id}. Default \code{FALSE}.}
@@ -111,7 +112,9 @@ the draft somewhere else, a warning says so.
 mc never deletes a draft. To regenerate one (a re-rendered attachment, an
 edited body), pass the \code{draft_id} it returned; nothing else in the mailbox
 is touched. Replacing overwrites the draft as it stands, including any
-edits made to it in Gmail.
+edits made to it in Gmail. Pass the same \code{thread_id} and \code{labels} as when
+the draft was made: a replacement without \code{thread_id} takes the draft out of
+its thread, and labels not given again are dropped.
 
 \code{send_at} and \code{scheduler} are not accepted here. A scheduled message is by
 definition one that gets sent, so scheduling lives on \code{\link[=mc_send]{mc_send()}}.

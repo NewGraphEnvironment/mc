@@ -56,9 +56,9 @@ That is easy to get wrong. A filter on the To header alone also matches drafts t
 
 ## Phase 5: Docs, NEWS, integration
 
-- [ ] `devtools::document()`, `NEWS.md` entry under the development heading (breaking return shape; drafts in threads; reply headers; label-based draft status; draft queries), `pkgdown::check_pkgdown()`.
-- [ ] Integration probes from the review: stale id (delete by id, then replace → warning, new id); update of a threaded draft keeps threadId and headers (A2); attachment over 5 MB on create and update through the JSON route (A1); labels after a replace (A3); status for a malformed id (A4). Record each in findings.md.
-- [ ] Integration tests (`MC_RUN_INTEGRATION=true`): create a draft, replace it by the returned `draft_id`, and check the id is the same with the new body; a draft with an attachment, created and updated through the JSON path; send to self, draft into that thread, and check the threadId and both headers; `mc_message_find(status = "draft")` finds only the tagged draft. Every draft the tests make is deleted in `withr::defer()` by the id mc returned.
+- [x] `devtools::document()`, `pkgdown::check_pkgdown()` (clean). NEWS is written at merge by `/gh-pr-merge` (as for v0.4.0, v0.4.1), so the behaviour changes (G11) go in the PR body for it.
+- [x] Integration probes from the review: stale id (delete by id, then replace → warning, new id); update of a threaded draft keeps threadId and headers (A2); attachment over 5 MB on create and update through the JSON route (A1); labels after a replace (A3); status for a malformed id (A4). Record each in findings.md.
+- [x] Integration tests (`MC_RUN_INTEGRATION=true`): create a draft, replace it by the returned `draft_id`, and check the id is the same with the new body; a draft with an attachment, created and updated through the JSON path; send to self, draft into that thread, and check the threadId and both headers; `mc_message_find(status = "draft")` finds only the tagged draft. Every draft the tests make is deleted in `withr::defer()` by the id mc returned.
 
 ## Owed at the end (reported, done after merge)
 
