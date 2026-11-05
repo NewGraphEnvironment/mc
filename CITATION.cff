@@ -8,7 +8,7 @@ message: If you use mc, please cite it by its DOI, 10.5281/zenodo.23524725.
 type: software
 license: MIT
 title: 'mc: Mail Composer - Email Composition and Delivery'
-version: 0.4.0
+version: 0.4.1
 doi: 10.5281/zenodo.23524725
 abstract: Compose, draft, and send emails from markdown files via the Gmail API. Strips
   markdown headers, converts to HTML with inline table styles, appends a standard
@@ -28,7 +28,7 @@ preferred-citation:
     email: al@newgraphenvironment.com
     orcid: https://orcid.org/0000-0002-3495-2128
     affiliation: New Graph Environment Ltd.
-  version: 0.4.0
+  version: 0.4.1
   date-released: '2026-11-05'
   url: https://newgraphenvironment.github.io/mc/
   repository-code: https://github.com/NewGraphEnvironment/mc
