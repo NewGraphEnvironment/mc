@@ -131,7 +131,7 @@ schedule_launchd <- function(target_time, args) {
 
   rscript <- Sys.which("Rscript")
   if (rscript == "") {
-    stop("Rscript not found on PATH — required by launchd backend.",
+    stop("Rscript not found on PATH - required by launchd backend.",
          call. = FALSE)
   }
 
@@ -225,7 +225,7 @@ schedule_at <- function(target_time, args) {
 
   rscript <- Sys.which("Rscript")
   if (rscript == "") {
-    stop("Rscript not found on PATH — required by at backend.",
+    stop("Rscript not found on PATH - required by at backend.",
          call. = FALSE)
   }
 

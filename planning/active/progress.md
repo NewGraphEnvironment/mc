@@ -8,3 +8,4 @@
 - Next: start Phase 1
 - Phase 1: merged `origin/ci-r-cmd-check` (PR #46's workflow) and kept `.lintr`/`.claude` out of the tarball
 - Phase 2: the three tests went red with the sender unset and `gm_labels` mocked to stop, then green with the path/html check moved first and `toupper()` in `mc_thread_modify()`
+- Phase 3: six string-literal em dashes made ASCII (`.check_package_ASCII_code` now empty, no test matched those messages); `...` documented in `mc_draft()`, `checkDocFiles` clean

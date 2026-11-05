@@ -91,7 +91,7 @@ mc_deliver <- function(path = NULL,
         "silently dropping the send. Heartbeat log entries (SCHEDULED at ",
         "submission, STARTED at fire) make missed fires auditable from ",
         "~/.mc/send_log.txt. Use scheduler = \"auto\" for OS-native ",
-        "scheduling (launchd / at) — see ",
+        "scheduling (launchd / at) - see ",
         "https://github.com/NewGraphEnvironment/mc/issues/36",
         call. = FALSE
       )
@@ -238,7 +238,7 @@ caffeinate_send <- function(proc) {
   pid <- proc$get_pid()
   system2("caffeinate", args = c("-i", "-w", pid), wait = FALSE,
           stdout = FALSE, stderr = FALSE)
-  message("caffeinate active (PID ", pid, ") — machine will stay awake")
+  message("caffeinate active (PID ", pid, ") - machine will stay awake")
   invisible(NULL)
 }
 

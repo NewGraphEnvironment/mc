@@ -68,9 +68,9 @@ Plan approved by the user 2026-11-04 (plan mode, `/planning-init 47`).
 
 ## Phase 3: Clear the check WARNINGs (#47)
 
-- [ ] Replace the 6 em dashes in string literals with ASCII ` - `, then grep the tests for any message they match on
-- [ ] Add `@param ...` to `mc_draft()` saying it is not used, and that `send_at` / `scheduler` error toward `mc_send()`
-- [ ] `devtools::document()`. Then `tools:::.check_package_ASCII_code(".")` returns nothing, and `mc_draft.Rd` documents `...`
+- [x] Replace the 6 em dashes in string literals with ASCII ` - `, then grep the tests for any message they match on
+- [x] Add `@param ...` to `mc_draft()` saying it is not used, and that `send_at` / `scheduler` error toward `mc_send()`
+- [x] `devtools::document()`. Then `tools:::.check_package_ASCII_code(".")` returns nothing, and `mc_draft.Rd` documents `...`
 
 ## Phase 4: OS-native scheduler by default (#8)
 

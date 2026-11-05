@@ -6,6 +6,9 @@
 #' @inheritParams mc_send
 #' @param to_self Logical. If `TRUE`, address the draft to `from` and drop
 #'   `cc`, `bcc` and `thread_id`. Default `FALSE`.
+#' @param ... Not used. Present only so that passing `send_at` or `scheduler`
+#'   errors with a pointer to [mc_send()] rather than R's generic unused-argument
+#'   error. Any other argument errors as unused.
 #'
 #' @return The Gmail thread ID of the resulting draft, invisibly. May be `NULL`
 #'   if the gmailr response did not include one.
@@ -57,7 +60,7 @@ mc_draft <- function(path = NULL,
   bad <- intersect(names(extra), c("send_at", "scheduler"))
   if (length(bad) > 0) {
     stop(
-      "`", paste(bad, collapse = "`, `"), "` cannot be used with mc_draft() — ",
+      "`", paste(bad, collapse = "`, `"), "` cannot be used with mc_draft() - ",
       "a scheduled message is one that gets sent. Use mc_send(", bad[1],
       " = ...) instead.",
       call. = FALSE
