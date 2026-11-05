@@ -73,8 +73,8 @@ Approved by the owner at the plan gate, 2026-11-05.
 - [x] Roxygen `@details` of `mc_md_render()` mentions it
 
 ## Phase 5: Integration tests from a `.md` file (#10)
-- [ ] `test-integration.R`: `mc_send(path = <tmp .md>, sig = TRUE)` to al@ with a markdown link, an aligned table and an inline image (frontmatter `inline_images:` via `mc_md_send()` too); read the message back with `gmailr::gm_message()` and assert the signature, `target="_blank"`, each table declaration once, and an inline part with `Content-Id`
-- [ ] Run `MC_RUN_INTEGRATION=true devtools::test(filter = "integration")` before the PR; test mail trashed by the existing safeguards
+- [x] `test-integration.R`: `mc_send(path = <tmp .md>, sig = TRUE)` to al@ with a markdown link, an aligned table and an inline image (frontmatter `inline_images:` via `mc_md_send()` too); read the message back with `gmailr::gm_message()` and assert the signature, `target="_blank"`, each table declaration once, and an inline part with `Content-Id`
+- [x] Run `MC_RUN_INTEGRATION=true devtools::test(filter = "integration")` before the PR; test mail trashed by the existing safeguards
 
 ## Phase 6: The chip check (#43 acceptance)
 - [ ] Send one `to_self = TRUE` message with an inline PNG; look at Gmail web (Chrome) and ask you to check Apple Mail
@@ -87,7 +87,7 @@ Approved by the owner at the plan gate, 2026-11-05.
 ## Validation
 
 - [ ] Tests pass (`devtools::document() && devtools::test() && lintr::lint_package()`)
-- [ ] Integration tests pass with `MC_RUN_INTEGRATION=true`
+- [x] Integration tests pass with `MC_RUN_INTEGRATION=true` (2026-11-05: 38 pass, 0 fail)
 - [ ] `/code-check branch` clean (three-round floor)
 - [ ] PWF checkboxes match landed work
 - [ ] `/planning-archive`, then push and update PR #44

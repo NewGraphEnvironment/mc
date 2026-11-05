@@ -357,3 +357,114 @@ test_that("mc_md_send auto-creates labels when YAML has new label name", {
     info = "Auto-created label not applied to draft thread"
   )
 })
+
+# --- The HTML body mc builds, read back from Gmail (#10, #35, #42, #43) ------
+
+# Leaf MIME parts of a Gmail message payload
+mime_leaves <- function(p) {
+  if (length(p$parts)) do.call(c, lapply(p$parts, mime_leaves)) else list(p)
+}
+part_header <- function(part, name) {
+  for (h in part$headers) if (tolower(h$name) == tolower(name)) return(h$value)
+  NA_character_
+}
+# A visible PNG, so a person looking at the message can see where it landed
+inline_png <- function() {
+  f <- tempfile(fileext = ".png")
+  grDevices::png(f, width = 240, height = 80)
+  graphics::par(mar = c(0, 0, 0, 0))
+  graphics::plot.new()
+  graphics::rect(0, 0, 1, 1, col = "#2c7fb8", border = NA)
+  graphics::text(0.5, 0.5, "mc inline image", col = "white", cex = 1.6)
+  grDevices::dev.off()
+  f
+}
+# Payload of the first message in a thread
+sent_payload <- function(thread_id) {
+  Sys.sleep(3)
+  gmailr::gm_thread(id = thread_id)$messages[[1]]$payload
+}
+expect_inline_part <- function(payload, cid) {
+  imgs <- Filter(function(p) identical(p$mimeType, "image/png"), mime_leaves(payload))
+  expect_length(imgs, 1)
+  expect_identical(part_header(imgs[[1]], "Content-Id"), paste0("<", cid, ">"))
+  expect_match(part_header(imgs[[1]], "Content-Disposition"), "^inline")
+}
+
+test_that("mc_send from a .md file with the signature: header, links, tables and image arrive", {
+  img <- inline_png()
+  md <- tempfile(fileext = ".md")
+  writeLines(c(
+    "# Email to self - path test",
+    "",
+    "---",
+    "",
+    paste0("Path test ", test_tag, ". ", test_meta),
+    "",
+    "See [the mc docs](https://www.newgraphenvironment.com/mc/).",
+    "",
+    "| Site | Plugs |",
+    "|:-----|------:|",
+    "| Nechako | 4000 |",
+    "",
+    '<p><img src="cid:card" width="240" alt="mc inline test image"></p>'
+  ), md)
+  withr::defer(unlink(c(md, img)))
+
+  thread_id <- mc_send(
+    path = md,
+    to = "al@newgraphenvironment.com",
+    subject = paste("Path", test_tag),
+    to_self = TRUE,
+    sig = TRUE,
+    inline_images = c(card = img)
+  )
+  expect_false(is.null(thread_id), info = "mc_send did not return a thread_id")
+
+  payload <- sent_payload(thread_id)
+  html <- mc:::extract_body(payload, "text/html")
+
+  # Header above --- stripped, signature appended
+  expect_false(grepl("path test", html, fixed = TRUE))
+  expect_match(html, "New Graph Environment Ltd.", fixed = TRUE)
+  # Link opens in a new tab
+  expect_match(
+    html,
+    '<a href="https://www.newgraphenvironment.com/mc/" target="_blank" rel="noopener noreferrer">',
+    fixed = TRUE
+  )
+  # Each table declaration once; aligned cells styled
+  table_tag <- regmatches(html, regexpr("<table[^>]*>", html))
+  expect_length(gregexpr("border-collapse", table_tag, fixed = TRUE)[[1]], 1)
+  expect_match(html, '<th align="left" style="border: 1px solid #ddd; padding: 8px;">', fixed = TRUE)
+  expect_match(html, '<td align="right" style="border: 1px solid #ddd; padding: 8px;">', fixed = TRUE)
+  # Image arrives as an inline part named by its Content-ID
+  expect_match(html, 'src="cid:card"', fixed = TRUE)
+  expect_inline_part(payload, "card")
+})
+
+test_that("mc_md_send carries frontmatter inline_images with the default signature", {
+  img <- inline_png()
+  md <- tempfile(fileext = ".md")
+  writeLines(c(
+    "---",
+    "to: al@newgraphenvironment.com",
+    paste0("subject: Frontmatter image ", test_tag),
+    "inline_images:",
+    paste0("  map: ", img),
+    "---",
+    "",
+    paste0("Frontmatter image test. ", test_meta),
+    "",
+    '<p><img src="cid:map" width="240" alt="mc inline test image"></p>'
+  ), md)
+  withr::defer(unlink(c(md, img)))
+
+  thread_id <- mc_md_send(md)
+  expect_false(is.null(thread_id), info = "mc_md_send did not return a thread_id")
+
+  payload <- sent_payload(thread_id)
+  html <- mc:::extract_body(payload, "text/html")
+  expect_match(html, "New Graph Environment Ltd.", fixed = TRUE)
+  expect_inline_part(payload, "map")
+})
