@@ -39,6 +39,7 @@ Imports:
     gmailr,
     httr,
     jsonlite,
+    mime,
     rappdirs,
     yaml
 VignetteBuilder: knitr

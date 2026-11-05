@@ -327,7 +327,7 @@ schedule_at <- function(target_time, args) {
 #'
 #' @keywords internal
 run_scheduled_send <- function(args_json_path) {
-  args <- jsonlite::read_json(args_json_path, simplifyVector = TRUE)
+  args <- read_scheduled_args(args_json_path)
   on.exit(cleanup_scheduled_send(args_json_path), add = TRUE)
 
   # launchd and atd both run a job missed while asleep at the next wake, so
@@ -458,9 +458,29 @@ write_scheduled_args <- function(args, target_time, path) {
   # JSON writes a zero-length vector as [], which reads back as list() and
   # fails mc_send()'s checks; NULL means the same here and round-trips.
   args <- lapply(args, function(v) if (length(v) == 0) NULL else v)
+  # JSON drops the names of a character vector, and an inline image's name is
+  # its Content-ID, so write it as an object; read_scheduled_args() undoes it.
+  if (!is.null(args$inline_images)) {
+    args$inline_images <- as.list(args$inline_images)
+  }
   args <- c(args, list(.target_time = as.numeric(target_time),
                        .grace_secs = send_grace_secs()))
   jsonlite::write_json(args, path, auto_unbox = TRUE, null = "null")
+}
+
+
+#' Read scheduled-send args written by write_scheduled_args()
+#'
+#' The one reader, so each field comes back as the value [mc_send()] was
+#' given: `inline_images`, written as a JSON object to keep its names, reads
+#' back as a named list and is returned to a named character vector.
+#' @noRd
+read_scheduled_args <- function(path) {
+  args <- jsonlite::read_json(path, simplifyVector = TRUE)
+  if (is.list(args$inline_images)) {
+    args$inline_images <- unlist(args$inline_images)
+  }
+  args
 }
 
 

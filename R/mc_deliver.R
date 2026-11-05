@@ -16,7 +16,7 @@
 #' @importFrom chk chk_null_or chk_character chk_string chk_flag vld_string
 #'   vld_character
 #' @importFrom gmailr gm_mime gm_to gm_from gm_subject gm_html_body gm_cc
-#'   gm_bcc gm_create_draft gm_send_message gm_attach_file
+#'   gm_bcc gm_create_draft gm_send_message gm_attach_file gm_attach_part
 mc_deliver <- function(path = NULL,
                        to,
                        subject,
@@ -29,6 +29,7 @@ mc_deliver <- function(path = NULL,
                        sig = TRUE,
                        sig_path = NULL,
                        attachments = NULL,
+                       inline_images = NULL,
                        labels = NULL,
                        labels_create = TRUE,
                        html = NULL,
@@ -60,6 +61,7 @@ mc_deliver <- function(path = NULL,
   chk::chk_flag(sig)
   chk::chk_null_or(sig_path, vld = chk::vld_string)
   chk::chk_null_or(attachments, vld = chk::vld_character)
+  chk::chk_null_or(inline_images, vld = chk::vld_character)
   chk::chk_null_or(labels, vld = chk::vld_character)
   chk::chk_flag(labels_create)
   chk::chk_null_or(html, vld = chk::vld_string)
@@ -84,6 +86,8 @@ mc_deliver <- function(path = NULL,
   if (is.null(html)) {
     html <- mc_md_render(path, sig = sig, sig_path = sig_path)
   }
+
+  check_inline_images(inline_images, html)
 
   # Scheduled send — defer to backend dispatcher
   if (!is.null(send_at)) {
@@ -125,10 +129,22 @@ mc_deliver <- function(path = NULL,
         basename(attachments)
       )
     }
+    # Normalised here, not inside the list() below: the scheduled-args guard
+    # test reads the field names out of that list() call.
+    if (!is.null(inline_images)) {
+      inline_images <- stats::setNames(
+        file.path(
+          normalizePath(dirname(inline_images), mustWork = TRUE),
+          basename(inline_images)
+        ),
+        names(inline_images)
+      )
+    }
     schedule_args <- list(
       to = to, subject = subject, cc = cc, bcc = bcc, from = from,
       thread_id = thread_id, to_self = to_self, sig = sig,
-      sig_path = sig_path, attachments = attachments, labels = labels,
+      sig_path = sig_path, attachments = attachments,
+      inline_images = inline_images, labels = labels,
       labels_create = labels_create, html = html
     )
     handle <- schedule_send(send_time, schedule_args, scheduler = scheduler)
@@ -161,6 +177,18 @@ mc_deliver <- function(path = NULL,
     for (file_path in attachments) {
       msg <- gmailr::gm_attach_file(msg, file_path)
     }
+  }
+  # Inline images: a part with Content-Id <name> and inline disposition, which
+  # the HTML references as src="cid:<name>". Kept under to_self, since that is
+  # how the rendering gets checked.
+  for (cid in names(inline_images)) {
+    file_path <- inline_images[[cid]]
+    msg <- gmailr::gm_attach_part(
+      msg, readBin(file_path, "raw", file.info(file_path)$size),
+      id = cid, content_type = mime::guess_type(file_path),
+      name = basename(file_path), filename = basename(file_path),
+      disposition = "inline"
+    )
   }
 
   # Draft or send — capture thread_id from gmailr response
@@ -323,4 +351,104 @@ resolve_send_at <- function(send_at) {
     stop("`send_at` must be in the future.", call. = FALSE)
   }
   target
+}
+
+
+#' Check inline images against the HTML that references them (internal)
+#'
+#' Each name must be a usable Content-ID token and each path must exist. A
+#' `cid:` in the HTML with no matching image is an error, because the reader
+#' would see a broken image; an image the HTML never references is a warning.
+#'
+#' @param inline_images Named character vector, name = Content-ID, value = path.
+#' @param html The HTML body.
+#' @return `NULL`, invisibly. Called for its errors and warnings.
+#' @keywords internal
+check_inline_images <- function(inline_images, html) {
+  # A reference is what a client draws: a src or background attribute, or a
+  # CSS url() in a style attribute, read from tags only, so "cid:" in prose,
+  # in a code span or inside another attribute's value is not one, nor is
+  # data-src.
+  refs <- cid_refs(html)
+  refs <- unique(refs)
+  if (is.null(inline_images)) {
+    if (length(refs)) stop("HTML references cid: ", paste(refs, collapse = ", "),
+                           " but no inline_images were given.", call. = FALSE)
+    return(invisible(NULL))
+  }
+  ids <- names(inline_images)
+  if (is.null(ids) || any(!nzchar(ids)) || anyDuplicated(ids)) {
+    stop("inline_images must be named, with a unique Content-ID for each image.", call. = FALSE)
+  }
+  bad <- ids[!grepl("^[A-Za-z0-9._@-]+$", ids)]
+  if (length(bad)) stop("Invalid Content-ID name(s): ", paste(bad, collapse = ", "),
+                        ". Use letters, digits and . _ @ -", call. = FALSE)
+  missing <- inline_images[!file.exists(inline_images)]
+  if (length(missing)) stop("Inline image file(s) not found: ", paste(missing, collapse = ", "), call. = FALSE)
+  unmatched <- setdiff(refs, ids)
+  if (length(unmatched)) stop("HTML references cid: ", paste(unmatched, collapse = ", "),
+                              " with no matching inline image.", call. = FALSE)
+  unused <- setdiff(ids, refs)
+  if (length(unused)) warning("Inline image(s) not referenced in the HTML: ",
+                              paste(unused, collapse = ", "), call. = FALSE)
+  invisible(NULL)
+}
+
+
+#' The Content-IDs an HTML body references (internal)
+#'
+#' @param html The HTML body.
+#' @return Character vector of Content-IDs, in order, possibly repeated.
+#' @noRd
+cid_refs <- function(html) {
+  cid_walk(html)$refs
+}
+
+
+#' Walk every cid: reference a client draws, optionally rewriting it (internal)
+#'
+#' The one reader of `cid:` references, shared by the send-side check and the
+#' preview so the two cannot disagree: a `src` or `background` attribute whose
+#' value is `cid:<id>`, or a CSS `url(cid:<id>)` in a `style` attribute, read
+#' from start tags only.
+#'
+#' @param html The HTML body.
+#' @param replace `NULL`, or a function of one Content-ID returning the text
+#'   to put in place of `cid:<id>`, or `NA` to leave it.
+#' @return List: `refs`, the Content-IDs in order; `html`, rewritten.
+#' @noRd
+cid_walk <- function(html, replace = NULL) {
+  tok <- "[A-Za-z0-9._@-]+"
+  refs <- character()
+  swap <- function(id, whole) {
+    refs <<- c(refs, id)
+    if (is.null(replace)) return(whole)
+    r <- replace(id)
+    if (is.na(r)) whole else r
+  }
+  html <- rewrite_start_tags(html, function(t, name) {
+    a <- tag_attrs(t)
+    # Right to left, so earlier positions stay valid as values change length
+    for (i in rev(which(a$name %in% c("src", "background", "style")))) {
+      v <- a$value[i]
+      if (a$name[i] == "style") {
+        mm <- gregexpr(paste0("(?i)(url\\(\\s*[\"']?)cid:(", tok, ")"), v, perl = TRUE)
+        regmatches(v, mm) <- lapply(regmatches(v, mm), function(x) {
+          vapply(x, function(u) {
+            id <- sub(paste0("(?i)^url\\(\\s*[\"']?cid:(", tok, ")$"), "\\1", u, perl = TRUE)
+            paste0(sub("(?i)cid:.*$", "", u, perl = TRUE), swap(id, paste0("cid:", id)))
+          }, character(1), USE.NAMES = FALSE)
+        })
+      } else {
+        hit <- regmatches(v, regexec(paste0("(?i)^(\\s*)cid:(", tok, ")(.*)$"), v, perl = TRUE))[[1]]
+        if (length(hit) == 0) next
+        v <- paste0(hit[2], swap(hit[3], paste0("cid:", hit[3])), hit[4])
+      }
+      if (identical(v, a$value[i])) next
+      t <- paste0(substr(t, 1, a$vstart[i] - 1), a$quote[i], v, a$quote[i],
+                  substr(t, a$vstart[i] + a$vlen[i], nchar(t)))
+    }
+    t
+  })
+  list(refs = refs, html = html)
 }

@@ -15,6 +15,10 @@
 #' Gmail strips `<style>` blocks from HTML emails. This function adds inline
 #' styles to `<table>`, `<th>`, and `<td>` elements so tables render correctly.
 #'
+#' Every link gets `target="_blank" rel="noopener noreferrer"`, so a reader
+#' clicking it in webmail opens a new tab rather than leaving their inbox. A
+#' link that already sets `target` or `rel` keeps its own value.
+#'
 #' The markdown file should follow the compost template format:
 #'
 #' ```
@@ -59,8 +63,9 @@ mc_md_render <- function(path, sig = TRUE, sig_path = NULL) {
   # Convert markdown to HTML
   body_html <- commonmark::markdown_html(body_md, extensions = TRUE)
 
-  # Inline table styles for Gmail compatibility
+  # Inline table styles for Gmail compatibility, and links in a new tab
   body_html <- inline_table_styles(body_html)
+  body_html <- inject_link_target(body_html)
 
   # Append signature
 
@@ -129,58 +134,172 @@ parse_frontmatter <- function(path) {
 #' Add inline styles to HTML tables for Gmail
 #'
 #' Gmail strips `<style>` blocks so table styling must be inline.
-#' Handles bare tags (from commonmark) and tags with existing attributes
-#' (from kable/kableExtra). Merges border/padding styles with any
-#' existing inline styles rather than replacing them.
+#' Handles bare tags (from commonmark), tags with attributes but no style
+#' (commonmark's aligned cells, `<th align="left">`), and tags with an existing
+#' `style` attribute (kable/kableExtra), whose declarations are kept after
+#' ours. Each tag is matched once, so each declaration is written once, and a
+#' tag that already starts with our declarations is left alone.
 #'
 #' @param html Character string of HTML.
 #' @return HTML with inline table styles.
 #' @noRd
 inline_table_styles <- function(html) {
-  table_css <- "border-collapse: collapse; margin: 12px 0;"
-  th_css <- "border: 1px solid #ddd; padding: 8px;"
-  td_css <- "border: 1px solid #ddd; padding: 8px;"
-
-  # Tables: bare <table> or <table with attributes
-  html <- gsub(
-    '<table>',
-    paste0('<table style="', table_css, '">'),
-    html, fixed = TRUE
-  )
-  html <- gsub(
-    '<table(\\s+(?!style)[^>]*)>',
-    paste0('<table\\1 style="', table_css, '">'),
-    html, perl = TRUE
-  )
-  html <- gsub(
-    '<table(\\s[^>]*)style="([^"]*)"',
-    paste0('<table\\1style="', table_css, ' \\2"'),
-    html, perl = TRUE
-  )
-
-  # th: prepend border/padding to existing styles
-  html <- gsub(
-    '<th>',
-    paste0('<th style="', th_css, '">'),
-    html, fixed = TRUE
-  )
-  html <- gsub(
-    '<th(\\s[^>]*)style="([^"]*)"',
-    paste0('<th\\1style="', th_css, ' \\2"'),
-    html, perl = TRUE
-  )
-
-  # td: prepend border/padding to existing styles
-  html <- gsub(
-    '<td>',
-    paste0('<td style="', td_css, '">'),
-    html, fixed = TRUE
-  )
-  html <- gsub(
-    '<td(\\s[^>]*)style="([^"]*)"',
-    paste0('<td\\1style="', td_css, ' \\2"'),
-    html, perl = TRUE
-  )
-
+  cell_css <- "border: 1px solid #ddd; padding: 8px;"
+  html <- style_tag(html, "table", "border-collapse: collapse; margin: 12px 0;")
+  html <- style_tag(html, "th", cell_css)
+  html <- style_tag(html, "td", cell_css)
   html
+}
+
+
+#' Put `css` first in the style of every `<tag>` (internal)
+#'
+#' @param html Character string of HTML.
+#' @param tag Element name, lower case, e.g. `"td"`.
+#' @param css Declarations to add.
+#' @return HTML with each `<tag>` styled once.
+#' @noRd
+style_tag <- function(html, tag, css) {
+  rewrite_start_tags(html, function(t, name) {
+    if (name != tag) return(t)
+    a <- tag_attrs(t)
+    i <- match("style", a$name)
+    if (is.na(i)) {
+      return(sub("\\s*/?>$", paste0(' style="', css, '">'), t, perl = TRUE))
+    }
+    # Valueless (`style`, `style=`): replace the whole attribute
+    if (is.na(a$vstart[i])) {
+      return(paste0(substr(t, 1, a$astart[i] - 1), ' style="', css, '"',
+                    substr(t, a$astart[i] + a$alen[i], nchar(t))))
+    }
+    if (startsWith(a$value[i], css)) return(t)
+    # Rewrite the style value in place, quoted, our declarations first
+    new <- paste0('"', css, if (nzchar(a$value[i])) " ", gsub('"', "&quot;", a$value[i], fixed = TRUE), '"')
+    if (nzchar(a$quote[i]) && a$quote[i] == "'") {
+      new <- paste0("'", css, if (nzchar(a$value[i])) " ", a$value[i], "'")
+    }
+    paste0(substr(t, 1, a$vstart[i] - 1), new, substr(t, a$vstart[i] + a$vlen[i], nchar(t)))
+  })
+}
+
+
+#' Open every link in a new tab (internal)
+#'
+#' Adds `target="_blank"` and `rel="noopener noreferrer"` to each `<a>` tag
+#' that has an `href`, leaving any `target` or `rel` it already sets. A link to
+#' an anchor in the message (`href="#notes"`) is left alone.
+#'
+#' @param html Character string of HTML.
+#' @return HTML with each link opening in a new tab.
+#' @noRd
+inject_link_target <- function(html) {
+  rewrite_start_tags(html, function(t, name) {
+    if (name != "a") return(t)
+    a <- tag_attrs(t)
+    href <- a$value[match("href", a$name)]
+    # Not a link, or a link within the message, which stays in the message
+    if (is.na(href) || startsWith(trimws(href), "#")) return(t)
+    add <- c(
+      if (!"target" %in% a$name) 'target="_blank"',
+      if (!"rel" %in% a$name) 'rel="noopener noreferrer"'
+    )
+    if (length(add) == 0) return(t)
+    sub("\\s*>$", paste0(" ", paste(add, collapse = " "), ">"), t, perl = TRUE)
+  })
+}
+
+
+#' The grammar of one HTML attribute (internal)
+#'
+#' As an HTML reader tokenizes it: a name, which may contain a stray quote
+#' (`pipe"`), then optionally `=` and a value. A quote starts a value only
+#' after `=`. Shared by `start_tag_regex()` and `tag_attrs()`, so the two agree
+#' about where every value ends.
+#'
+#' @param capture Capture the name (group 1) and raw value (group 2)?
+#' @return A PCRE fragment.
+#' @noRd
+html_attr_regex <- function(capture = FALSE) {
+  g <- if (capture) "(" else "(?:"
+  paste0(g, "[^\\s/>=]++)(?:\\s*=\\s*", g, "\"[^\"]*\"|'[^']*'|[^\\s>]*))?")
+}
+
+
+#' A regex for any HTML start tag, outside comments and raw text (internal)
+#'
+#' Attributes are consumed by `html_attr_regex()`, so a `>` or a stray quote
+#' inside a value (kableExtra writes tooltips unescaped) does not end the tag.
+#' Comments, CDATA and the contents of `<script>` and `<style>` are skipped,
+#' as a reader skips them. It matches every tag name, so a scan consumes each
+#' tag whole and never reads markup inside another tag's value; pick a tag by
+#' name afterwards, as `rewrite_start_tags()` does.
+#'
+#' @return A PCRE pattern matching one whole start tag.
+#' @noRd
+start_tag_regex <- function() {
+  skip <- "(?:<!--.*?-->|<!\\[CDATA\\[.*?\\]\\]>|<(script|style)\\b.*?</\\1\\s*>)(*SKIP)(*FAIL)|"
+  paste0("(?s)", skip, "<[A-Za-z][A-Za-z0-9-]*(?:\\s+", html_attr_regex(), ")*+\\s*/?>")
+}
+
+
+#' Rewrite each HTML start tag in turn (internal)
+#'
+#' The one walk over start tags, shared by the table styles, the link pass and
+#' the cid reader, so all three see the same tags. A body that is not valid
+#' UTF-8 (a latin1 signature, say) has its bad bytes replaced with `?` first;
+#' otherwise the regex fails and the walk sees nothing.
+#'
+#' @param html Character string of HTML.
+#' @param fun Function of the tag text and its lower-case name, returning the
+#'   tag to put in its place.
+#' @return HTML with each start tag replaced by `fun()`'s result.
+#' @noRd
+rewrite_start_tags <- function(html, fun) {
+  if (!validUTF8(html)) html <- iconv(html, "UTF-8", "UTF-8", sub = "?")
+  m <- gregexpr(start_tag_regex(), html, perl = TRUE)
+  regmatches(html, m) <- lapply(regmatches(html, m), function(tags) {
+    vapply(tags, function(t) {
+      fun(t, tolower(regmatches(t, regexpr("(?<=^<)[A-Za-z][A-Za-z0-9-]*", t, perl = TRUE))))
+    }, character(1), USE.NAMES = FALSE)
+  })
+  html
+}
+
+
+#' Read the attributes of one HTML start tag (internal)
+#'
+#' Tokenizes left to right, so a quoted value is consumed by the attribute it
+#' belongs to and text inside it (`title="a style=b"`) is never read as an
+#' attribute of its own.
+#'
+#' @param tag One start tag, e.g. `'<td align="left" style="x">'`.
+#' @return Data frame: `name` (lower case), `value` (unquoted, `""` when
+#'   absent), `quote` (`"\""`, `"'"` or `""`), `vstart`/`vlen`, the position
+#'   and length of the raw value in `tag` (`NA` when there is none, as in
+#'   `style` or `style=`), and `astart`/`alen`, the whole attribute with its
+#'   leading space.
+#' @noRd
+tag_attrs <- function(tag) {
+  body_start <- regexpr("^<[A-Za-z][A-Za-z0-9-]*", tag, perl = TRUE)
+  offset <- attr(body_start, "match.length")
+  rest <- substr(tag, offset + 1, nchar(tag))
+  # \G: each attribute starts where the last one ended, as in start_tag_regex()
+  m <- gregexpr(paste0("\\G\\s+", html_attr_regex(capture = TRUE)), rest, perl = TRUE)[[1]]
+  empty <- data.frame(name = character(), value = character(), quote = character(),
+                      vstart = integer(), vlen = integer(), astart = integer(), alen = integer())
+  if (m[1] == -1) return(empty)
+  cs <- attr(m, "capture.start")
+  cl <- attr(m, "capture.length")
+  name <- tolower(substring(rest, cs[, 1], cs[, 1] + cl[, 1] - 1))
+  has_value <- cl[, 2] > 0
+  raw <- ifelse(has_value, substring(rest, cs[, 2], cs[, 2] + cl[, 2] - 1), "")
+  quote <- ifelse(grepl("^[\"']", raw) & nchar(raw) >= 2 & substr(raw, 1, 1) == substring(raw, nchar(raw)),
+                  substr(raw, 1, 1), "")
+  value <- ifelse(nzchar(quote), substr(raw, 2, nchar(raw) - 1), raw)
+  data.frame(
+    name = name, value = value, quote = quote,
+    vstart = ifelse(has_value, cs[, 2] + offset, NA_integer_),
+    vlen = ifelse(has_value, cl[, 2], NA_integer_),
+    astart = as.integer(m) + offset, alen = attr(m, "match.length")
+  )
 }

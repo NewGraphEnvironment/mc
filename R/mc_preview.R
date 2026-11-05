@@ -45,7 +45,7 @@ mc_preview <- function(html,
 
   if (endsWith(html, ".md") && file.exists(html)) {
     meta <- mc_md_meta(html)
-    body <- mc_md_render(html)
+    body <- preview_inline_images(mc_md_render(html), meta$inline_images)
     html <- paste0(preview_header(meta), body)
   }
 
@@ -56,9 +56,49 @@ mc_preview <- function(html,
 }
 
 
+#' Point `cid:` references at the image files, for a browser preview
+#'
+#' A browser cannot resolve `cid:`, so each reference to a frontmatter inline
+#' image becomes a `file://` URL to the image itself. Only the references a
+#' send checks are rewritten (`cid_walk()`), so the preview matches the email.
+#' @param html Rendered body.
+#' @param inline_images Frontmatter `inline_images` (named list or vector).
+#' @return HTML with `cid:<name>` replaced where the image is known.
+#' @noRd
+preview_inline_images <- function(html, inline_images) {
+  imgs <- unlist(inline_images)
+  # The same references a send checks, and only those (cid_walk())
+  cid_walk(html, replace = function(id) {
+    if (!id %in% names(imgs) || !file.exists(imgs[[id]])) return(NA_character_)
+    file_url(imgs[[id]])
+  })$html
+}
+
+
+#' A file:// URL for a local path, percent-encoded (internal)
+#'
+#' Forward slashes on every platform and each path segment percent-encoded,
+#' so a space, `#`, `?`, `%` or `"` in a name cannot change the URL or end the
+#' attribute, and the result is safe as a regex replacement.
+#' @param path Existing file path.
+#' @return Character `file:///...` URL.
+#' @noRd
+file_url <- function(path) {
+  p <- normalizePath(path, winslash = "/")
+  segs <- strsplit(p, "/", fixed = TRUE)[[1]]
+  drive <- grepl("^[A-Za-z]:$", segs)
+  # repeated = TRUE: otherwise a segment already holding "%xx" is left whole
+  segs[!drive] <- vapply(segs[!drive], utils::URLencode, "", reserved = TRUE, repeated = TRUE,
+                         USE.NAMES = FALSE)
+  out <- paste(segs, collapse = "/")
+  paste0("file://", if (startsWith(out, "/")) "" else "/", out)
+}
+
+
 #' Build an HTML header table from frontmatter metadata
 #'
-#' Renders To / Cc / Bcc (if present) / Subject / Thread / Attachments as
+#' Renders To / Cc / Bcc (if present) / Subject / Thread / Attachments /
+#' Inline images (if present) as
 #' a simple inline-styled table above the preview body.
 #' @param meta Named list from [mc_md_meta()].
 #' @return HTML string.
@@ -79,6 +119,10 @@ preview_header <- function(meta) {
     c("Thread", fmt(meta$thread_id)),
     c("Attach", fmt(meta$attachments))
   ))
+  imgs <- unlist(meta$inline_images)
+  if (length(imgs)) {
+    rows[[length(rows) + 1]] <- c("Inline", fmt(paste0(names(imgs), ": ", imgs)))
+  }
   row_html <- vapply(rows, function(r) {
     sprintf(
       paste0(

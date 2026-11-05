@@ -1,7 +1,7 @@
 #' Create a Gmail draft from a markdown file with YAML frontmatter
 #'
 #' Reads metadata (`to`, `subject`, optional `cc`, `bcc`, `thread_id`,
-#' `attachments`, `labels`, `from`) from the YAML frontmatter at the top of a
+#' `attachments`, `inline_images`, `labels`, `from`) from the YAML frontmatter at the top of a
 #' markdown draft and dispatches to [mc_draft()].
 #'
 #' Drafts only. Nothing passed here sends — use [mc_md_send()] to deliver.
@@ -70,6 +70,7 @@ md_dispatch_args <- function(path, to_self = FALSE, override = list()) {
     bcc = meta$bcc,
     thread_id = meta$thread_id,
     attachments = meta$attachments,
+    inline_images = if (is.null(meta$inline_images)) NULL else unlist(meta$inline_images),
     labels = meta_labels,
     to_self = to_self
   )
