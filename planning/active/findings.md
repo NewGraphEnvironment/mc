@@ -119,3 +119,11 @@ Four fragile findings, all reproduced by the reviewer and fixed:
   scan). All now go through `tag_attrs()`, a left-to-right tokenizer in which each quoted value is
   consumed by its own attribute; the `cid:` scan reads only start tags (`cid_refs()`).
 - Integration assertion `expect_length(gregexpr(...)[[1]], 1)` passed on zero matches: now counts.
+
+## Test message to the owner's personal inbox (2026-11-05, on request)
+
+Sent `mc_send(path = <md>, sig = TRUE, inline_images = c(card = ...))` to the owner's personal
+address, BCC al@, and read it in Chrome (Gmail web): header stripped, link present, every cell
+bordered including the right-aligned column, image in the body, signature, **no attachment
+card**. Gmail web's DOM shows the link without our `target` (Gmail rewrites links and opens them
+in a new tab itself); the attribute is in the sent MIME, as the integration test reads back.
