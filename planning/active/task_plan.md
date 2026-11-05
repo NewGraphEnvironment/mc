@@ -59,12 +59,12 @@ Plan approved by the user 2026-11-04 (plan mode, `/planning-init 47`).
 
 ## Phase 2: Tests run without a sender or credentials (#47)
 
-- [ ] Failing tests first:
+- [x] Failing tests first:
   - `test-mc_draft.R:5` and `test-mc_send.R:1` unset the sender with `withr::local_options(mc.from = NULL)` and `withr::local_envvar(MC_FROM = NA)`. Both should then fail on "No default email found".
   - `test-mc_thread_modify.R:250` gets a `gm_labels` mock that `stop()`s ("system labels must not fetch user labels"). It should fail on the case bug.
-- [ ] `mc_deliver()`: move the `is.null(path) && is.null(html)` stop ahead of the `chk` block, so it runs before `from` is forced
-- [ ] `mc_thread_modify()`: `toupper(all_names) %in% system_labels()`, which matches `resolve_label_names()`
-- [ ] Restore each bug and confirm its test goes red, then green with the fix
+- [x] `mc_deliver()`: move the `is.null(path) && is.null(html)` stop ahead of the `chk` block, so it runs before `from` is forced
+- [x] `mc_thread_modify()`: `toupper(all_names) %in% system_labels()`, which matches `resolve_label_names()`
+- [x] Restore each bug and confirm its test goes red, then green with the fix
 
 ## Phase 3: Clear the check WARNINGs (#47)
 

@@ -37,6 +37,13 @@ mc_deliver <- function(path = NULL,
 
   scheduler <- match.arg(scheduler)
 
+  # Before the chk block: `from` defaults to default_from(), and chk_string(from)
+  # forces it. A call missing its body is an argument error, and it should be
+  # reported as one even where no sender is configured (#47).
+  if (is.null(html) && is.null(path)) {
+    stop("Provide either `path` to a markdown file or `html`.", call. = FALSE)
+  }
+
   chk::chk_null_or(path, vld = chk::vld_string)
   chk::chk_character(to)
   chk::chk_string(subject)
@@ -71,9 +78,6 @@ mc_deliver <- function(path = NULL,
   # and means the launchd plist's R invocation does not need filesystem
   # access to the original draft.
   if (is.null(html)) {
-    if (is.null(path)) {
-      stop("Provide either `path` to a markdown file or `html`.", call. = FALSE)
-    }
     html <- mc_md_render(path, sig = sig, sig_path = sig_path)
   }
 

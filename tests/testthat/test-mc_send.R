@@ -1,4 +1,8 @@
 test_that("mc_send errors without path or html", {
+  # No sender configured, as on a CI runner: the argument error must still be
+  # the one reported, not the sender lookup (#47).
+  withr::local_options(mc.from = NULL)
+  withr::local_envvar(MC_FROM = NA)
   expect_error(
     mc_send(to = "test@test.com", subject = "test"),
     "Provide either"

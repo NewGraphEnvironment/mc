@@ -254,6 +254,12 @@ test_that("mc_thread_modify matches system labels case-insensitively", {
       NULL
     }
   )
+  # System labels in any case must not reach the user-label fetch, which needs
+  # Gmail credentials a CI runner does not have (#47).
+  local_mocked_bindings(
+    gm_labels = function(...) stop("system labels must not fetch user labels"),
+    .package = "gmailr"
+  )
   # All inputs are system-label names in mixed case
   mc_thread_modify("abc", add = c("Starred", "inbox"), remove = "Unread")
   # Normalized to canonical uppercase IDs Gmail expects
