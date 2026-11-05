@@ -129,58 +129,44 @@ parse_frontmatter <- function(path) {
 #' Add inline styles to HTML tables for Gmail
 #'
 #' Gmail strips `<style>` blocks so table styling must be inline.
-#' Handles bare tags (from commonmark) and tags with existing attributes
-#' (from kable/kableExtra). Merges border/padding styles with any
-#' existing inline styles rather than replacing them.
+#' Handles bare tags (from commonmark), tags with attributes but no style
+#' (commonmark's aligned cells, `<th align="left">`), and tags with an existing
+#' `style` attribute (kable/kableExtra), whose declarations are kept after
+#' ours. Each tag is matched once, so each declaration is written once, and a
+#' tag that already starts with our declarations is left alone.
 #'
 #' @param html Character string of HTML.
 #' @return HTML with inline table styles.
 #' @noRd
 inline_table_styles <- function(html) {
-  table_css <- "border-collapse: collapse; margin: 12px 0;"
-  th_css <- "border: 1px solid #ddd; padding: 8px;"
-  td_css <- "border: 1px solid #ddd; padding: 8px;"
+  cell_css <- "border: 1px solid #ddd; padding: 8px;"
+  html <- style_tag(html, "table", "border-collapse: collapse; margin: 12px 0;")
+  html <- style_tag(html, "th", cell_css)
+  html <- style_tag(html, "td", cell_css)
+  html
+}
 
-  # Tables: bare <table> or <table with attributes
-  html <- gsub(
-    '<table>',
-    paste0('<table style="', table_css, '">'),
-    html, fixed = TRUE
-  )
-  html <- gsub(
-    '<table(\\s+(?!style)[^>]*)>',
-    paste0('<table\\1 style="', table_css, '">'),
-    html, perl = TRUE
-  )
-  html <- gsub(
-    '<table(\\s[^>]*)style="([^"]*)"',
-    paste0('<table\\1style="', table_css, ' \\2"'),
-    html, perl = TRUE
-  )
 
-  # th: prepend border/padding to existing styles
-  html <- gsub(
-    '<th>',
-    paste0('<th style="', th_css, '">'),
-    html, fixed = TRUE
-  )
-  html <- gsub(
-    '<th(\\s[^>]*)style="([^"]*)"',
-    paste0('<th\\1style="', th_css, ' \\2"'),
-    html, perl = TRUE
-  )
-
-  # td: prepend border/padding to existing styles
-  html <- gsub(
-    '<td>',
-    paste0('<td style="', td_css, '">'),
-    html, fixed = TRUE
-  )
-  html <- gsub(
-    '<td(\\s[^>]*)style="([^"]*)"',
-    paste0('<td\\1style="', td_css, ' \\2"'),
-    html, perl = TRUE
-  )
-
+#' Put `css` first in the style of every `<tag>` (internal)
+#'
+#' @param html Character string of HTML.
+#' @param tag Element name, e.g. `"td"`. `<thead>` does not match `"th"`.
+#' @param css Declarations to add.
+#' @return HTML with each `<tag>` styled once.
+#' @noRd
+style_tag <- function(html, tag, css) {
+  m <- gregexpr(paste0("<", tag, "(\\s[^>]*)?>"), html, perl = TRUE, ignore.case = TRUE)
+  regmatches(html, m) <- lapply(regmatches(html, m), function(tags) {
+    vapply(tags, function(t) {
+      style <- "(\\sstyle\\s*=\\s*)([\"'])"
+      if (!grepl(style, t, perl = TRUE, ignore.case = TRUE)) {
+        return(sub("\\s*/?>$", paste0(' style="', css, '">'), t, perl = TRUE))
+      }
+      if (grepl(paste0("\\sstyle\\s*=\\s*[\"']\\Q", css, "\\E"), t, perl = TRUE, ignore.case = TRUE)) {
+        return(t)
+      }
+      sub(style, paste0("\\1\\2", css, " "), t, perl = TRUE, ignore.case = TRUE)
+    }, character(1), USE.NAMES = FALSE)
+  })
   html
 }

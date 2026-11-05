@@ -12,3 +12,4 @@
   it back into a named character vector; `mc_deliver()` makes each image's directory absolute,
   keeping names. Tests watched red first (4 in test-inline_images.R, the guard in test-mc_schedule.R)
 - Phase 2: `check_inline_images()` reads only `src="cid:…"` / `src='cid:…'` (case-insensitive, spaces around `=`); prose test watched red first
+- Phase 3: `inline_table_styles()` rewritten over a `style_tag()` helper, one match per tag (bare, attributes without style, existing style in either quote), idempotent; aligned commonmark cells now styled. Tests watched red first

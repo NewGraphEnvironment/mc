@@ -64,8 +64,8 @@ Approved by the owner at the plan gate, 2026-11-05.
 - [x] `check_inline_images()` matches `src\s*=\s*["']cid:<token>` only
 
 ## Phase 3: Table styles once, aligned cells styled (#42)
-- [ ] Tests: each declaration appears once per `<table>`/`<th>`/`<td>`; aligned `<th align=…>`/`<td align=…>` get the style; kable `style="…"` attributes still merged; idempotent on a second call
-- [ ] Rewrite `inline_table_styles()` as one pass per tag: bare tag, tag with attributes and no style, tag with style (mutually exclusive)
+- [x] Tests: each declaration appears once per `<table>`/`<th>`/`<td>`; aligned `<th align=…>`/`<td align=…>` get the style; kable `style="…"` attributes still merged; idempotent on a second call
+- [x] Rewrite `inline_table_styles()` as one pass per tag: bare tag, tag with attributes and no style, tag with style (mutually exclusive)
 
 ## Phase 4: Links open in a new tab (#35)
 - [ ] Tests: `[t](u)`, titled link, autolink and `www.` link gain `target="_blank" rel="noopener noreferrer"`; an `<a>` already carrying `target=` is left alone; `mailto:` links too; no-link HTML unchanged; `mc_compose()` output also rewritten
