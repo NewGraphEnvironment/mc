@@ -27,7 +27,7 @@ mc_deliver(
   labels_create = TRUE,
   html = NULL,
   send_at = NULL,
-  scheduler = c("callr", "auto", "launchd", "at")
+  scheduler = NULL
 )
 ```
 
@@ -126,9 +126,12 @@ mc_deliver(
 
 - scheduler:
 
-  Backend for scheduled send. One of `"callr"` (default), `"auto"`
-  (OS-native: `launchd` on macOS, `at` on Linux), `"launchd"`, or
-  `"at"`. Ignored when `send_at` is `NULL`.
+  Backend for scheduled send. One of `"auto"` (OS-native: `launchd` on
+  macOS, `at` on Linux), `"callr"`, `"launchd"`, or `"at"`. Default
+  `NULL` uses `"auto"` on macOS and Linux, where the OS owns the job and
+  it survives the R session exiting, and `"callr"` elsewhere, with a
+  warning that its send can be dropped. An explicit `"auto"` errors on a
+  platform with no OS-native backend. Ignored when `send_at` is `NULL`.
 
 ## Value
 

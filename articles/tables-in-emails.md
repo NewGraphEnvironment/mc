@@ -342,27 +342,23 @@ body <- mc_compose(
 )
 
 # Send in 30 minutes
-proc <- mc_send(html = body,
-                to = "brandon@example.com",
-                subject = "2026 planting plan",
-                send_at = 30)
+mc_send(html = body,
+        to = "brandon@example.com",
+        subject = "2026 planting plan",
+        send_at = 30)
 
 # Or at a specific time
 mc_send(html = body,
         to = "brandon@example.com",
         subject = "2026 planting plan",
         send_at = as.POSIXct("2026-02-24 09:00:00"))
-
-# Check or cancel
-proc$is_alive()
-proc$kill()
 ```
 
-On macOS, `caffeinate` prevents the machine from sleeping until the
-email sends. The laptop lid can be closed as long as power is connected.
-If the machine does sleep through the send window, a 5-minute grace
-period applies — past that the send is skipped to prevent stale emails
-firing.
+On macOS and Linux the operating system schedules the send (`launchd` or
+`at`), so it fires even after the R session that made it has closed. The
+body is rendered when you call
+[`mc_send()`](https://newgraphenvironment.github.io/mc/reference/mc_send.md),
+so later edits to the source do not change what is sent.
 
 All scheduled send outcomes (sent, skipped, failed) are logged to
 `~/.mc/send_log.txt` and trigger a macOS desktop notification.

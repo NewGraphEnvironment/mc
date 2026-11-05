@@ -2864,25 +2864,21 @@ now, send it when you want.</p>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Send in 30 minutes</span></span>
-<span><span class="va">proc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/mc_send.html">mc_send</a></span><span class="op">(</span>html <span class="op">=</span> <span class="va">body</span>,</span>
-<span>                to <span class="op">=</span> <span class="st">"brandon@example.com"</span>,</span>
-<span>                subject <span class="op">=</span> <span class="st">"2026 planting plan"</span>,</span>
-<span>                send_at <span class="op">=</span> <span class="fl">30</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/mc_send.html">mc_send</a></span><span class="op">(</span>html <span class="op">=</span> <span class="va">body</span>,</span>
+<span>        to <span class="op">=</span> <span class="st">"brandon@example.com"</span>,</span>
+<span>        subject <span class="op">=</span> <span class="st">"2026 planting plan"</span>,</span>
+<span>        send_at <span class="op">=</span> <span class="fl">30</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Or at a specific time</span></span>
 <span><span class="fu"><a href="../reference/mc_send.html">mc_send</a></span><span class="op">(</span>html <span class="op">=</span> <span class="va">body</span>,</span>
 <span>        to <span class="op">=</span> <span class="st">"brandon@example.com"</span>,</span>
 <span>        subject <span class="op">=</span> <span class="st">"2026 planting plan"</span>,</span>
-<span>        send_at <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.POSIXlt.html" class="external-link">as.POSIXct</a></span><span class="op">(</span><span class="st">"2026-02-24 09:00:00"</span><span class="op">)</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Check or cancel</span></span>
-<span><span class="va">proc</span><span class="op">$</span><span class="fu">is_alive</span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="va">proc</span><span class="op">$</span><span class="fu">kill</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<p>On macOS, <code>caffeinate</code> prevents the machine from sleeping
-until the email sends. The laptop lid can be closed as long as power is
-connected. If the machine does sleep through the send window, a 5-minute
-grace period applies — past that the send is skipped to prevent stale
-emails firing.</p>
+<span>        send_at <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.POSIXlt.html" class="external-link">as.POSIXct</a></span><span class="op">(</span><span class="st">"2026-02-24 09:00:00"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>On macOS and Linux the operating system schedules the send
+(<code>launchd</code> or <code>at</code>), so it fires even after the R
+session that made it has closed. The body is rendered when you call
+<code><a href="../reference/mc_send.html">mc_send()</a></code>, so later edits to the source do not change what
+is sent.</p>
 <p>All scheduled send outcomes (sent, skipped, failed) are logged to
 <code>~/.mc/send_log.txt</code> and trigger a macOS desktop
 notification.</p>

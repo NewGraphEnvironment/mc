@@ -103,6 +103,14 @@ mc_draft(
   Optional pre-rendered HTML body. If provided, `path` is ignored and
   this HTML is used directly.
 
+- ...:
+
+  Not used. Present only so that passing `send_at` or `scheduler` errors
+  with a pointer to
+  [`mc_send()`](https://newgraphenvironment.github.io/mc/reference/mc_send.md)
+  rather than R's generic unused-argument error. Any other argument
+  errors as unused.
+
 ## Value
 
 The Gmail thread ID of the resulting draft, invisibly. May be `NULL` if

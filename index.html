@@ -162,27 +162,25 @@
 <div class="section level2">
 <h2 id="scheduled-send">Scheduled send<a class="anchor" aria-label="anchor" href="#scheduled-send"></a>
 </h2>
-<p>Send an email later with <code>send_at</code> — either minutes from now or a specific time. Use <code>scheduler = "auto"</code> for durable OS-native scheduling (recommended):</p>
+<p>Send an email later with <code>send_at</code> — either minutes from now or a specific time. On macOS and Linux the operating system schedules the send, so it fires even after the R session that made it has exited:</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Send in 10 minutes via launchd (macOS) or atd (Linux)</span></span>
 <span><span class="fu"><a href="reference/mc_send.html">mc_send</a></span><span class="op">(</span><span class="st">"draft.md"</span>,</span>
 <span>        to <span class="op">=</span> <span class="st">"brandon@example.com"</span>,</span>
 <span>        subject <span class="op">=</span> <span class="st">"Cottonwood plugs"</span>,</span>
-<span>        send_at <span class="op">=</span> <span class="fl">10</span>,</span>
-<span>        scheduler <span class="op">=</span> <span class="st">"auto"</span><span class="op">)</span></span>
+<span>        send_at <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Send at a specific time</span></span>
 <span><span class="fu"><a href="reference/mc_send.html">mc_send</a></span><span class="op">(</span><span class="st">"draft.md"</span>,</span>
 <span>        to <span class="op">=</span> <span class="st">"brandon@example.com"</span>,</span>
 <span>        subject <span class="op">=</span> <span class="st">"Cottonwood plugs"</span>,</span>
-<span>        send_at <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.POSIXlt.html" class="external-link">as.POSIXct</a></span><span class="op">(</span><span class="st">"2026-02-24 09:11:00"</span><span class="op">)</span>,</span>
-<span>        scheduler <span class="op">=</span> <span class="st">"auto"</span><span class="op">)</span></span></code></pre></div>
-<p>The <code>scheduler</code> argument selects the backend:</p>
+<span>        send_at <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.POSIXlt.html" class="external-link">as.POSIXct</a></span><span class="op">(</span><span class="st">"2026-02-24 09:11:00"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>The <code>scheduler</code> argument selects the backend. Left unset, it is <code>"auto"</code> on macOS and Linux and <code>"callr"</code> elsewhere:</p>
 <ul>
 <li>
-<code>"callr"</code> (default for backward compatibility) — <code><a href="https://callr.r-lib.org/reference/r_bg.html" class="external-link">callr::r_bg</a></code> background R process. Survives some session lifecycles but <strong>can be cleaned up if its parent context exits</strong> (one-shot <code>Rscript -e</code>, RStudio sessions that close, CI). Emits a <code><a href="https://rdrr.io/r/base/warning.html" class="external-link">warning()</a></code> on use steering you toward <code>"auto"</code>.</li>
-<li>
 <code>"auto"</code> — resolves to <code>launchd</code> on macOS or <code>at</code> on Linux. The OS-native daemon owns the job lifecycle independent of any R session — survives shell exit, parent process death, and (on macOS) sleep/wake cycles.</li>
+<li>
+<code>"callr"</code> — <code><a href="https://callr.r-lib.org/reference/r_bg.html" class="external-link">callr::r_bg</a></code> background R process, the fallback where no OS-native backend exists. <strong>Can be cleaned up if its parent context exits</strong> (one-shot <code>Rscript -e</code>, RStudio sessions that close, CI), and emits a <code><a href="https://rdrr.io/r/base/warning.html" class="external-link">warning()</a></code> saying so.</li>
 <li>
 <code>"launchd"</code> / <code>"at"</code> — force a specific backend.</li>
 </ul>
@@ -196,7 +194,7 @@
 <code>SENT</code> / <code>SKIPPED</code> / <code>FAILED</code> at outcome</li>
 </ul>
 <p>A <code>SCHEDULED</code> line with no follow-up <code>STARTED</code> means the bg process died before firing — the failure mode that the OS-native backends solve.</p>
-<p>On macOS, <code>caffeinate</code> keeps the machine awake until the email sends (callr backend only — launchd handles wake/sleep itself). If the machine sleeps through the send window with the callr backend, a 5-minute grace period applies — past that, the send is skipped to prevent stale emails.</p>
+<p>If the machine is asleep at the send time, the send fires when it wakes, within a 5-minute grace period; past that it is skipped and logged as <code>SKIPPED</code>, so a stale email never goes out hours late. With the callr backend, <code>caffeinate</code> also keeps a Mac awake until the email sends.</p>
 <p>Outcomes also trigger a macOS desktop notification on success, skip, or failure.</p>
 </div>
 <div class="section level2">
@@ -227,6 +225,13 @@
 <span>        subject <span class="op">=</span> <span class="st">"Cottonwood plugs"</span>,</span>
 <span>        to_self <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <p>It caps who receives the message — it does not stop the send. If you want nothing delivered at all, use <code><a href="reference/mc_draft.html">mc_draft()</a></code>.</p>
+</div>
+<div class="section level2">
+<h2 id="troubleshooting">Troubleshooting<a class="anchor" aria-label="anchor" href="#troubleshooting"></a>
+</h2>
+<p><strong>Sending works from RStudio but fails from <code>Rscript</code>, cron or CI with “Can’t get Google credentials”.</strong> Upgrading rlang invalidates gargle’s token cache: gargle names the OAuth client with <code><a href="https://rlang.r-lib.org/reference/hash.html" class="external-link">rlang::hash()</a></code>, whose output changed in rlang 1.3.0, so a token minted before the upgrade is no longer found by a non-interactive session. Check before you rely on an unattended send, from a fresh process in your home directory, so the check reads the same startup files as a scheduled send’s job:</p>
+<pre><code>cd ~ &amp;&amp; Rscript -e 'mc::mc_auth_check()'</code></pre>
+<p>If it reports a mismatch, start a fresh R session (one opened before the upgrade writes the token under the old name again), move the token file it names out of the cache, and run <code><a href="reference/mc_auth.html">mc_auth()</a></code>. Keep <code>GMAILR_OAUTH_CLIENT</code>, <code>GMAILR_EMAIL</code> and <code>MC_FROM</code> in <code>~/.Renviron</code>, where a scheduled send’s job can read them. <code><a href="reference/mc_auth_check.html">?mc_auth_check</a></code> has the details.</p>
 </div>
 <div class="section level2">
 <h2 id="license">License<a class="anchor" aria-label="anchor" href="#license"></a>

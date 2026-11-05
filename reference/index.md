@@ -4,6 +4,8 @@
 
 - [`mc_auth()`](https://newgraphenvironment.github.io/mc/reference/mc_auth.md)
   : Authenticate with Gmail
+- [`mc_auth_check()`](https://newgraphenvironment.github.io/mc/reference/mc_auth_check.md)
+  : Check that a cached Gmail token will be found without a browser
 - [`mc_compose()`](https://newgraphenvironment.github.io/mc/reference/mc_compose.md)
   : Compose an HTML email from mixed content
 - [`mc_draft()`](https://newgraphenvironment.github.io/mc/reference/mc_draft.md)
