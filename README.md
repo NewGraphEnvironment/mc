@@ -236,15 +236,18 @@ nothing delivered at all, use `mc_draft()`.
 "Can't get Google credentials".** Upgrading rlang invalidates gargle's token
 cache: gargle names the OAuth client with `rlang::hash()`, whose output changed
 in rlang 1.3.0, so a token minted before the upgrade is no longer found by a
-non-interactive session. Check before you rely on an unattended send:
+non-interactive session. Check before you rely on an unattended send, from a
+fresh process so the check sees what the send will see:
 
-```r
-mc_auth_check()
+```
+Rscript -e 'mc::mc_auth_check()'
 ```
 
 If it reports a mismatch, start a fresh R session (one opened before the
 upgrade writes the token under the old name again), move the token file it
-names out of the cache, and run `mc_auth()`. `?mc_auth_check` has the details.
+names out of the cache, and run `mc_auth()`. Keep `GMAILR_OAUTH_CLIENT`,
+`GMAILR_EMAIL` and `MC_FROM` in `~/.Renviron`, where a scheduled send's job can
+read them. `?mc_auth_check` has the details.
 
 ## License
 

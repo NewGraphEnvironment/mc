@@ -473,3 +473,35 @@ test_that("mc_send never calls gm_create_draft", {
     )
   )
 })
+
+test_that("a scheduled send carries attachments as absolute paths", {
+  # The fired job runs elsewhere (a launchd job starts in /), so a relative
+  # path that resolves at scheduling time must not reach it (#47 round 4).
+  captured <- NULL
+  local_mocked_bindings(
+    schedule_send = function(target_time, args, scheduler) {
+      captured <<- args
+      list()
+    },
+    send_log = function(...) invisible(NULL),
+    .package = "mc"
+  )
+  dir <- withr::local_tempdir()
+  writeLines("x", file.path(dir, "report.txt"))
+  withr::local_dir(dir)
+  suppressMessages(
+    mc_send(html = "<p>x</p>", to = "t@t.com", subject = "s",
+            from = "f@f.com", attachments = "report.txt",
+            send_at = 5, scheduler = "launchd")
+  )
+  expect_equal(captured$attachments,
+               normalizePath(file.path(dir, "report.txt")))
+})
+
+test_that("send_log lines name their zone", {
+  withr::local_envvar(HOME = withr::local_tempdir())
+  withr::local_timezone("Asia/Tokyo")
+  mc:::send_log("s", "t@t.com", "SENT")
+  line <- readLines(file.path(Sys.getenv("HOME"), ".mc", "send_log.txt"))
+  expect_match(line, "^[0-9-]+ [0-9:]+ JST [|] SENT [|]")
+})

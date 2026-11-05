@@ -38,6 +38,12 @@ later authenticates through gmailr's own default, the \code{GMAILR_EMAIL}
 environment variable or the \code{gargle_oauth_email} option, and with neither
 set gargle takes the first matching cached token. Set \code{GMAILR_EMAIL} to the
 same address for unattended sends, so the token checked is the one used.
+
+The check reads the context of the R process it runs in: its OAuth client,
+its cache option and the rlang it has loaded. Run it the way the send will
+run, from a fresh process (\verb{Rscript -e 'mc::mc_auth_check()'}), and keep
+\code{GMAILR_OAUTH_CLIENT}, \code{GMAILR_EMAIL} and \code{MC_FROM} in \verb{~/.Renviron}: a
+launchd job does not see variables exported from a shell profile.
 }
 \section{Troubleshooting}{
 

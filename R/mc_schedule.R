@@ -136,7 +136,6 @@ schedule_launchd <- function(target_time, args) {
   if (!dir.exists(scheduled_dir)) dir.create(scheduled_dir, recursive = TRUE)
 
   args_path <- file.path(scheduled_dir, paste0(uuid, ".json"))
-  write_scheduled_args(args, target_time, args_path)
 
   label <- paste0("com.newgraph.mc.send-", uuid)
   agents_dir <- file.path(Sys.getenv("HOME"), "Library", "LaunchAgents")
@@ -149,8 +148,11 @@ schedule_launchd <- function(target_time, args) {
          call. = FALSE)
   }
 
+  # Build the plist before writing anything, so a failure here (e.g. reading
+  # the system clock) leaves no orphaned args JSON behind.
   plist_xml <- launchd_plist(label, target_time, rscript, args_path,
                              scheduled_dir)
+  write_scheduled_args(args, target_time, args_path)
   writeLines(plist_xml, plist_path)
 
   res <- system2(

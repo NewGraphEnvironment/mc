@@ -102,8 +102,8 @@ mc_deliver <- function(path = NULL,
     }
     send_time <- resolve_send_at(send_at)
     delay_min <- as.numeric(difftime(send_time, Sys.time(), units = "mins"))
-    # Machine-local, with the zone named: the time the backend will fire at
-    # and the zone the send log's own timestamps use.
+    # In this process's zone, with the zone named, so it reads correctly beside
+    # send log lines a launchd job later writes in the system zone.
     target_label <- format(send_time, "%Y-%m-%d %H:%M:%S %Z", tz = "")
     message(
       "Scheduled to send at ", target_label,
@@ -115,6 +115,11 @@ mc_deliver <- function(path = NULL,
       paste0("target=", target_label,
              " scheduler=", scheduler)
     )
+    # The send runs later in another process: a launchd job starts in `/`, so
+    # a relative attachment path that resolves here would not resolve there.
+    if (!is.null(attachments)) {
+      attachments <- normalizePath(attachments, mustWork = TRUE)
+    }
     schedule_args <- list(
       to = to, subject = subject, cc = cc, bcc = bcc, from = from,
       thread_id = thread_id, to_self = to_self, sig = sig,
@@ -262,7 +267,9 @@ send_log <- function(subject, to, status, detail = "") {
   log_dir <- file.path(Sys.getenv("HOME"), ".mc")
   if (!dir.exists(log_dir)) dir.create(log_dir, recursive = TRUE)
   line <- paste0(
-    format(Sys.time(), "%Y-%m-%d %H:%M:%S"), " | ",
+    # Zone named: lines come from the scheduling session and from the fired
+    # job, whose zones can differ.
+    format(Sys.time(), "%Y-%m-%d %H:%M:%S %Z"), " | ",
     status, " | ",
     "To: ", paste(to, collapse = ", "), " | ",
     "Subject: ", subject,
