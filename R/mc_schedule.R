@@ -112,7 +112,8 @@ schedule_callr <- function(target_time, args) {
         }
       )
     },
-    args = list(target_time = target_time, grace_secs = 300, args = args),
+    args = list(target_time = target_time, grace_secs = send_grace_secs(),
+                args = args),
     package = "mc"
   )
   caffeinate_send(proc)
@@ -135,7 +136,8 @@ schedule_launchd <- function(target_time, args) {
   if (!dir.exists(scheduled_dir)) dir.create(scheduled_dir, recursive = TRUE)
 
   args_path <- file.path(scheduled_dir, paste0(uuid, ".json"))
-  jsonlite::write_json(args, args_path, auto_unbox = TRUE, null = "null")
+  jsonlite::write_json(with_fire_window(args, target_time), args_path,
+                       auto_unbox = TRUE, null = "null")
 
   label <- paste0("com.newgraph.mc.send-", uuid)
   agents_dir <- file.path(Sys.getenv("HOME"), "Library", "LaunchAgents")
@@ -244,7 +246,8 @@ schedule_at <- function(target_time, args) {
   if (!dir.exists(scheduled_dir)) dir.create(scheduled_dir, recursive = TRUE)
 
   args_path <- file.path(scheduled_dir, paste0(uuid, ".json"))
-  jsonlite::write_json(args, args_path, auto_unbox = TRUE, null = "null")
+  jsonlite::write_json(with_fire_window(args, target_time), args_path,
+                       auto_unbox = TRUE, null = "null")
 
   rscript <- Sys.which("Rscript")
   if (rscript == "") {
@@ -273,6 +276,22 @@ schedule_at <- function(target_time, args) {
     unlink(args_path)
     stop("at command failed: ", paste(res, collapse = " "),
          call. = FALSE)
+  }
+
+  # A stopped atd accepts the job and never runs it. Where pgrep exists, say
+  # so now rather than at the missed send time.
+  if (Sys.which("pgrep") != "") {
+    atd <- suppressWarnings(
+      system2("pgrep", c("-x", "atd"), stdout = TRUE, stderr = TRUE)
+    )
+    atd_status <- attr(atd, "status")
+    if (!is.null(atd_status) && atd_status != 0) {
+      warning(
+        "atd does not appear to be running: the send is queued but will ",
+        "not fire until atd starts (e.g. systemctl enable --now atd).",
+        call. = FALSE
+      )
+    }
   }
 
   # `at` typically prints "job N at <time>" to stderr; capture the job
@@ -307,6 +326,28 @@ schedule_at <- function(target_time, args) {
 run_scheduled_send <- function(args_json_path) {
   args <- jsonlite::read_json(args_json_path, simplifyVector = TRUE)
   on.exit(cleanup_scheduled_send(args_json_path), add = TRUE)
+
+  # launchd and atd both run a job missed while asleep at the next wake, so
+  # skip a send past its grace period, as the callr backend does. Args written
+  # before the target was carried have no `.target_time` and are not checked.
+  target <- args$.target_time
+  grace <- args$.grace_secs %||% send_grace_secs()
+  args$.target_time <- NULL
+  args$.grace_secs <- NULL
+  if (!is.null(target)) {
+    target <- as.POSIXct(target, origin = "1970-01-01")
+    late <- as.numeric(difftime(Sys.time(), target, units = "secs"))
+    if (late > grace) {
+      msg <- paste0(
+        "Scheduled send SKIPPED. Fired ", round(late / 60, 1),
+        " min past target time ", format(target, "%Y-%m-%d %H:%M:%S"),
+        ". Not sent to protect against stale context."
+      )
+      send_log(args$subject, args$to, "SKIPPED", msg)
+      send_notify(paste0("SKIPPED: ", args$subject), msg)
+      return(invisible(NULL))
+    }
+  }
 
   send_log(args$subject, args$to, "STARTED")
 
@@ -363,6 +404,22 @@ cleanup_scheduled_send <- function(args_json_path) {
   }
 
   invisible(NULL)
+}
+
+
+#' Seconds past its target time after which a scheduled send is skipped
+#' @noRd
+send_grace_secs <- function() 300
+
+
+#' Add the target time and grace period to scheduled-send args
+#'
+#' Read back and removed by `run_scheduled_send()` before it calls
+#' [mc_send()], which does not take them.
+#' @noRd
+with_fire_window <- function(args, target_time) {
+  c(args, list(.target_time = as.numeric(target_time),
+               .grace_secs = send_grace_secs()))
 }
 
 

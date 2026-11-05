@@ -68,7 +68,7 @@ test_that("schedule_at writes args JSON and pipes Rscript invocation to at", {
   expect_equal(read_back$subject, "at test")
 
   # at invoked with -t YYYYMMDDhhmm.ss + Rscript invocation as stdin
-  at_call <- at_calls[[length(at_calls)]]
+  at_call <- Filter(function(c) identical(c$command, "at"), at_calls)[[1]]
   expect_equal(at_call$command, "at")
   expect_equal(at_call$args[1], "-t")
   expect_match(at_call$args[2], "^20260510[0-9]{4}\\.[0-9]{2}$")
@@ -432,4 +432,87 @@ test_that("schedule_at says how to fix a missing at before writing anything", {
   )
   expect_false(system2_called)
   expect_false(dir.exists(file.path(tmp_home, ".mc", "scheduled")))
+})
+
+# --- stale-send guard on the OS-native backends (#47 code-check) -------------
+# launchd and atd run a job missed while asleep at the next wake. Now that they
+# are the default, they skip a late send the way the callr backend does.
+
+run_with_target <- function(target_offset_secs, grace = NULL) {
+  calls <- list(send = list(), log = character(0), cleanup = NULL)
+  local_mocked_bindings(
+    mc_send = function(...) {
+      calls$send[[length(calls$send) + 1]] <<- list(...)
+      "tid"
+    },
+    send_log = function(subject, to, status, detail = "") {
+      calls$log <<- c(calls$log, status)
+    },
+    send_notify = function(title, body) NULL,
+    cleanup_scheduled_send = function(args_json_path) {
+      calls$cleanup <<- args_json_path
+    },
+    .package = "mc",
+    .env = parent.frame()
+  )
+  args <- list(to = "r@x.com", subject = "s", from = "f@x.com",
+               html = "<p>b</p>",
+               .target_time = as.numeric(Sys.time()) + target_offset_secs)
+  if (!is.null(grace)) args$.grace_secs <- grace
+  path <- tempfile(fileext = ".json")
+  jsonlite::write_json(args, path, auto_unbox = TRUE, digits = NA)
+  withr::defer(unlink(path), envir = parent.frame())
+  mc:::run_scheduled_send(path)
+  calls$path <- path
+  calls
+}
+
+test_that("run_scheduled_send skips a send fired past its grace period", {
+  calls <- run_with_target(-600)
+  expect_length(calls$send, 0)
+  expect_equal(calls$log, "SKIPPED")
+  expect_equal(calls$cleanup, calls$path)
+})
+
+test_that("run_scheduled_send sends within grace and strips the fire window", {
+  calls <- run_with_target(-60)
+  expect_length(calls$send, 1)
+  expect_equal(calls$log, c("STARTED", "SENT"))
+  expect_false(any(c(".target_time", ".grace_secs") %in% names(calls$send[[1]])))
+})
+
+test_that("run_scheduled_send honours the grace carried in the args", {
+  calls <- run_with_target(-60, grace = 30)
+  expect_length(calls$send, 0)
+  expect_equal(calls$log, "SKIPPED")
+})
+
+test_that("schedule_at writes the target time and grace into the args JSON", {
+  local_mocked_bindings(
+    Sys.which = function(names) stats::setNames(paste0("/usr/bin/", names), names),
+    system2 = function(command, args, ...) "job 7 at Sat May 10 14:30:00 2026",
+    .package = "base"
+  )
+  withr::local_envvar(HOME = withr::local_tempdir())
+  target <- Sys.time() + 600
+  handle <- mc:::schedule_at(target, list(to = "x@x.com", subject = "x"))
+  back <- jsonlite::read_json(handle$args_path, simplifyVector = TRUE)
+  expect_equal(back$.target_time, as.numeric(target), tolerance = 1e-6)
+  expect_equal(back$.grace_secs, 300)
+})
+
+test_that("schedule_at warns when atd is not running", {
+  local_mocked_bindings(
+    Sys.which = function(names) stats::setNames(paste0("/usr/bin/", names), names),
+    system2 = function(command, args, ...) {
+      if (identical(command, "pgrep")) structure(character(0), status = 1L)
+      else "job 8 at Sat May 10 14:30:00 2026"
+    },
+    .package = "base"
+  )
+  withr::local_envvar(HOME = withr::local_tempdir())
+  expect_warning(
+    mc:::schedule_at(Sys.time() + 600, list(to = "x@x.com", subject = "x")),
+    "atd does not appear to be running"
+  )
 })

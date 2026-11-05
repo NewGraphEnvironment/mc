@@ -180,10 +180,10 @@ auditable from the log alone:
 A `SCHEDULED` line with no follow-up `STARTED` means the bg process died
 before firing — the failure mode that the OS-native backends solve.
 
-On macOS, `caffeinate` keeps the machine awake until the email sends (callr
-backend only — launchd handles wake/sleep itself). If the machine sleeps
-through the send window with the callr backend, a 5-minute grace period
-applies — past that, the send is skipped to prevent stale emails.
+If the machine is asleep at the send time, the send fires when it wakes,
+within a 5-minute grace period; past that it is skipped and logged as
+`SKIPPED`, so a stale email never goes out hours late. With the callr backend,
+`caffeinate` also keeps a Mac awake until the email sends.
 
 Outcomes also trigger a macOS desktop notification on success, skip, or failure.
 

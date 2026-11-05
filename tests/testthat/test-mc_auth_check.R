@@ -64,7 +64,8 @@ test_that("mc_auth_check ignores tokens cached for other emails", {
   local_mocked_bindings(auth_client = function() list(name = "proj_new", id = "gm-id"), .package = "mc")
   cache <- local_token_cache(list(
     "aaa111_someone@example.com" = fake_token("proj_new"),
-    "bbb222_xal@example.com" = fake_token("proj_new")
+    "bbb222_xal@example.com" = fake_token("proj_new"),
+    "ccc333_sales_al@example.com" = fake_token("proj_new")
   ))
   expect_error(
     mc_auth_check("al@example.com", cache = cache),

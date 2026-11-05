@@ -69,9 +69,10 @@ mc_auth_check <- function(email = default_from(), cache = NULL) {
   client <- auth_client()
   expected <- client$name
 
-  # gargle names cache files <hash>_<email>.
+  # gargle names cache files <hash>_<email>, the hash in hex, and matches the
+  # whole email: a suffix test would take sales_al@ for al@.
   files <- list.files(dir, pattern = "^[0-9a-f]+_")
-  files <- files[endsWith(files, paste0("_", email))]
+  files <- files[sub("^[0-9a-f]+_", "", files) == email]
 
   # The cache is shared with other Google packages, so keep only tokens minted
   # for this OAuth client (same id). A stale token has the same id and a
