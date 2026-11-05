@@ -116,3 +116,27 @@ test_that("a preview image path is percent-encoded into its file URL", {
   expect_false(grepl("[ #%]1|[ #]", sub("%[0-9A-F]{2}", "", url)))
   expect_identical(utils::URLdecode(sub("^file://", "", url)), normalizePath(img, winslash = "/"))
 })
+
+test_that("a path segment that already holds %xx is still encoded", {
+  dir <- withr::local_tempdir()
+  img <- file.path(dir, 'fig "v2" 10%ab \\1.png')
+  writeBin(as.raw(1:10), img)
+  url <- mc:::file_url(img)
+  expect_false(grepl('[ "\\\\]', url))
+  expect_identical(utils::URLdecode(sub("^file://", "", url)), normalizePath(img, winslash = "/"))
+  out <- mc:::preview_inline_images('<img src="cid:card">', list(card = img))
+  expect_identical(out, paste0('<img src="', url, '">'))
+})
+
+test_that("the preview rewrites only the references a send checks", {
+  img <- tempfile(fileext = ".png")
+  writeBin(as.raw(1:10), img)
+  html <- paste0('<p><code>src=cid:card</code></p><img data-src="cid:card">',
+                 '<img alt="a > b" src="cid:card"><td style="background: url(\'cid:card\')">')
+  out <- mc:::preview_inline_images(html, list(card = img))
+  url <- mc:::file_url(img)
+  expect_match(out, "<code>src=cid:card</code>", fixed = TRUE)
+  expect_match(out, 'data-src="cid:card"', fixed = TRUE)
+  expect_match(out, paste0('alt="a > b" src="', url, '"'), fixed = TRUE)
+  expect_match(out, paste0("url('", url, "')"), fixed = TRUE)
+})

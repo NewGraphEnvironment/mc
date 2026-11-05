@@ -18,3 +18,4 @@
 - Phase 4b: plan-review follow-ups (cid scan forms, fragment links, quoted-value attribute reading, unquoted style, preview images, docs, guard case). Tests watched red first (13 failures across 3 files)
 - Live launchd scheduled send with an inline image: SENT, MIME correct (findings.md). Lint added by the branch fixed. Full unit suite 568 pass, 0 fail
 - Phase 6: owner saw no attachment card in Gmail web or on the phone (findings.md). Code-check round 1: 4 fragile, fixed via `tag_attrs()` tokenizer and `file_url()`; regression tests watched red first
+- Code-check round 2: 2 bugs + 1 fragile, all inside round 1 fixes; fixed via `start_tag_regex()` + `cid_walk()` + `repeated = TRUE`; enumeration recorded in findings.md; tests watched red first

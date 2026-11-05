@@ -401,16 +401,57 @@ check_inline_images <- function(inline_images, html) {
 #' @return Character vector of Content-IDs, in order, possibly repeated.
 #' @noRd
 cid_refs <- function(html) {
+  cid_walk(html)$refs
+}
+
+
+#' Walk every cid: reference a client draws, optionally rewriting it (internal)
+#'
+#' The one reader of `cid:` references, shared by the send-side check and the
+#' preview so the two cannot disagree: a `src` or `background` attribute whose
+#' value is `cid:<id>`, or a CSS `url(cid:<id>)` in a `style` attribute, read
+#' from start tags only.
+#'
+#' @param html The HTML body.
+#' @param replace `NULL`, or a function of one Content-ID returning the text
+#'   to put in place of `cid:<id>`, or `NA` to leave it.
+#' @return List: `refs`, the Content-IDs in order; `html`, rewritten.
+#' @noRd
+cid_walk <- function(html, replace = NULL) {
   tok <- "[A-Za-z0-9._@-]+"
-  tags <- regmatches(html, gregexpr("<[A-Za-z][^>]*>", html, perl = TRUE))[[1]]
-  unlist(lapply(tags, function(t) {
-    a <- tag_attrs(t)
-    direct <- a$value[a$name %in% c("src", "background")]
-    direct <- regmatches(direct, regexpr(paste0("(?i)^\\s*cid:\\K", tok), direct, perl = TRUE))
-    styles <- a$value[a$name == "style"]
-    css <- unlist(regmatches(styles, gregexpr(
-      paste0("(?i)url\\(\\s*[\"']?cid:\\K", tok), styles, perl = TRUE
-    )))
-    c(direct, css)
-  }))
+  refs <- character()
+  swap <- function(id, whole) {
+    refs <<- c(refs, id)
+    if (is.null(replace)) return(whole)
+    r <- replace(id)
+    if (is.na(r)) whole else r
+  }
+  m <- gregexpr(start_tag_regex(), html, perl = TRUE)
+  regmatches(html, m) <- lapply(regmatches(html, m), function(tags) {
+    vapply(tags, function(t) {
+      a <- tag_attrs(t)
+      # Right to left, so earlier positions stay valid as values change length
+      for (i in rev(which(a$name %in% c("src", "background", "style")))) {
+        v <- a$value[i]
+        if (a$name[i] == "style") {
+          mm <- gregexpr(paste0("(?i)(url\\(\\s*[\"']?)cid:(", tok, ")"), v, perl = TRUE)
+          regmatches(v, mm) <- lapply(regmatches(v, mm), function(x) {
+            vapply(x, function(u) {
+              id <- sub(paste0("(?i)^url\\(\\s*[\"']?cid:(", tok, ")$"), "\\1", u, perl = TRUE)
+              paste0(sub("(?i)cid:.*$", "", u, perl = TRUE), swap(id, paste0("cid:", id)))
+            }, character(1), USE.NAMES = FALSE)
+          })
+        } else {
+          hit <- regmatches(v, regexec(paste0("(?i)^(\\s*)cid:(", tok, ")(.*)$"), v, perl = TRUE))[[1]]
+          if (length(hit) == 0) next
+          v <- paste0(hit[2], swap(hit[3], paste0("cid:", hit[3])), hit[4])
+        }
+        if (identical(v, a$value[i])) next
+        t <- paste0(substr(t, 1, a$vstart[i] - 1), a$quote[i], v, a$quote[i],
+                    substr(t, a$vstart[i] + a$vlen[i], nchar(t)))
+      }
+      t
+    }, character(1), USE.NAMES = FALSE)
+  })
+  list(refs = refs, html = html)
 }

@@ -159,3 +159,14 @@ test_that("text inside a quoted attribute value is never read as an attribute", 
   link <- mc:::inject_link_target('<a title="see href=#top" href="https://a.com">a</a>')
   expect_match(link, 'target="_blank" rel="noopener noreferrer">a</a>', fixed = TRUE)
 })
+
+test_that("a > inside a quoted value does not end the tag", {
+  # kableExtra::cell_spec(tooltip = "flow > 5 m3/s") writes the > unescaped
+  cell <- mc:::inline_table_styles('<td title="1 > 0" align="left">1</td>')
+  expect_identical(cell, '<td title="1 > 0" align="left" style="border: 1px solid #ddd; padding: 8px;">1</td>')
+  link <- mc:::inject_link_target('<a href="https://a.com" title="flow > 5 m3/s">site</a>')
+  expect_identical(
+    link,
+    '<a href="https://a.com" title="flow > 5 m3/s" target="_blank" rel="noopener noreferrer">site</a>'
+  )
+})

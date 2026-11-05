@@ -127,3 +127,19 @@ address, BCC al@, and read it in Chrome (Gmail web): header stripped, link prese
 bordered including the right-aligned column, image in the body, signature, **no attachment
 card**. Gmail web's DOM shows the link without our `target` (Gmail rewrites links and opens them
 in a new tab itself); the attribute is in the sent MIME, as the integration test reads back.
+
+## Code-check round 2 (review-round2.md): defects inside round 1's fix
+
+Round 1 moved attribute reading into `tag_attrs()` but left every caller finding the tag with
+`[^>]*`, so a `>` inside a quoted value (kableExtra writes `title="flow > 5"` unescaped) ended the
+tag early: the same mechanism one axis over. Also `URLencode(repeated = FALSE)` left a segment
+already holding `%xx` unencoded, and the preview still rewrote `cid:` body-wide while the send
+check read attributes only (a fix landed in one of two callers).
+
+Fix and **enumeration** (terminal, per /code-check's stopping rule):
+- Start-tag finders in `R/`: 3 (`style_tag`, `inject_link_target`, `cid_walk`), all through
+  `start_tag_regex()`, which consumes quoted values. Remaining `[^>]` regexes: 2, both
+  `mc_thread_find.R` thread-to-text stripping, predating this branch and outside the diff.
+- Attribute readers: 3, all through `tag_attrs()`; `grep` finds no attribute regex outside it.
+- `cid:` readers: 1, `cid_walk()`, shared by `cid_refs()` (the send check) and
+  `preview_inline_images()`.

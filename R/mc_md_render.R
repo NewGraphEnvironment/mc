@@ -160,7 +160,7 @@ inline_table_styles <- function(html) {
 #' @return HTML with each `<tag>` styled once.
 #' @noRd
 style_tag <- function(html, tag, css) {
-  m <- gregexpr(paste0("<", tag, "(\\s[^>]*)?>"), html, perl = TRUE, ignore.case = TRUE)
+  m <- gregexpr(start_tag_regex(tag), html, perl = TRUE, ignore.case = TRUE)
   regmatches(html, m) <- lapply(regmatches(html, m), function(tags) {
     vapply(tags, function(t) {
       a <- tag_attrs(t)
@@ -191,7 +191,7 @@ style_tag <- function(html, tag, css) {
 #' @return HTML with each link opening in a new tab.
 #' @noRd
 inject_link_target <- function(html) {
-  m <- gregexpr("<a\\s[^>]*>", html, perl = TRUE, ignore.case = TRUE)
+  m <- gregexpr(start_tag_regex("a"), html, perl = TRUE, ignore.case = TRUE)
   regmatches(html, m) <- lapply(regmatches(html, m), function(tags) {
     vapply(tags, function(t) {
       a <- tag_attrs(t)
@@ -207,6 +207,19 @@ inject_link_target <- function(html) {
     }, character(1), USE.NAMES = FALSE)
   })
   html
+}
+
+
+#' A regex for an HTML start tag that consumes quoted values (internal)
+#'
+#' A `>` inside a quoted value (`title="flow > 5"`, which kableExtra writes
+#' unescaped) does not end the tag. `"th"` does not match `<thead>`.
+#'
+#' @param name Element name, or a regex for any name (the default).
+#' @return A PCRE pattern matching one whole start tag.
+#' @noRd
+start_tag_regex <- function(name = "[A-Za-z][A-Za-z0-9-]*") {
+  paste0("<(?:", name, ")(?:\\s(?:[^\"'>]|\"[^\"]*\"|'[^']*')*)?/?>")
 }
 
 

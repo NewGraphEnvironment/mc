@@ -201,3 +201,14 @@ test_that("text that is not an attribute is not a cid reference", {
   expect_no_error(send("<p><code>src=cid:q</code> and url(cid:q) in prose</p>"))
   expect_no_error(send('<img title="src=cid:q" src="https://e.com/a.png">'))
 })
+
+test_that("a > inside another attribute does not hide a cid reference", {
+  env <- new.env()
+  capture_send(env)
+  send <- function(html, imgs = NULL) {
+    mc_send(html = html, to = "bob@example.com", subject = "x",
+            from = "alice@example.com", sig = FALSE, inline_images = imgs)
+  }
+  expect_error(send('<img alt="flow > 5" src="cid:missing">'), "no inline_images")
+  expect_no_warning(send('<img alt="a > b" src="cid:card">', c(card = png_file())))
+})

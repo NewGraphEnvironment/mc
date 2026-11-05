@@ -59,18 +59,19 @@ mc_preview <- function(html,
 #' Point `cid:` references at the image files, for a browser preview
 #'
 #' A browser cannot resolve `cid:`, so each reference to a frontmatter inline
-#' image becomes a `file://` URL to the image itself.
+#' image becomes a `file://` URL to the image itself. Only the references a
+#' send checks are rewritten (`cid_walk()`), so the preview matches the email.
 #' @param html Rendered body.
 #' @param inline_images Frontmatter `inline_images` (named list or vector).
 #' @return HTML with `cid:<name>` replaced where the image is known.
 #' @noRd
 preview_inline_images <- function(html, inline_images) {
   imgs <- unlist(inline_images)
-  for (id in names(imgs)) {
-    if (!file.exists(imgs[[id]])) next
-    html <- gsub(paste0("cid:\\Q", id, "\\E(?![A-Za-z0-9._@-])"), file_url(imgs[[id]]), html, perl = TRUE)
-  }
-  html
+  # The same references a send checks, and only those (cid_walk())
+  cid_walk(html, replace = function(id) {
+    if (!id %in% names(imgs) || !file.exists(imgs[[id]])) return(NA_character_)
+    file_url(imgs[[id]])
+  })$html
 }
 
 
@@ -86,7 +87,9 @@ file_url <- function(path) {
   p <- normalizePath(path, winslash = "/")
   segs <- strsplit(p, "/", fixed = TRUE)[[1]]
   drive <- grepl("^[A-Za-z]:$", segs)
-  segs[!drive] <- vapply(segs[!drive], utils::URLencode, "", reserved = TRUE, USE.NAMES = FALSE)
+  # repeated = TRUE: otherwise a segment already holding "%xx" is left whole
+  segs[!drive] <- vapply(segs[!drive], utils::URLencode, "", reserved = TRUE, repeated = TRUE,
+                         USE.NAMES = FALSE)
   out <- paste(segs, collapse = "/")
   paste0("file://", if (startsWith(out, "/")) "" else "/", out)
 }
