@@ -1,5 +1,51 @@
 # Changelog
 
+## mc 0.4.0
+
+### Behaviour change
+
+- **Scheduled sends go through the operating system by default.**
+  - `mc_send(send_at = ...)` now uses launchd on macOS and `at` on
+    Linux, so a send scheduled from `Rscript` or cron no longer dies
+    with the R session that made it
+    ([\#8](https://github.com/NewGraphEnvironment/mc/issues/8)).
+  - `scheduler` defaults to `NULL`. That resolves to `"auto"` on macOS
+    and Linux, and elsewhere to `"callr"`, with its existing warning.
+  - An explicit `scheduler = "auto"` still errors where no OS-native
+    backend exists.
+- **launchd and `at` handle a missed or early send time.**
+  - A send that fires more than five minutes late (the machine was
+    asleep) is skipped and logged as `SKIPPED`, as the callr backend
+    already did.
+  - A send that fires early waits for its time.
+  - The send time is right whatever time zone `send_at` or the session
+    uses.
+  - Attachments are carried as absolute paths.
+- `send_log` lines name their time zone.
+
+### New
+
+- **[`mc_auth_check()`](https://newgraphenvironment.github.io/mc/reference/mc_auth_check.md)**
+  says why an unattended send will not find its cached Gmail token. That
+  happens after an rlang upgrade: gargle names the OAuth client with
+  [`rlang::hash()`](https://rlang.r-lib.org/reference/hash.html), whose
+  output changed in rlang 1.3.0. The README has a Troubleshooting
+  section ([\#38](https://github.com/NewGraphEnvironment/mc/issues/38)).
+- `citation("mc")` and `CITATION.cff` cite the package by its Zenodo
+  concept DOI, which resolves to every archived release.
+
+### Fixes
+
+- [`mc_thread_modify()`](https://newgraphenvironment.github.io/mc/reference/mc_thread_modify.md)
+  no longer fetches user labels when every label is a system label
+  written in mixed case, such as `"Starred"`.
+- [`mc_draft()`](https://newgraphenvironment.github.io/mc/reference/mc_draft.md)
+  and
+  [`mc_send()`](https://newgraphenvironment.github.io/mc/reference/mc_send.md)
+  report a missing `path` or `html` before looking up the sender.
+- R CMD check runs on every pull request
+  ([\#47](https://github.com/NewGraphEnvironment/mc/issues/47)).
+
 ## mc 0.3.1
 
 No change to the package’s functions. This release exists so the package

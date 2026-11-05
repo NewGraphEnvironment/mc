@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">mc</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -32,9 +32,47 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/NewGraphEnvironment/mc/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/NewGraphEnvironment/mc/blob/v0.4.0/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.4.0" id="mc-040">mc 0.4.0<a class="anchor" aria-label="anchor" href="#mc-040"></a></h2>
+<div class="section level3">
+<h3 id="behaviour-change-0-4-0">Behaviour change<a class="anchor" aria-label="anchor" href="#behaviour-change-0-4-0"></a></h3>
+<ul><li>
+<strong>Scheduled sends go through the operating system by default.</strong>
+<ul><li>
+<code>mc_send(send_at = ...)</code> now uses launchd on macOS and <code>at</code> on Linux, so a send scheduled from <code>Rscript</code> or cron no longer dies with the R session that made it (<a href="https://github.com/NewGraphEnvironment/mc/issues/8" class="external-link">#8</a>).</li>
+<li>
+<code>scheduler</code> defaults to <code>NULL</code>. That resolves to <code>"auto"</code> on macOS and Linux, and elsewhere to <code>"callr"</code>, with its existing warning.</li>
+<li>An explicit <code>scheduler = "auto"</code> still errors where no OS-native backend exists.</li>
+</ul></li>
+<li>
+<strong>launchd and <code>at</code> handle a missed or early send time.</strong>
+<ul><li>A send that fires more than five minutes late (the machine was asleep) is skipped and logged as <code>SKIPPED</code>, as the callr backend already did.</li>
+<li>A send that fires early waits for its time.</li>
+<li>The send time is right whatever time zone <code>send_at</code> or the session uses.</li>
+<li>Attachments are carried as absolute paths.</li>
+</ul></li>
+<li>
+<code>send_log</code> lines name their time zone.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="new-0-4-0">New<a class="anchor" aria-label="anchor" href="#new-0-4-0"></a></h3>
+<ul><li>
+<strong><code><a href="../reference/mc_auth_check.html">mc_auth_check()</a></code></strong> says why an unattended send will not find its cached Gmail token. That happens after an rlang upgrade: gargle names the OAuth client with <code><a href="https://rlang.r-lib.org/reference/hash.html" class="external-link">rlang::hash()</a></code>, whose output changed in rlang 1.3.0. The README has a Troubleshooting section (<a href="https://github.com/NewGraphEnvironment/mc/issues/38" class="external-link">#38</a>).</li>
+<li>
+<code>citation("mc")</code> and <code>CITATION.cff</code> cite the package by its Zenodo concept DOI, which resolves to every archived release.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="fixes-0-4-0">Fixes<a class="anchor" aria-label="anchor" href="#fixes-0-4-0"></a></h3>
+<ul><li>
+<code><a href="../reference/mc_thread_modify.html">mc_thread_modify()</a></code> no longer fetches user labels when every label is a system label written in mixed case, such as <code>"Starred"</code>.</li>
+<li>
+<code><a href="../reference/mc_draft.html">mc_draft()</a></code> and <code><a href="../reference/mc_send.html">mc_send()</a></code> report a missing <code>path</code> or <code>html</code> before looking up the sender.</li>
+<li>R CMD check runs on every pull request (<a href="https://github.com/NewGraphEnvironment/mc/issues/47" class="external-link">#47</a>).</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.3.1" id="mc-031">mc 0.3.1<a class="anchor" aria-label="anchor" href="#mc-031"></a></h2>
 <p>No change to the package’s functions. This release exists so the package has a citable, archived version.</p>
