@@ -129,6 +129,8 @@ mc_deliver <- function(path = NULL,
         basename(attachments)
       )
     }
+    # Normalised here, not inside the list() below: the scheduled-args guard
+    # test reads the field names out of that list() call.
     if (!is.null(inline_images)) {
       inline_images <- stats::setNames(
         file.path(
@@ -363,10 +365,14 @@ resolve_send_at <- function(send_at) {
 #' @return `NULL`, invisibly. Called for its errors and warnings.
 #' @keywords internal
 check_inline_images <- function(inline_images, html) {
-  # Only a src attribute is a reference: "cid:" in prose is not
+  # A reference is what a client draws: a src or background attribute, or a
+  # CSS url(), quoted or not. "cid:" in prose is not, nor is data-src.
   refs <- regmatches(
     html,
-    gregexpr("(?i)\\bsrc\\s*=\\s*[\"']cid:\\K[A-Za-z0-9._@-]+", html, perl = TRUE)
+    gregexpr(
+      "(?i)(?:(?<![\\w-])(?:src|background)\\s*=\\s*[\"']?|url\\(\\s*[\"']?)cid:\\K[A-Za-z0-9._@-]+",
+      html, perl = TRUE
+    )
   )[[1]]
   refs <- unique(refs)
   if (is.null(inline_images)) {

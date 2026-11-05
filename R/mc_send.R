@@ -31,10 +31,18 @@
 #'   Ignored when `sig = FALSE` or when `html` is provided.
 #' @param attachments Optional character vector of file paths to attach.
 #'   Each file is attached via [gmailr::gm_attach_file()]. Default `NULL`.
+#'   A scheduled send reads the files when it fires, so they must still
+#'   exist then (not a [tempfile()] from a session that has ended).
 #' @param inline_images Optional named character vector of image paths to
 #'   show in the body: each name is a Content-ID the HTML references as
-#'   `<img src="cid:name">`. A `cid:` with no matching image is an error; an
-#'   image the HTML never references is a warning. Kept when `to_self = TRUE`.
+#'   `<img src="cid:name">`, or in markdown as `![alt](cid:name)`. Names use
+#'   letters, digits and `. _ @ -`. A `cid:` reference (in `src`,
+#'   `background` or a CSS `url()`) with no matching image is an error; an
+#'   image the HTML never references is a warning. Kept when
+#'   `to_self = TRUE`. In YAML frontmatter, give a mapping
+#'   (`inline_images:` then `  card: fig/card.png`), not a list. Paths
+#'   resolve against the working directory, and a scheduled send reads the
+#'   files when it fires, as for `attachments`.
 #' @param labels Optional character vector of Gmail label names to apply
 #'   to the resulting thread. Applied via [mc_thread_modify()] after a
 #'   successful send.

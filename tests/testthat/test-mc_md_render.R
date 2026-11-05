@@ -134,3 +134,18 @@ test_that("HTML without links is unchanged", {
   x <- "<p>no links, <abbr>abbr</abbr> and <address>here</address></p>"
   expect_identical(mc:::inject_link_target(x), x)
 })
+
+test_that("a link within the message stays in the message", {
+  x <- '<a href="#notes">see notes</a>'
+  expect_identical(mc:::inject_link_target(x), x)
+})
+
+test_that("attribute names are read outside quoted values", {
+  html <- mc:::inject_link_target('<a href="https://a.com" title="no target=here, rel=none">a</a>')
+  expect_match(html, 'target="_blank" rel="noopener noreferrer">a</a>', fixed = TRUE)
+})
+
+test_that("an unquoted style attribute is merged, not duplicated", {
+  html <- mc:::inline_table_styles("<td style=color:red>1</td>")
+  expect_identical(html, '<td style="border: 1px solid #ddd; padding: 8px; color:red">1</td>')
+})

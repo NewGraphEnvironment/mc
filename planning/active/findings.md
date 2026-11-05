@@ -69,3 +69,19 @@ Check whether Gmail renders inline parts inside gmailr's `multipart/mixed` wrapp
 
 | Error | Resolution |
 |-------|------------|
+
+## Plan review (review-plan.md)
+
+Plan agent, background, 2026-11-05; it reported after Phases 1-4 had landed. Acted on in Phase 4b. Notes:
+
+- Its correction to the plan's Context holds: the old `cid:` regex fired only on a token character
+  right after the colon (`Placid:calm`), not on `acid: strong`. The landed test used the firing form.
+- Decided, not in #35 or the gate: `mailto:` links get `target="_blank"` too. Gmail opens a compose
+  window either way; other clients that honour it open the mail app instead of navigating away.
+- Phase 5's integration tests read back the MIME mc sent: they prove the md + signature + MIME
+  pipeline end to end, not how a client renders it. Gmail web opens every link in a new tab on its
+  own, so #35's change shows only in other clients.
+- Callr: the Phase 1 test mocks `schedule_send`, so it proves `mc_deliver()` hands callr a named,
+  absolute vector; `r_bg` passes R objects through RDS, which keeps names. Not exercised live.
+- Deferred to the chip result: dropping `name =`/`filename =` on the inline part, which some
+  clients use to decide on a chip; needs the owner's word (gate decision 3 says no workaround).

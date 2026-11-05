@@ -58,12 +58,20 @@ uses the bundled New Graph signature. Passed to \code{\link[=mc_md_render]{mc_md
 Ignored when \code{sig = FALSE} or when \code{html} is provided.}
 
 \item{attachments}{Optional character vector of file paths to attach.
-Each file is attached via \code{\link[gmailr:gm_mime]{gmailr::gm_attach_file()}}. Default \code{NULL}.}
+Each file is attached via \code{\link[gmailr:gm_mime]{gmailr::gm_attach_file()}}. Default \code{NULL}.
+A scheduled send reads the files when it fires, so they must still
+exist then (not a \code{\link[=tempfile]{tempfile()}} from a session that has ended).}
 
 \item{inline_images}{Optional named character vector of image paths to
 show in the body: each name is a Content-ID the HTML references as
-\verb{<img src="cid:name">}. A \verb{cid:} with no matching image is an error; an
-image the HTML never references is a warning. Kept when \code{to_self = TRUE}.}
+\verb{<img src="cid:name">}, or in markdown as \verb{![alt](cid:name)}. Names use
+letters, digits and \verb{. _ @ -}. A \verb{cid:} reference (in \code{src},
+\code{background} or a CSS \code{url()}) with no matching image is an error; an
+image the HTML never references is a warning. Kept when
+\code{to_self = TRUE}. In YAML frontmatter, give a mapping
+(\verb{inline_images:} then \code{  card: fig/card.png}), not a list. Paths
+resolve against the working directory, and a scheduled send reads the
+files when it fires, as for \code{attachments}.}
 
 \item{labels}{Optional character vector of Gmail label names to apply
 to the resulting thread. Applied via \code{\link[=mc_thread_modify]{mc_thread_modify()}} after a

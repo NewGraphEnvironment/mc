@@ -90,3 +90,17 @@ test_that("mc_preview default path is under R_user_dir and persists", {
     expect_true(startsWith(path, cache_root))
   })
 })
+
+test_that("mc_preview shows frontmatter inline images in the body and the envelope", {
+  img <- tempfile(fileext = ".png")
+  writeBin(as.raw(1:10), img)
+  draft <- tempfile(fileext = ".md")
+  writeLines(c("---", "to: a@b.com", "subject: s", "inline_images:", paste0("  card: ", img),
+               "---", "", "![card](cid:card)"), draft)
+  tmp <- tempfile(fileext = ".html")
+  mc_preview(draft, path = tmp, open = FALSE)
+  out <- paste(readLines(tmp), collapse = "\n")
+  expect_false(grepl("cid:card", out, fixed = TRUE))
+  expect_match(out, paste0('src="file://', normalizePath(img), '"'), fixed = TRUE)
+  expect_match(out, ">Inline</th>", fixed = TRUE)
+})

@@ -163,6 +163,8 @@ style_tag <- function(html, tag, css) {
   m <- gregexpr(paste0("<", tag, "(\\s[^>]*)?>"), html, perl = TRUE, ignore.case = TRUE)
   regmatches(html, m) <- lapply(regmatches(html, m), function(tags) {
     vapply(tags, function(t) {
+      # An unquoted style (style=color:red) is quoted first, so it is merged
+      t <- sub("(\\sstyle\\s*=\\s*)([^\"'\\s>]+)", '\\1"\\2"', t, perl = TRUE, ignore.case = TRUE)
       style <- "(\\sstyle\\s*=\\s*)([\"'])"
       if (!grepl(style, t, perl = TRUE, ignore.case = TRUE)) {
         return(sub("\\s*/?>$", paste0(' style="', css, '">'), t, perl = TRUE))
@@ -180,7 +182,8 @@ style_tag <- function(html, tag, css) {
 #' Open every link in a new tab (internal)
 #'
 #' Adds `target="_blank"` and `rel="noopener noreferrer"` to each `<a>` tag
-#' that has an `href`, leaving any `target` or `rel` it already sets.
+#' that has an `href`, leaving any `target` or `rel` it already sets. A link to
+#' an anchor in the message (`href="#notes"`) is left alone.
 #'
 #' @param html Character string of HTML.
 #' @return HTML with each link opening in a new tab.
@@ -189,8 +192,13 @@ inject_link_target <- function(html) {
   m <- gregexpr("<a\\s[^>]*>", html, perl = TRUE, ignore.case = TRUE)
   regmatches(html, m) <- lapply(regmatches(html, m), function(tags) {
     vapply(tags, function(t) {
-      has <- function(attr) grepl(paste0("\\s", attr, "\\s*="), t, perl = TRUE, ignore.case = TRUE)
+      # Attribute names are read with quoted values blanked out, so text such
+      # as title="target=x" is not mistaken for an attribute
+      bare <- gsub("\"[^\"]*\"|'[^']*'", "\"\"", t, perl = TRUE)
+      has <- function(attr) grepl(paste0("\\s", attr, "\\s*="), bare, perl = TRUE, ignore.case = TRUE)
       if (!has("href")) return(t)
+      # A link within the message (href="#notes") stays in the message
+      if (grepl("\\shref\\s*=\\s*[\"']?#", t, perl = TRUE, ignore.case = TRUE)) return(t)
       add <- c(
         if (!has("target")) 'target="_blank"',
         if (!has("rel")) 'rel="noopener noreferrer"'

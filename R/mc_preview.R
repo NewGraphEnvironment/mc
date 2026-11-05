@@ -45,7 +45,7 @@ mc_preview <- function(html,
 
   if (endsWith(html, ".md") && file.exists(html)) {
     meta <- mc_md_meta(html)
-    body <- mc_md_render(html)
+    body <- preview_inline_images(mc_md_render(html), meta$inline_images)
     html <- paste0(preview_header(meta), body)
   }
 
@@ -56,9 +56,29 @@ mc_preview <- function(html,
 }
 
 
+#' Point `cid:` references at the image files, for a browser preview
+#'
+#' A browser cannot resolve `cid:`, so each reference to a frontmatter inline
+#' image becomes a `file://` URL to the image itself.
+#' @param html Rendered body.
+#' @param inline_images Frontmatter `inline_images` (named list or vector).
+#' @return HTML with `cid:<name>` replaced where the image is known.
+#' @noRd
+preview_inline_images <- function(html, inline_images) {
+  imgs <- unlist(inline_images)
+  for (id in names(imgs)) {
+    if (!file.exists(imgs[[id]])) next
+    url <- paste0("file://", normalizePath(imgs[[id]]))
+    html <- gsub(paste0("cid:\\Q", id, "\\E(?![A-Za-z0-9._@-])"), url, html, perl = TRUE)
+  }
+  html
+}
+
+
 #' Build an HTML header table from frontmatter metadata
 #'
-#' Renders To / Cc / Bcc (if present) / Subject / Thread / Attachments as
+#' Renders To / Cc / Bcc (if present) / Subject / Thread / Attachments /
+#' Inline images (if present) as
 #' a simple inline-styled table above the preview body.
 #' @param meta Named list from [mc_md_meta()].
 #' @return HTML string.
@@ -79,6 +99,10 @@ preview_header <- function(meta) {
     c("Thread", fmt(meta$thread_id)),
     c("Attach", fmt(meta$attachments))
   ))
+  imgs <- unlist(meta$inline_images)
+  if (length(imgs)) {
+    rows[[length(rows) + 1]] <- c("Inline", fmt(paste0(names(imgs), ": ", imgs)))
+  }
   row_html <- vapply(rows, function(r) {
     sprintf(
       paste0(

@@ -146,3 +146,19 @@ test_that("only a src attribute counts as a cid reference", {
   expect_no_warning(send('<img SRC = "cid:card">', c(card = img)))
   expect_error(send("<img src='cid:other'>", c(card = img)), "no matching inline image")
 })
+
+test_that("background, url() and unquoted src are cid references; data-src is not", {
+  env <- new.env(); capture_send(env)
+  send <- function(html, imgs = NULL) mc_send(html = html, to = "bob@example.com", subject = "x",
+                                              from = "alice@example.com", sig = FALSE,
+                                              inline_images = imgs)
+  for (html in c('<td background="cid:gone">', '<div style="background: url(cid:gone)">',
+                 "<div style=\"background: url('cid:gone')\">", "<img src=cid:gone>")) {
+    expect_error(send(html), "no inline_images", info = html)
+  }
+  img <- png_file()
+  expect_no_warning(send('<td background="cid:card">', c(card = img)))
+  expect_no_warning(send('<div style="background-image: url(cid:card)">', c(card = img)))
+  # A lazy-load attribute is not what the client draws
+  expect_no_error(send('<img data-src="cid:gone">'))
+})

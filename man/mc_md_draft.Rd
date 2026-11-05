@@ -22,7 +22,7 @@ Invisibly returns whatever \code{\link[=mc_draft]{mc_draft()}} returns.
 }
 \description{
 Reads metadata (\code{to}, \code{subject}, optional \code{cc}, \code{bcc}, \code{thread_id},
-\code{attachments}, \code{labels}, \code{from}) from the YAML frontmatter at the top of a
+\code{attachments}, \code{inline_images}, \code{labels}, \code{from}) from the YAML frontmatter at the top of a
 markdown draft and dispatches to \code{\link[=mc_draft]{mc_draft()}}.
 }
 \details{

@@ -68,9 +68,18 @@ Approved by the owner at the plan gate, 2026-11-05.
 - [x] Rewrite `inline_table_styles()` as one pass per tag: bare tag, tag with attributes and no style, tag with style (mutually exclusive)
 
 ## Phase 4: Links open in a new tab (#35)
-- [x] Tests: `[t](u)`, titled link, autolink and `www.` link gain `target="_blank" rel="noopener noreferrer"`; an `<a>` already carrying `target=` is left alone; `mailto:` links too; no-link HTML unchanged; `mc_compose()` output also rewritten
+- [x] Tests: `[t](u)`, titled link, autolink and `www.` link gain `target="_blank" rel="noopener noreferrer"`; an `<a>` already carrying `target=` keeps it (and still gains `rel` if it has none); `mailto:` links too; no-link HTML unchanged; `mc_compose()` output also rewritten
 - [x] `inject_link_target()` in `R/mc_md_render.R`: every `<a ` tag with `href` and no `target`; called from both `mc_md_render()` and `mc_compose()` next to `inline_table_styles()`
 - [x] Roxygen `@details` of `mc_md_render()` mentions it
+
+## Phase 4b: Plan-review follow-ups (review-plan.md, 2026-11-05)
+- [x] `cid:` scan: `background=`, CSS `url()` and unquoted `src=` count; `data-src` does not
+- [x] Links: `href="#…"` left alone; attribute names read with quoted values blanked
+- [x] `style_tag()`: unquoted `style=` merged, not duplicated
+- [x] `mc_preview()`: frontmatter `cid:` images shown from their files; envelope lists `Inline`
+- [x] Docs: `@param inline_images` (markdown form, YAML mapping, fire-time read), `@param attachments` (fire-time read), frontmatter key lists in `mc_md_send()`/`mc_md_draft()`, CLAUDE.md scheduled-args line
+- [x] Round-trip guard covers a Content-ID with `.` and `@`; comment on why normalising sits before the `list()`
+- [ ] One live launchd scheduled send (`send_at`, `to_self`) with an inline image, checked in the send log and in Gmail
 
 ## Phase 5: Integration tests from a `.md` file (#10)
 - [x] `test-integration.R`: `mc_send(path = <tmp .md>, sig = TRUE)` to al@ with a markdown link, an aligned table and an inline image (frontmatter `inline_images:` via `mc_md_send()` too); read the message back with `gmailr::gm_message()` and assert the signature, `target="_blank"`, each table declaration once, and an inline part with `Content-Id`

@@ -595,7 +595,8 @@ test_that("every scheduled-send field survives the JSON round trip mc_send() che
     sig_path = list(NULL, "/tmp/sig.html"),
     attachments = list(NULL, character(0), "/tmp/a.txt", c("/tmp/a", "/tmp/b")),
     inline_images = list(NULL, character(0), c(card = "/tmp/card.png"),
-                         c(card = "/tmp/card.png", map = "/tmp/map.png")),
+                         c(card = "/tmp/card.png", map = "/tmp/map.png"),
+                         c("card.v1@mc" = "/tmp/card.png")),
     labels = list(NULL, character(0), "x", c("x", "y")),
     labels_create = list(TRUE, FALSE),
     html = list("<p>b</p>")

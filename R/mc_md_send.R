@@ -1,7 +1,7 @@
 #' Send an email from a markdown file with YAML frontmatter
 #'
 #' One-file workflow: reads metadata (`to`, `subject`, optional `cc`, `bcc`,
-#' `thread_id`, `attachments`, `labels`, `from`) from the YAML frontmatter at
+#' `thread_id`, `attachments`, `inline_images`, `labels`, `from`) from the YAML frontmatter at
 #' the top of a markdown draft and dispatches to [mc_send()]. Lets callers
 #' keep each logical email in a single `.md` file instead of splitting
 #' subject, body, and recipients across a paired `.R` script.
