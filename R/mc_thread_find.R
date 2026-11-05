@@ -65,9 +65,14 @@ mc_thread_find <- function(query, n = 5, after = NULL, before = NULL) {
 #' a follow-up with [mc_send()].
 #'
 #' @param thread_id Gmail thread ID (from [mc_thread_find()]).
-#' @param drafts Logical. If `TRUE`, also include draft messages in the
-#'   output and add a `status` column (`"sent"` or `"draft"`).
-#'   Default `FALSE` for backwards compatibility.
+#' @param drafts Logical. If `TRUE`, include the thread's unsent drafts and
+#'   add a `status` column (`"sent"` or `"draft"`). If `FALSE` (default), drafts
+#'   are left out.
+#'
+#' @details
+#' Each message is classified by its own Gmail labels: a message carrying the
+#' `DRAFT` label is an unsent draft, and anything else (sent or received) has
+#' status `"sent"`. Each draft is listed once.
 #'
 #' @return A data frame with columns `from`, `date`, `subject`, and `body`,
 #'   ordered oldest to newest. When `drafts = TRUE`, an additional `status`
@@ -81,7 +86,7 @@ mc_thread_find <- function(query, n = 5, after = NULL, before = NULL) {
 #' }
 #'
 #' @importFrom chk chk_string chk_flag
-#' @importFrom gmailr gm_thread gm_drafts gm_draft
+#' @importFrom gmailr gm_thread
 #' @importFrom jsonlite base64url_dec
 #' @export
 mc_thread_read <- function(thread_id, drafts = FALSE) {
@@ -89,7 +94,7 @@ mc_thread_read <- function(thread_id, drafts = FALSE) {
   chk::chk_flag(drafts)
 
   thread <- gmailr::gm_thread(id = thread_id)
-  msgs <- thread$messages
+  msgs <- thread$messages %||% list()
 
   empty <- data.frame(
     from = character(0),
@@ -100,47 +105,60 @@ mc_thread_read <- function(thread_id, drafts = FALSE) {
   )
   if (drafts) empty$status <- character(0)
 
-  if (is.null(msgs) || length(msgs) == 0) {
-    if (!drafts) {
-      message("No messages in thread: ", thread_id)
-      return(empty)
-    }
-  }
+  is_draft <- vapply(msgs, is_draft_message, logical(1))
+  if (!drafts) msgs <- msgs[!is_draft]
 
-  rows <- lapply(msgs %||% list(), function(msg) {
-    body <- extract_body(msg$payload, "text/plain")
-    if (!nzchar(body)) {
-      body_html <- extract_body(msg$payload, "text/html")
-      if (nzchar(body_html)) {
-        body <- gsub("<[^>]+>", " ", body_html)
-        body <- gsub("[ \t]+", " ", body)
-        body <- trimws(body)
-      }
-    }
-    row <- data.frame(
-      from = extract_header(msg, "From"),
-      date = extract_header(msg, "Date"),
-      subject = extract_header(msg, "Subject"),
-      body = body,
-      stringsAsFactors = FALSE
-    )
-    if (drafts) row$status <- "sent"
-    row
-  })
-
-  if (drafts) {
-    draft_rows <- fetch_thread_drafts(thread_id)
-    rows <- c(rows, draft_rows)
-  }
-
-  result <- do.call(rbind, rows)
-
-  if (is.null(result) || nrow(result) == 0) {
+  if (length(msgs) == 0) {
     message("No messages in thread: ", thread_id)
     return(empty)
   }
 
-  result
+  rows <- lapply(msgs, function(msg) {
+    row <- data.frame(
+      from = extract_header(msg, "From"),
+      date = extract_header(msg, "Date"),
+      subject = extract_header(msg, "Subject"),
+      body = message_text(msg),
+      stringsAsFactors = FALSE
+    )
+    if (drafts) row$status <- if (is_draft_message(msg)) "draft" else "sent"
+    row
+  })
+
+  do.call(rbind, rows)
+}
+
+
+#' Is a gmailr message an unsent draft? (internal)
+#'
+#' Gmail marks a draft's message with the `DRAFT` label; sent and received
+#' messages do not carry it.
+#' @param msg A gmailr message object.
+#' @return `TRUE` or `FALSE`.
+#' @noRd
+is_draft_message <- function(msg) {
+  "DRAFT" %in% unlist(msg$labelIds)
+}
+
+
+#' Plain-text body of a gmailr message (internal)
+#'
+#' The `text/plain` part, or the `text/html` part with tags stripped when there
+#' is no plain part.
+#' @param msg A gmailr message object.
+#' @return Character string, possibly `""`.
+#' @noRd
+message_text <- function(msg) {
+  body <- extract_body(msg$payload, "text/plain")
+  if (!nzchar(body)) {
+    body_html <- extract_body(msg$payload, "text/html")
+    if (nzchar(body_html)) {
+      body <- gsub("<[^>]+>", " ", body_html)
+      body <- gsub("[ \t]+", " ", body)
+      body <- trimws(body)
+    }
+  }
+  body
 }
 
 
@@ -203,46 +221,6 @@ strip_quoted <- function(text) {
     lines <- lines[-length(lines)]
   }
   trimws(paste(lines, collapse = "\n"))
-}
-
-
-#' Fetch draft messages belonging to a specific thread
-#'
-#' Scans Gmail drafts and returns rows for any that belong to the given
-#' thread. Used internally by [mc_thread_read()] when `drafts = TRUE`.
-#' @param thread_id Gmail thread ID.
-#' @return List of data frame rows (may be empty).
-#' @noRd
-fetch_thread_drafts <- function(thread_id) {
-  all_drafts <- gmailr::gm_drafts(num_results = 50)
-  draft_list <- all_drafts[[1]]$drafts
-  if (is.null(draft_list) || length(draft_list) == 0) return(list())
-
-  rows <- list()
-  for (d in draft_list) {
-    detail <- gmailr::gm_draft(d$id)
-    msg <- detail$message
-    if (!identical(msg$threadId, thread_id)) next
-
-    body <- extract_body(msg$payload, "text/plain")
-    if (!nzchar(body)) {
-      body_html <- extract_body(msg$payload, "text/html")
-      if (nzchar(body_html)) {
-        body <- gsub("<[^>]+>", " ", body_html)
-        body <- gsub("[ \t]+", " ", body)
-        body <- trimws(body)
-      }
-    }
-    rows[[length(rows) + 1]] <- data.frame(
-      from = extract_header(msg, "From"),
-      date = extract_header(msg, "Date"),
-      subject = extract_header(msg, "Subject"),
-      body = body,
-      status = "draft",
-      stringsAsFactors = FALSE
-    )
-  }
-  rows
 }
 
 

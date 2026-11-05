@@ -16,11 +16,11 @@ That is easy to get wrong. A filter on the To header alone also matches drafts t
 
 ## Phase 1: Thread and message drafts are classified by their own labels (#49, #50)
 
-- [ ] Tests first: a mocked `gm_thread()` holding one INBOX message and one DRAFT message. With `drafts = TRUE`: two rows, statuses `sent` and `draft`, no duplicate. With `drafts = FALSE`: one row, no draft. `mc_thread_body_latest(status = "sent")` returns the INBOX body.
-- [ ] `mc_thread_read()`: status comes from `"DRAFT" %in% msg$labelIds`. DRAFT messages are dropped when `drafts = FALSE`. Remove `fetch_thread_drafts()` (no longer used) and move the shared body extraction into one helper.
-- [ ] Tests first: a mocked `gm_messages()` captures the search string. `status = "draft"` sends `<query> in:drafts` with the date filters, `"sent"` sends `<query> -in:drafts`, and `"any"` sends the bare query, with each row's status taken from its labels.
-- [ ] `mc_message_find()`: drafts are found through `gm_messages(search = )` with the status taken from labels, and `gm_drafts()`/`gm_draft()` are no longer used. Update the `status` docs: `"any"` now returns up to `n` in total, not `n` per branch.
-- [ ] Update the existing thread/message tests that stub `fetch_thread_drafts` / `gm_drafts`.
+- [x] Tests first: a mocked `gm_thread()` holding one INBOX message and one DRAFT message. With `drafts = TRUE`: two rows, statuses `sent` and `draft`, no duplicate. With `drafts = FALSE`: one row, no draft. `mc_thread_body_latest(status = "sent")` returns the INBOX body.
+- [x] `mc_thread_read()`: status comes from `"DRAFT" %in% msg$labelIds`. DRAFT messages are dropped when `drafts = FALSE`. Remove `fetch_thread_drafts()` (no longer used) and move the shared body extraction into one helper.
+- [x] Tests first: a mocked `gm_messages()` captures the search string. `status = "draft"` sends `<query> in:drafts` with the date filters, `"sent"` sends `<query> -in:drafts`, and `"any"` sends the bare query, with each row's status taken from its labels.
+- [x] `mc_message_find()`: drafts are found through `gm_messages(search = )` with the status taken from labels, and `gm_drafts()`/`gm_draft()` are no longer used. Update the `status` docs: `"any"` now returns up to `n` in total, not `n` per branch.
+- [x] Update the existing thread/message tests that stub `fetch_thread_drafts` / `gm_drafts`.
 
 ## Phase 2: Return and replace a draft by id (#51)
 

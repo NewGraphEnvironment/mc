@@ -13,7 +13,8 @@ mc_message_find(
 )
 }
 \arguments{
-\item{query}{Gmail search query.}
+\item{query}{Gmail search query. Accepts the same operators as the Gmail
+search box; see \code{\link[=mc_thread_find]{mc_thread_find()}}.}
 
 \item{n}{Maximum number of results. Default \code{10}.}
 
@@ -21,12 +22,15 @@ mc_message_find(
 string. See \code{\link[=mc_thread_find]{mc_thread_find()}}.}
 
 \item{status}{One of \code{"any"} (default), \code{"sent"}, or \code{"draft"}. \code{"sent"}
-restricts to non-draft messages; \code{"draft"} searches drafts instead of
-messages.}
+restricts the search to non-draft messages (\verb{-in:drafts}), \code{"draft"} to
+unsent drafts (\verb{in:drafts}), and \code{"any"} searches both, returning up to \code{n}
+messages in total. The query and the date filters apply in every case.}
 }
 \value{
 A data frame with columns \code{message_id}, \code{thread_id}, \code{from}, \code{to},
-\code{subject}, \code{date}, and \code{status}, most recent first. Returns an empty
+\code{subject}, \code{date}, and \code{status}, most recent first. \code{status} is \code{"draft"}
+for a message carrying Gmail's \code{DRAFT} label and \code{"sent"} otherwise.
+\code{message_id} is the message's id, not a draft id. Returns an empty
 data frame (same columns) when no messages match.
 }
 \description{

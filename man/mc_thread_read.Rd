@@ -9,9 +9,9 @@ mc_thread_read(thread_id, drafts = FALSE)
 \arguments{
 \item{thread_id}{Gmail thread ID (from \code{\link[=mc_thread_find]{mc_thread_find()}}).}
 
-\item{drafts}{Logical. If \code{TRUE}, also include draft messages in the
-output and add a \code{status} column (\code{"sent"} or \code{"draft"}).
-Default \code{FALSE} for backwards compatibility.}
+\item{drafts}{Logical. If \code{TRUE}, include the thread's unsent drafts and
+add a \code{status} column (\code{"sent"} or \code{"draft"}). If \code{FALSE} (default), drafts
+are left out.}
 }
 \value{
 A data frame with columns \code{from}, \code{date}, \code{subject}, and \code{body},
@@ -22,6 +22,11 @@ column is included.
 Fetches a thread by ID and returns each message's sender, date, subject,
 and plain-text body. Useful for reviewing a conversation before composing
 a follow-up with \code{\link[=mc_send]{mc_send()}}.
+}
+\details{
+Each message is classified by its own Gmail labels: a message carrying the
+\code{DRAFT} label is an unsent draft, and anything else (sent or received) has
+status \code{"sent"}. Each draft is listed once.
 }
 \examples{
 \dontrun{
