@@ -48,5 +48,5 @@ Relates to #46
 
 | Error | Resolution |
 |-------|------------|
-| soul `gh_rest.sh` fails to parse under `/bin/bash` 3.2 (`syntax error near unexpected token ;;`, line 300) | Ran the skill blocks under Homebrew bash 5; already filed as soul#722 |
-| `gh_issue_comments` missing from soul published tree | Read comments with `gh api repos/.../issues/N/comments` |
+| A shared workflow helper script fails to parse under macOS `/bin/bash` 3.2 (`syntax error near unexpected token ;;`) | Ran the workflow's shell steps under Homebrew bash 5; reported to the tooling's maintainers |
+| The issue-comments helper was missing from the installed workflow tooling | Read comments with `gh api repos/.../issues/N/comments` |
