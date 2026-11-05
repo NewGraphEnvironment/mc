@@ -7,3 +7,7 @@
   origin/main into it (67d97b8). One expected test failure, the Phase 1 defect (findings.md)
 - Scaffolded PWF baseline from issue #43 with approved phases
 - Next: Phase 1
+- Phase 1: `write_scheduled_args()` writes `inline_images` as a JSON object; new
+  `read_scheduled_args()` (used by `run_scheduled_send()` and by main's round-trip guard) turns
+  it back into a named character vector; `mc_deliver()` makes each image's directory absolute,
+  keeping names. Tests watched red first (4 in test-inline_images.R, the guard in test-mc_schedule.R)

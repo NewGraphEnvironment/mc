@@ -129,6 +129,15 @@ mc_deliver <- function(path = NULL,
         basename(attachments)
       )
     }
+    if (!is.null(inline_images)) {
+      inline_images <- stats::setNames(
+        file.path(
+          normalizePath(dirname(inline_images), mustWork = TRUE),
+          basename(inline_images)
+        ),
+        names(inline_images)
+      )
+    }
     schedule_args <- list(
       to = to, subject = subject, cc = cc, bcc = bcc, from = from,
       thread_id = thread_id, to_self = to_self, sig = sig,

@@ -75,3 +75,60 @@ test_that("frontmatter inline_images reach mc_send", {
   args <- mc:::md_dispatch_args(md, to_self = FALSE, override = list())
   expect_identical(args$inline_images, c(card = img))
 })
+
+test_that("a scheduled send carries inline images by name, as absolute paths", {
+  # The fired job runs elsewhere (a launchd job starts in /), and the
+  # Content-ID is the name, so both the path and the name must survive.
+  for (sched in c("launchd", "callr")) {
+    captured <- NULL
+    local_mocked_bindings(
+      schedule_send = function(target_time, args, scheduler) {
+        captured <<- args
+        list()
+      },
+      send_log = function(...) invisible(NULL),
+      .package = "mc"
+    )
+    dir <- withr::local_tempdir()
+    file.copy(png_file(), file.path(dir, "card.png"))
+    file.copy(png_file(), file.path(dir, "map.png"))
+    withr::with_dir(dir, suppressWarnings(suppressMessages(
+      mc_send(html = '<img src="cid:card"><img src="cid:map">', to = "t@t.com",
+              subject = "s", from = "f@f.com", sig = FALSE,
+              inline_images = c(card = "card.png", map = "map.png"),
+              send_at = 5, scheduler = sched)
+    )))
+    expect_identical(
+      captured$inline_images,
+      c(card = file.path(normalizePath(dir), "card.png"),
+        map = file.path(normalizePath(dir), "map.png")),
+      info = sched
+    )
+  }
+})
+
+test_that("inline images reach the fired send by name through the args JSON", {
+  sent <- NULL
+  local_mocked_bindings(
+    mc_send = function(...) {
+      sent <<- list(...)
+      "tid"
+    },
+    send_log = function(...) invisible(NULL),
+    send_notify = function(...) NULL,
+    cleanup_scheduled_send = function(...) NULL,
+    .package = "mc"
+  )
+  for (imgs in list(c(card = "/tmp/card.png"),
+                    c(card = "/tmp/card.png", map = "/tmp/map.png"))) {
+    path <- tempfile(fileext = ".json")
+    mc:::write_scheduled_args(
+      list(to = "r@x.com", subject = "s", from = "f@x.com",
+           html = "<p>b</p>", inline_images = imgs),
+      Sys.time(), path
+    )
+    mc:::run_scheduled_send(path)
+    unlink(path)
+    expect_identical(sent$inline_images, imgs)
+  }
+})

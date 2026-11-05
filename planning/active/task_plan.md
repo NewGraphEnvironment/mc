@@ -54,10 +54,10 @@ Approved by the owner at the plan gate, 2026-11-05.
 - [x] Scaffold PWF in `planning/active/` and commit the baseline
 
 ## Phase 1: Inline images survive a scheduled send (#43)
-- [ ] Failing test: `inline_images` through `write_scheduled_args()` → `run_scheduled_send()` (mocked `mc_send`) keeps names and absolute paths
-- [ ] `mc_deliver()` scheduled branch: absolute directory per image (same `normalizePath(dirname)` + `basename` as attachments), written as a named list
-- [ ] `run_scheduled_send()`: turn a named list `inline_images` back into a named character vector before `mc_send()`
-- [ ] Callr backend keeps names (R object passed directly): one test
+- [x] Failing test: `inline_images` through `write_scheduled_args()` → `run_scheduled_send()` (mocked `mc_send`) keeps names and absolute paths
+- [x] `mc_deliver()` scheduled branch: absolute directory per image (same `normalizePath(dirname)` + `basename` as attachments), written as a named list
+- [x] `run_scheduled_send()`: turn a named list `inline_images` back into a named character vector before `mc_send()`
+- [x] Callr backend keeps names (R object passed directly): one test
 
 ## Phase 2: Tighten the `cid:` scan (#43)
 - [ ] Tests: prose containing `cid:` with no images sends; `src='cid:x'` (single quotes) is found
