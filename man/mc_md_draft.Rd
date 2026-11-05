@@ -37,11 +37,15 @@ written into the frontmatter as \verb{draft_id:} (that one line is added or
 changed; the rest of the file is left as it was). Running the same file
 again replaces that draft in place, and only that draft. If the draft has
 since been sent or deleted, a new one is created and its id written in.
-Delete the \verb{draft_id:} line to start a fresh draft. \code{\link[=mc_md_send]{mc_md_send()}} ignores
-\code{draft_id}.
+Delete the \verb{draft_id:} line to start a fresh draft. Replacing overwrites
+the draft as it stands in Gmail, including any edits made there.
 
-A \code{thread_id} in the frontmatter warns: \code{gmailr::gm_create_draft()} cannot
-thread a draft. See \code{\link[=mc_draft]{mc_draft()}}.
+With \code{to_self = TRUE} the draft is a separate test copy: the file's
+\code{draft_id} is not used and the copy's id is not recorded, so the tracked
+draft is left alone. \code{\link[=mc_md_send]{mc_md_send()}} ignores \code{draft_id}.
+
+A \code{thread_id} in the frontmatter creates the draft in that conversation.
+See \code{\link[=mc_draft]{mc_draft()}}.
 }
 \examples{
 \dontrun{

@@ -15,18 +15,22 @@
 #'   error. Any other argument errors as unused.
 #'
 #' @return A list, invisibly, with `draft_id` (pass it back as `draft_id` to
-#'   replace this draft), `thread_id` and `message_id`. An element is `NULL`
-#'   when Gmail's response did not include it.
+#'   replace this draft), `thread_id` and `message_id`. `draft_id` stays the
+#'   same across replacements; `message_id` is the Gmail API id of the draft's
+#'   current message (not its `Message-ID` header) and changes on each
+#'   replacement. An element is `NULL` when Gmail's response did not include
+#'   it.
 #'
 #' @details
-#' `gmailr::gm_create_draft()` does not accept a `thread_id`, so drafts always
-#' land outside the conversation. Supplying `thread_id` warns. Either move the
-#' draft into the thread from the Gmail UI before sending, or use [mc_send()]
-#' to deliver straight into the thread.
+#' With `thread_id`, the draft is created in that conversation, ready to
+#' review and send from the thread, and carries the reply headers described
+#' in [mc_send()]. Gmail decides whether a draft joins a thread; if it puts
+#' the draft somewhere else, a warning says so.
 #'
 #' mc never deletes a draft. To regenerate one (a re-rendered attachment, an
 #' edited body), pass the `draft_id` it returned; nothing else in the mailbox
-#' is touched.
+#' is touched. Replacing overwrites the draft as it stands, including any
+#' edits made to it in Gmail.
 #'
 #' `send_at` and `scheduler` are not accepted here. A scheduled message is by
 #' definition one that gets sent, so scheduling lives on [mc_send()].

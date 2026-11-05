@@ -37,6 +37,21 @@
 #' @importFrom chk chk_string chk_flag chk_list
 #' @export
 mc_md_send <- function(path, to_self = FALSE, override = list()) {
+  if ("draft_id" %in% names(override)) {
+    stop(
+      "`draft_id` replaces a draft, and mc_md_send() sends a new message. ",
+      "Use mc_md_draft() to replace a draft.",
+      call. = FALSE
+    )
+  }
   args <- md_dispatch_args(path, to_self = to_self, override = override)
-  invisible(do.call(mc_send, args))
+  res <- do.call(mc_send, args)
+  # mc never deletes a draft, so the file's draft is still in Gmail after the
+  # send; say so, or it can be sent a second time by hand.
+  draft_id <- mc_md_meta(path)$draft_id
+  if (is.character(draft_id) && length(draft_id) == 1 && nzchar(draft_id)) {
+    message("Draft ", draft_id, " from this file is still in Gmail. ",
+            "mc does not delete drafts.")
+  }
+  invisible(res)
 }

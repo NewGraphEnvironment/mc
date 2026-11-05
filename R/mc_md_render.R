@@ -169,6 +169,17 @@ frontmatter_set <- function(path, key, value) {
   }
   tmp <- tempfile(tmpdir = dirname(path), fileext = ".md")
   writeBin(charToRaw(paste0(hit[2], block, hit[4], hit[5])), tmp)
+  # Read the result back before it replaces the file: the key must read as the
+  # value and every other key as it did. A block the line cannot be added to
+  # (flow style, say) is refused and the file left alone.
+  expected <- parse_frontmatter(path)$meta
+  expected[[key]] <- value
+  got <- tryCatch(parse_frontmatter(tmp)$meta, error = function(e) NULL)
+  if (is.null(got) || !setequal(names(got), names(expected)) ||
+        !identical(got[names(expected)], expected)) {
+    unlink(tmp)
+    stop("Writing `", key, ":` would not read back as written", call. = FALSE)
+  }
   Sys.chmod(tmp, file.info(path)$mode)
   if (!file.rename(tmp, path)) {
     unlink(tmp)

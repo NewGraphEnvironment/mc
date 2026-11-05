@@ -62,6 +62,7 @@ mc_deliver <- function(path = NULL,
   chk::chk_null_or(thread_id, vld = chk::vld_string)
   chk::chk_null_or(draft_id, vld = chk::vld_string)
   chk::chk_flag(.draft)
+  if (identical(draft_id, "")) stop("`draft_id` must not be empty.", call. = FALSE)
   if (!is.null(draft_id) && !.draft) {
     stop("`draft_id` applies to drafts only.", call. = FALSE)
   }
@@ -168,11 +169,24 @@ mc_deliver <- function(path = NULL,
     message("TO SELF: addressed to ", from)
   }
 
+  # A reply names the message it answers, so recipients' clients thread it
+  # too, and carries a "Re: " subject. Read here, after to_self has dropped
+  # thread_id and after the scheduling branch, so a scheduled send reads the
+  # thread when it fires (#55).
+  reply <- list()
+  if (!is.null(thread_id)) {
+    reply <- reply_headers(thread_id)
+    if (!grepl("^\\s*re:", subject, ignore.case = TRUE)) {
+      subject <- paste0("Re: ", subject)
+    }
+  }
+
   # Build MIME message
   msg <- gmailr::gm_mime()
   msg <- gmailr::gm_to(msg, to)
   msg <- gmailr::gm_from(msg, from)
   msg <- gmailr::gm_subject(msg, subject)
+  for (h in names(reply)) msg$header[[h]] <- reply[[h]]
   msg <- gmailr::gm_html_body(msg, html)
 
   if (!is.null(cc)) {
@@ -201,22 +215,24 @@ mc_deliver <- function(path = NULL,
 
   # Draft or send — capture thread_id from gmailr response
   if (.draft) {
-    if (!is.null(thread_id)) {
-      warning(
-        "Draft created but will NOT appear in thread. ",
-        "gm_create_draft() does not support thread_id. ",
-        "Use mc_send() to deliver straight into the thread, ",
-        "or send the draft manually from Gmail UI.",
-        call. = FALSE
-      )
-    }
-    written <- write_draft(msg, draft_id = draft_id)
+    written <- write_draft(msg, thread_id = thread_id, draft_id = draft_id)
     res <- written$res
     sent_thread_id <- extract_thread_id(res)
+    where <- if (is.null(thread_id)) "" else paste0(" in thread ", thread_id)
     if (written$updated) {
-      message("Draft ", draft_id, " updated in Gmail. To: ", paste(to, collapse = ", "))
+      message("Draft ", draft_id, " replaced", where, ". To: ", paste(to, collapse = ", "))
     } else {
-      message("Draft created in Gmail. To: ", paste(to, collapse = ", "))
+      message("Draft created", where, ". To: ", paste(to, collapse = ", "))
+    }
+    # Gmail places a draft in a thread only when it accepts the reply (the
+    # subject has to fit), and does not say when it declines.
+    if (!is.null(thread_id) && !is.null(sent_thread_id) &&
+          !identical(sent_thread_id, thread_id)) {
+      warning(
+        "Gmail placed the draft in thread ", sent_thread_id, ", not ",
+        thread_id, ". Check the subject matches the conversation.",
+        call. = FALSE
+      )
     }
   } else {
     if (!is.null(thread_id)) {
@@ -278,21 +294,25 @@ mc_deliver <- function(path = NULL,
 
 #' Create a draft, or replace one in place by its id (internal)
 #'
-#' With no `draft_id`, the draft is created through
-#' [gmailr::gm_create_draft()], unchanged. With one, that draft, and only that
-#' draft, is replaced through Gmail's `drafts.update`, so its id stays the
-#' same. A `draft_id` Gmail no longer knows (the draft was sent or deleted)
-#' warns and creates a new draft. Nothing here deletes a draft.
+#' With no `draft_id` and no `thread_id`, the draft is created through
+#' [gmailr::gm_create_draft()], unchanged. A `thread_id` places it in that
+#' thread, which gmailr cannot do, so it goes through Gmail's API directly.
+#' With a `draft_id`, that draft, and only that draft, is replaced through
+#' Gmail's `drafts.update`, so its id stays the same. A `draft_id` Gmail no
+#' longer knows (the draft was sent or deleted) warns and creates a new draft,
+#' in the same thread. Nothing here deletes a draft.
 #'
 #' @param msg A gmailr mime object.
+#' @param thread_id `NULL` or the thread to place the draft in.
 #' @param draft_id `NULL` or a draft id.
 #' @return List: `res`, the Gmail draft resource; `updated`, `TRUE` when an
 #'   existing draft was replaced.
 #' @noRd
-write_draft <- function(msg, draft_id = NULL) {
+write_draft <- function(msg, thread_id = NULL, draft_id = NULL) {
   if (!is.null(draft_id)) {
     res <- tryCatch(
-      gmail_draft_request(as.character(msg), draft_id = draft_id),
+      gmail_draft_request(as.character(msg), thread_id = thread_id,
+                          draft_id = draft_id),
       mc_draft_not_found = function(e) NULL
     )
     if (!is.null(res)) return(list(res = res, updated = TRUE))
@@ -302,7 +322,56 @@ write_draft <- function(msg, draft_id = NULL) {
       call. = FALSE
     )
   }
-  list(res = gmailr::gm_create_draft(msg), updated = FALSE)
+  res <- if (is.null(thread_id)) {
+    gmailr::gm_create_draft(msg)
+  } else {
+    gmail_draft_request(as.character(msg), thread_id = thread_id)
+  }
+  list(res = res, updated = FALSE)
+}
+
+
+#' Reply headers for a message going into a thread (internal)
+#'
+#' `In-Reply-To` names the thread's latest message (not a draft, not trashed
+#' or spam), and `References` is that message's `References` (or, lacking
+#' one, its `In-Reply-To`) followed by its `Message-ID`. Long chains keep the
+#' first id and the last ten, so the header stays well under the 998-character
+#' line limit.
+#'
+#' @param thread_id Gmail thread ID.
+#' @return Named list of header values, or an empty list (with a warning) when
+#'   the thread has no message with a `Message-ID` to answer. Errors when the
+#'   thread cannot be read, before anything is created or sent.
+#' @noRd
+reply_headers <- function(thread_id) {
+  thread <- tryCatch(
+    gmailr::gm_thread(id = thread_id),
+    error = function(e) {
+      stop("Could not read thread ", thread_id, " to reply into it: ",
+           conditionMessage(e), call. = FALSE)
+    }
+  )
+  msgs <- Filter(function(m) {
+    !any(c("DRAFT", "TRASH", "SPAM") %in% unlist(m$labelIds))
+  }, thread$messages %||% list())
+  mid <- if (length(msgs)) extract_header(msgs[[length(msgs)]], "Message-ID") else NA
+  if (is.na(mid) || !nzchar(trimws(mid))) {
+    warning(
+      "Thread ", thread_id, " has no message with a Message-ID to reply to. ",
+      "Threading by Gmail thread id only.",
+      call. = FALSE
+    )
+    return(list())
+  }
+  mid <- trimws(mid)
+  parent <- msgs[[length(msgs)]]
+  prior <- extract_header(parent, "References")
+  if (is.na(prior)) prior <- extract_header(parent, "In-Reply-To")
+  ids <- if (is.na(prior)) character() else regmatches(prior, gregexpr("<[^<>]+>", prior))[[1]]
+  ids <- c(ids, mid)
+  if (length(ids) > 11) ids <- c(ids[1], utils::tail(ids, 10))
+  list(`In-Reply-To` = mid, References = paste(ids, collapse = " "))
 }
 
 

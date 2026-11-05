@@ -20,11 +20,15 @@
 #' changed; the rest of the file is left as it was). Running the same file
 #' again replaces that draft in place, and only that draft. If the draft has
 #' since been sent or deleted, a new one is created and its id written in.
-#' Delete the `draft_id:` line to start a fresh draft. [mc_md_send()] ignores
-#' `draft_id`.
+#' Delete the `draft_id:` line to start a fresh draft. Replacing overwrites
+#' the draft as it stands in Gmail, including any edits made there.
 #'
-#' A `thread_id` in the frontmatter warns: `gmailr::gm_create_draft()` cannot
-#' thread a draft. See [mc_draft()].
+#' With `to_self = TRUE` the draft is a separate test copy: the file's
+#' `draft_id` is not used and the copy's id is not recorded, so the tracked
+#' draft is left alone. [mc_md_send()] ignores `draft_id`.
+#'
+#' A `thread_id` in the frontmatter creates the draft in that conversation.
+#' See [mc_draft()].
 #'
 #' @seealso [mc_md_send()] to send, [mc_draft()] for the argument-driven form.
 #'
@@ -40,11 +44,14 @@ mc_md_draft <- function(path, to_self = FALSE, override = list()) {
   # Read here rather than in md_dispatch_args(), which mc_md_send() shares:
   # a send has no draft to replace.
   file_id <- mc_md_meta(path)$draft_id
-  if (is.null(args$draft_id)) args$draft_id <- file_id
+  if (identical(file_id, "")) file_id <- NULL
+  # A to_self draft is a test copy, never the file's tracked draft: it neither
+  # replaces that draft nor is recorded in its place.
+  if (is.null(args$draft_id) && !to_self) args$draft_id <- file_id
   res <- do.call(mc_draft, args)
   new_id <- res$draft_id
-  if (is.character(new_id) && length(new_id) == 1 &&
-        !identical(new_id, file_id)) {
+  if (!to_self && is.character(new_id) && length(new_id) == 1 &&
+        nzchar(new_id) && !identical(new_id, file_id)) {
     # The draft exists by now, so a failed write warns rather than errors:
     # the caller still gets the id, and the warning carries it.
     tryCatch(

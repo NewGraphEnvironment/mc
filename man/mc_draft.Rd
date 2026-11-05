@@ -39,7 +39,11 @@ mc_draft(
 then the \code{MC_FROM} environment variable. Errors if neither is set.}
 
 \item{thread_id}{Gmail thread ID to reply into. Default \code{NULL} (new thread).
-Use \code{\link[=mc_thread_find]{mc_thread_find()}} to look up thread IDs.}
+Use \code{\link[=mc_thread_find]{mc_thread_find()}} to look up thread IDs. The message answers the
+thread's latest message: it carries \code{In-Reply-To} and \code{References}
+headers naming it, so recipients' mail clients thread it too, and the
+subject gains a \verb{Re: } prefix unless it already has one. The thread is
+read first; if it cannot be read, nothing is sent.}
 
 \item{draft_id}{\code{NULL} (default) to create a new draft, or the id of a draft
 to replace in place, as returned in \code{draft_id} by an earlier call. Only
@@ -88,22 +92,26 @@ error. Any other argument errors as unused.}
 }
 \value{
 A list, invisibly, with \code{draft_id} (pass it back as \code{draft_id} to
-replace this draft), \code{thread_id} and \code{message_id}. An element is \code{NULL}
-when Gmail's response did not include it.
+replace this draft), \code{thread_id} and \code{message_id}. \code{draft_id} stays the
+same across replacements; \code{message_id} is the Gmail API id of the draft's
+current message (not its \code{Message-ID} header) and changes on each
+replacement. An element is \code{NULL} when Gmail's response did not include
+it.
 }
 \description{
 Creates a draft for review. Nothing passed to this function sends — to
 deliver a message, call \code{\link[=mc_send]{mc_send()}}.
 }
 \details{
-\code{gmailr::gm_create_draft()} does not accept a \code{thread_id}, so drafts always
-land outside the conversation. Supplying \code{thread_id} warns. Either move the
-draft into the thread from the Gmail UI before sending, or use \code{\link[=mc_send]{mc_send()}}
-to deliver straight into the thread.
+With \code{thread_id}, the draft is created in that conversation, ready to
+review and send from the thread, and carries the reply headers described
+in \code{\link[=mc_send]{mc_send()}}. Gmail decides whether a draft joins a thread; if it puts
+the draft somewhere else, a warning says so.
 
 mc never deletes a draft. To regenerate one (a re-rendered attachment, an
 edited body), pass the \code{draft_id} it returned; nothing else in the mailbox
-is touched.
+is touched. Replacing overwrites the draft as it stands, including any
+edits made to it in Gmail.
 
 \code{send_at} and \code{scheduler} are not accepted here. A scheduled message is by
 definition one that gets sent, so scheduling lives on \code{\link[=mc_send]{mc_send()}}.

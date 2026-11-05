@@ -35,12 +35,20 @@ That is easy to get wrong. A filter on the To header alone also matches drafts t
 - [x] `mc_md_draft()`: `md_dispatch_args()` passes `meta$draft_id`. After a draft is created or replaced with a new id, write `draft_id:` into the frontmatter through one helper, `frontmatter_set()`, in `R/mc_md_render.R`: it replaces an existing `draft_id:` line or adds one before the closing `---`, and leaves the body and every other line byte for byte. Tests: round trip through `parse_frontmatter()`, an existing line replaced rather than duplicated, the body untouched (md5 of the part after the YAML block), CRLF and no trailing newline. `mc_md_send()` ignores `draft_id`.
 - [x] Update every existing test that reads the old return value (`expect_equal(res, "draft_thread_001")` and the like).
 
+## Review fold-in (review-plan.md, 2026-11-05)
+
+- [x] B1: `mc_md_send()` errors on `override$draft_id`, tested against the real `mc_send()` signature; S3: it notes a frontmatter draft still in Gmail
+- [x] G3: `mc_draft()` rejects `draft_id = ""`; `mc_md_draft()` treats `draft_id: ""` as absent
+- [x] G4: `frontmatter_set()` re-parses the written temp file and refuses (original untouched) unless `draft_id` reads back and every other key is unchanged
+- [x] G7 (corrects gate decision 3's to_self note): `mc_md_draft(to_self = TRUE)` neither uses nor records the file's `draft_id`; docs say a replace overwrites edits made in Gmail; G8: docs explain `message_id`
+
 ## Phase 3: A draft joins its thread, with reply headers on drafts and sends (#55)
 
-- [ ] Tests first: with `thread_id`, the draft request carries `threadId`, the raw message carries `In-Reply-To: <latest Message-ID>` and `References: <old refs> <latest Message-ID>`, and the subject gains `Re: ` (not when it already starts with `re:`, any case). The same headers go on `mc_send(thread_id = )`. With no thread id, the request is unchanged. The thread-id warning is gone.
-- [ ] Internal `reply_headers(thread_id)`: `gm_thread()`, latest **non-DRAFT** message, header lookup that ignores case (`Message-ID` / `Message-Id`). A failed lookup is an error raised before anything is created or sent, naming the thread.
-- [ ] Apply it in `mc_deliver()` after the scheduling branch (a scheduled send reads the thread when it fires, not when it is queued) and after `to_self` (which drops `thread_id`).
-- [ ] Remove the "cannot thread a draft" text from `mc_draft()` / `mc_md_draft()` docs and `README.md:136-139`, and document the reply headers on `mc_send()`.
+- [x] Tests first: with `thread_id`, the draft request carries `threadId`, the raw message carries `In-Reply-To: <latest Message-ID>` and `References: <old refs> <latest Message-ID>`, and the subject gains `Re: ` (not when it already starts with `re:`, any case). The same headers go on `mc_send(thread_id = )`. With no thread id, the request is unchanged. The thread-id warning is gone.
+- [x] Internal `reply_headers(thread_id)`: `gm_thread()`, latest message not labelled DRAFT, TRASH or SPAM; `extract_header()` ignores case (`Message-ID` / `Message-Id`). An unreadable thread is an error raised before anything is created or sent, naming the thread; a thread with no usable `Message-ID` warns and goes ahead with `threadId` only (A5). `References` falls back to the parent's `In-Reply-To` and keeps the first id plus the last 10 (A6, G9).
+- [x] The 404 fallback keeps the thread (G6); warn when Gmail's returned threadId differs from the one asked for (G5).
+- [x] Apply it in `mc_deliver()` after the scheduling branch (a scheduled send reads the thread when it fires, not when it is queued) and after `to_self` (which drops `thread_id`).
+- [x] Remove the "cannot thread a draft" text from `mc_draft()` / `mc_md_draft()` docs and `README.md:136-139`, and document the reply headers on `mc_send()`.
 
 ## Phase 4: Query docs (#29)
 
@@ -49,11 +57,14 @@ That is easy to get wrong. A filter on the To header alone also matches drafts t
 ## Phase 5: Docs, NEWS, integration
 
 - [ ] `devtools::document()`, `NEWS.md` entry under the development heading (breaking return shape; drafts in threads; reply headers; label-based draft status; draft queries), `pkgdown::check_pkgdown()`.
+- [ ] Integration probes from the review: stale id (delete by id, then replace → warning, new id); update of a threaded draft keeps threadId and headers (A2); attachment over 5 MB on create and update through the JSON route (A1); labels after a replace (A3); status for a malformed id (A4). Record each in findings.md.
 - [ ] Integration tests (`MC_RUN_INTEGRATION=true`): create a draft, replace it by the returned `draft_id`, and check the id is the same with the new body; a draft with an attachment, created and updated through the JSON path; send to self, draft into that thread, and check the threadId and both headers; `mc_message_find(status = "draft")` finds only the tagged draft. Every draft the tests make is deleted in `withr::defer()` by the id mc returned.
 
 ## Owed at the end (reported, done after merge)
 
 - [ ] Draft (not post) a short gmailr issue offering `thread_id` on `gm_create_draft()` and a `gm_update_draft()`, following the upstream rules (fork issue labelled `upstream-draft`, AI disclosed). Show it to you; nothing is posted without your word.
+
+- [ ] File a soul issue: `conventions/communications.md` and the `email-draft` skill say drafts cannot join a thread, and the skill commits the `.md` before `mc_md_draft()` writes `draft_id:` (S1, S2).
 
 ## Validation
 

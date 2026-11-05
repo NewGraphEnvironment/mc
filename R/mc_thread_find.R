@@ -286,6 +286,9 @@ extract_body <- function(payload, mime_type) {
 
 
 #' Extract a header value from a gmailr message
+#'
+#' Header names are matched ignoring case, as RFC 5322 has them: senders
+#' write `Message-ID` and `Message-Id` alike.
 #' @param msg A gmailr message object.
 #' @param name Header name (e.g., "From", "Subject", "Date").
 #' @return Character string or `NA_character_`.
@@ -294,7 +297,7 @@ extract_header <- function(msg, name) {
   headers <- msg$payload$headers
   if (is.null(headers)) return(NA_character_)
   for (h in headers) {
-    if (identical(h$name, name)) return(h$value)
+    if (identical(tolower(h$name %||% ""), tolower(name))) return(h$value)
   }
   NA_character_
 }

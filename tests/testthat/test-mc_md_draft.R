@@ -176,3 +176,63 @@ test_that("mc_md_send ignores draft_id in the frontmatter", {
   mc_md_send(p)
   expect_false("draft_id" %in% names(captured))
 })
+
+test_that("frontmatter_set leaves a file alone when the line would not read back", {
+  # Flow style: a line appended after {...} is a YAML parse error
+  txt <- "---\n{to: a@x.com, subject: Hi}\n---\nbody\n"
+  d <- tempfile()
+  dir.create(d)
+  p <- file.path(d, "draft.md")
+  writeBin(charToRaw(txt), p)
+  expect_error(frontmatter_set(p, "draft_id", "r-1"), "read back")
+  expect_equal(read_bytes(p), txt)
+  expect_equal(list.files(d), "draft.md")
+})
+
+test_that("to_self neither replaces nor records the file's draft", {
+  txt <- "---\nto: a@x.com\nsubject: Hi\ndraft_id: \"r-real\"\n---\nbody\n"
+  p <- write_bytes(txt)
+  captured <- NULL
+  mockery::stub(mc_md_draft, "mc_draft", function(...) {
+    captured <<- list(...)
+    invisible(list(draft_id = "r-test", thread_id = "t", message_id = "m"))
+  })
+  mc_md_draft(p, to_self = TRUE)
+  expect_null(captured$draft_id)
+  expect_equal(read_bytes(p), txt)
+})
+
+test_that("an empty draft_id in the frontmatter counts as none", {
+  p <- write_bytes("---\nto: a@x.com\nsubject: Hi\ndraft_id: \"\"\n---\nbody\n")
+  captured <- NULL
+  mockery::stub(mc_md_draft, "mc_draft", function(...) {
+    captured <<- list(...)
+    invisible(list(draft_id = "r-1", thread_id = "t", message_id = "m"))
+  })
+  suppressMessages(mc_md_draft(p))
+  expect_null(captured$draft_id)
+  expect_equal(mc_md_meta(p)$draft_id, "r-1")
+})
+
+test_that("mc_md_send refuses override draft_id against the real mc_send signature", {
+  p <- write_bytes("---\nto: a@x.com\nsubject: Hi\n---\nbody\n")
+  local_mocked_bindings(
+    gm_send_message = function(...) stop("must not send"),
+    .package = "gmailr"
+  )
+  expect_error(mc_md_send(p, override = list(draft_id = "r1")), "mc_md_draft")
+})
+
+test_that("mc_md_send with draft_id in the frontmatter reaches the real mc_send and says the draft remains", {
+  p <- write_bytes("---\nto: a@x.com\nsubject: Hi\ndraft_id: \"r-1\"\nfrom: me@x.com\nsig: false\n---\nbody\n")
+  env <- new.env()
+  local_mocked_bindings(
+    gm_send_message = function(msg, ...) {
+      env$sent <- TRUE
+      list(threadId = "t")
+    },
+    .package = "gmailr"
+  )
+  expect_message(mc_md_send(p), "Draft r-1 from this file is still in Gmail")
+  expect_true(env$sent)
+})

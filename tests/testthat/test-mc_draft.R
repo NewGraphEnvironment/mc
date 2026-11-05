@@ -67,20 +67,6 @@ test_that("mc_draft to_self overrides to/cc/bcc/thread_id", {
   expect_false(grepl("dave@example.com", hdrs))
 })
 
-test_that("mc_draft warns when thread_id is set", {
-  local_mocked_bindings(
-    gm_create_draft = function(msg) msg,
-    .package = "gmailr"
-  )
-  expect_warning(
-    mc_draft(
-      html = "<p>hi</p>", to = "bob@example.com",
-      subject = "Test", from = "alice@example.com",
-      thread_id = "abc123"
-    ),
-    "will NOT appear in thread"
-  )
-})
 
 test_that("mc_draft applies labels to the draft thread", {
   modify_args <- NULL
@@ -214,7 +200,7 @@ test_that("mc_draft(draft_id = ) replaces that draft and keeps its id", {
     res <- mc_draft(html = "<p>new body</p>", to = "bob@example.com",
                     subject = "Edited", from = "alice@example.com", sig = FALSE,
                     draft_id = "r1"),
-    "Draft r1 updated"
+    "Draft r1 replaced"
   )
   expect_equal(env$draft_id, "r1")
   expect_match(env$raw, "Subject: Edited", fixed = TRUE)
@@ -307,4 +293,12 @@ test_that("base64url_padded matches the encoding gmailr gives a send", {
   for (s in c("a", "ab", "abc", strrep("Subject: x\r\né?>~", 300))) {
     expect_identical(base64url_padded(s), gmailr:::base64url_encode(s))
   }
+})
+
+test_that("mc_draft rejects an empty draft_id", {
+  expect_error(
+    mc_draft(html = "<p>x</p>", to = "bob@example.com", subject = "s",
+             from = "alice@example.com", draft_id = ""),
+    "must not be empty"
+  )
 })
