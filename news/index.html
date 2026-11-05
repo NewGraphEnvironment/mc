@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">mc</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -32,9 +32,25 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/NewGraphEnvironment/mc/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/NewGraphEnvironment/mc/blob/v0.4.1/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.4.1" id="mc-041">mc 0.4.1<a class="anchor" aria-label="anchor" href="#mc-041"></a></h2>
+<div class="section level3">
+<h3 id="new-0-4-1">New<a class="anchor" aria-label="anchor" href="#new-0-4-1"></a></h3>
+<ul><li>
+<strong>Inline images.</strong> <code>inline_images = c(card = "fig/card.png")</code> on <code><a href="../reference/mc_send.html">mc_send()</a></code>, <code><a href="../reference/mc_draft.html">mc_draft()</a></code>, <code><a href="../reference/mc_md_send.html">mc_md_send()</a></code> and <code><a href="../reference/mc_md_draft.html">mc_md_draft()</a></code> shows an image in the body. The body references it as <code>&lt;img src="cid:card"&gt;</code>, or in markdown as <code>![alt](cid:card)</code>; YAML frontmatter takes a mapping. A <code>cid:</code> reference with no matching image stops the send, and an image the body never references is a warning. Scheduled sends carry the images, and <code><a href="../reference/mc_preview.html">mc_preview()</a></code> shows them. Gmail displays them in the body with no attachment card (<a href="https://github.com/NewGraphEnvironment/mc/issues/43" class="external-link">#43</a>).</li>
+<li>
+<strong>Links open in a new tab.</strong> Every link from markdown, or from an HTML part of <code><a href="../reference/mc_compose.html">mc_compose()</a></code>, gets <code>target="_blank" rel="noopener noreferrer"</code>, unless it sets its own <code>target</code> or <code>rel</code> or points at an anchor in the message (<a href="https://github.com/NewGraphEnvironment/mc/issues/35" class="external-link">#35</a>).</li>
+</ul></div>
+<div class="section level3">
+<h3 id="fixes-0-4-1">Fixes<a class="anchor" aria-label="anchor" href="#fixes-0-4-1"></a></h3>
+<ul><li>Each table style declaration is written once, and the cells of aligned columns get their border and padding, which they never had (<a href="https://github.com/NewGraphEnvironment/mc/issues/42" class="external-link">#42</a>).</li>
+<li>Table styles, link targets and the <code>cid:</code> check leave markup inside a quoted attribute value alone, so kableExtra tooltips and popovers come through intact.</li>
+<li>Integration tests send from a <code>.md</code> file with the signature (<a href="https://github.com/NewGraphEnvironment/mc/issues/10" class="external-link">#10</a>).</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.4.0" id="mc-040">mc 0.4.0<a class="anchor" aria-label="anchor" href="#mc-040"></a></h2>
 <div class="section level3">
