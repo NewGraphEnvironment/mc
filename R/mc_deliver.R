@@ -363,7 +363,12 @@ resolve_send_at <- function(send_at) {
 #' @return `NULL`, invisibly. Called for its errors and warnings.
 #' @keywords internal
 check_inline_images <- function(inline_images, html) {
-  refs <- unique(regmatches(html, gregexpr("(?<=cid:)[A-Za-z0-9._@-]+", html, perl = TRUE))[[1]])
+  # Only a src attribute is a reference: "cid:" in prose is not
+  refs <- regmatches(
+    html,
+    gregexpr("(?i)\\bsrc\\s*=\\s*[\"']cid:\\K[A-Za-z0-9._@-]+", html, perl = TRUE)
+  )[[1]]
+  refs <- unique(refs)
   if (is.null(inline_images)) {
     if (length(refs)) stop("HTML references cid: ", paste(refs, collapse = ", "),
                            " but no inline_images were given.", call. = FALSE)

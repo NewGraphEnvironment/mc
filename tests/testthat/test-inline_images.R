@@ -132,3 +132,17 @@ test_that("inline images reach the fired send by name through the args JSON", {
     expect_identical(sent$inline_images, imgs)
   }
 })
+
+test_that("only a src attribute counts as a cid reference", {
+  env <- new.env(); capture_send(env)
+  send <- function(html, imgs = NULL) mc_send(html = html, to = "bob@example.com", subject = "x",
+                                              from = "alice@example.com", sig = FALSE,
+                                              inline_images = imgs)
+  # Prose that contains "cid:" is not a reference
+  expect_no_error(send("<p>Placid:calm. Write cid:card to reference it.</p>"))
+  # Single quotes, spaces around = and upper case are references
+  img <- png_file()
+  expect_no_warning(send("<img src='cid:card'>", c(card = img)))
+  expect_no_warning(send('<img SRC = "cid:card">', c(card = img)))
+  expect_error(send("<img src='cid:other'>", c(card = img)), "no matching inline image")
+})

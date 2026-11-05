@@ -60,8 +60,8 @@ Approved by the owner at the plan gate, 2026-11-05.
 - [x] Callr backend keeps names (R object passed directly): one test
 
 ## Phase 2: Tighten the `cid:` scan (#43)
-- [ ] Tests: prose containing `cid:` with no images sends; `src='cid:x'` (single quotes) is found
-- [ ] `check_inline_images()` matches `src\s*=\s*["']cid:<token>` only
+- [x] Tests: prose containing `cid:` with no images sends; `src='cid:x'` (single quotes) is found
+- [x] `check_inline_images()` matches `src\s*=\s*["']cid:<token>` only
 
 ## Phase 3: Table styles once, aligned cells styled (#42)
 - [ ] Tests: each declaration appears once per `<table>`/`<th>`/`<td>`; aligned `<th align=…>`/`<td align=…>` get the style; kable `style="…"` attributes still merged; idempotent on a second call

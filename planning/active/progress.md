@@ -11,3 +11,4 @@
   `read_scheduled_args()` (used by `run_scheduled_send()` and by main's round-trip guard) turns
   it back into a named character vector; `mc_deliver()` makes each image's directory absolute,
   keeping names. Tests watched red first (4 in test-inline_images.R, the guard in test-mc_schedule.R)
+- Phase 2: `check_inline_images()` reads only `src="cid:…"` / `src='cid:…'` (case-insensitive, spaces around `=`); prose test watched red first
