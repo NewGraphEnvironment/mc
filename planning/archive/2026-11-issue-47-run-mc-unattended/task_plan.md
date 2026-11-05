@@ -105,10 +105,10 @@ Plan approved by the user 2026-11-04 (plan mode, `/planning-init 47`).
 
 ## Validation
 
-- [ ] Tests pass
-- [ ] `/code-check` clean (once over the branch with `/code-check branch`)
-- [ ] PWF checkboxes match landed work
-- [ ] `/planning-archive` on completion
+- [x] Tests pass
+- [x] `/code-check` clean (once over the branch with `/code-check branch`)
+- [x] PWF checkboxes match landed work
+- [x] `/planning-archive` on completion
 
 How each change is proved:
 
