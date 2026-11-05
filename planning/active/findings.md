@@ -162,3 +162,30 @@ frame; noted, not a defect).
 
 Enumeration unchanged and still complete: 3 start-tag finders, 3 attribute readers, 1 cid walker
 (2 consumers), all through the shared helpers; the tag grammar itself now has one definition.
+
+## Code-check round 4 (review-round4.md): the walk, not the grammar
+
+Round 4 confirmed the grammar (fuzzed 40,000 strings: tokenizer and tag regex agree on all 12,034
+matched tags) and found the mechanism one level up: `style_tag()` and `inject_link_target()` each
+walked only their own tag name, so they never consumed other tags and read markup inside another
+tag's quoted value (kableExtra `cell_spec(popover = )` / `tooltip = `); and the invalid-UTF-8 fix
+sat in one caller (`check_inline_images()`), so the preview disagreed with the send, and its
+`sub = "byte"` wrote `<e9>`, whose `>` ended an unquoted value.
+
+Fix: `rewrite_start_tags()`, the one walk over every start tag (any name, via
+`start_tag_regex()`), used by `style_tag()`, `inject_link_target()` and `cid_walk()`; it replaces
+invalid UTF-8 bytes with `?` before matching. Checked with a real kableExtra table through
+`mc_compose()`: popover and tooltip values untouched, cells styled once. Behaviour note: a body
+that is itself invalid UTF-8 now goes out with `?` for the bad bytes (the signature is appended
+after the style and link passes, so it is only read, by the cid check and the preview).
+
+**Terminal enumeration** (the loop's stopping rule after inside-a-fix findings in rounds 2-4),
+by `grep` over `R/`:
+- Walks over start tags: 1, `rewrite_start_tags()`; its callers: 3 (`style_tag`,
+  `inject_link_target`, `cid_walk`). `gregexpr(start_tag_regex(...))` call sites: 1, inside it.
+- Tag grammar definitions: 1 (`start_tag_regex()`), built on the one attribute grammar
+  (`html_attr_regex()`), which the tokenizer (`tag_attrs()`, its only other user) also uses.
+- Attribute readers: 3, all `tag_attrs()`. `cid:` readers: 1, `cid_walk()` (2 consumers).
+- Encoding handling: 1, inside the walk.
+- Outside: 2 `gsub("<[^>]+>", ...)` in `mc_thread_find.R`, thread-to-text, predating the branch.
+Nothing that recognises HTML structure sits outside these helpers, so no caller can drift from them.

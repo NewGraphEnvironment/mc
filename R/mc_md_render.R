@@ -155,34 +155,31 @@ inline_table_styles <- function(html) {
 #' Put `css` first in the style of every `<tag>` (internal)
 #'
 #' @param html Character string of HTML.
-#' @param tag Element name, e.g. `"td"`. `<thead>` does not match `"th"`.
+#' @param tag Element name, lower case, e.g. `"td"`.
 #' @param css Declarations to add.
 #' @return HTML with each `<tag>` styled once.
 #' @noRd
 style_tag <- function(html, tag, css) {
-  m <- gregexpr(start_tag_regex(tag), html, perl = TRUE, ignore.case = TRUE)
-  regmatches(html, m) <- lapply(regmatches(html, m), function(tags) {
-    vapply(tags, function(t) {
-      a <- tag_attrs(t)
-      i <- match("style", a$name)
-      if (is.na(i)) {
-        return(sub("\\s*/?>$", paste0(' style="', css, '">'), t, perl = TRUE))
-      }
-      # Valueless (`style`, `style=`): replace the whole attribute
-      if (is.na(a$vstart[i])) {
-        return(paste0(substr(t, 1, a$astart[i] - 1), ' style="', css, '"',
-                      substr(t, a$astart[i] + a$alen[i], nchar(t))))
-      }
-      if (startsWith(a$value[i], css)) return(t)
-      # Rewrite the style value in place, quoted, our declarations first
-      new <- paste0('"', css, if (nzchar(a$value[i])) " ", gsub('"', "&quot;", a$value[i], fixed = TRUE), '"')
-      if (nzchar(a$quote[i]) && a$quote[i] == "'") {
-        new <- paste0("'", css, if (nzchar(a$value[i])) " ", a$value[i], "'")
-      }
-      paste0(substr(t, 1, a$vstart[i] - 1), new, substr(t, a$vstart[i] + a$vlen[i], nchar(t)))
-    }, character(1), USE.NAMES = FALSE)
+  rewrite_start_tags(html, function(t, name) {
+    if (name != tag) return(t)
+    a <- tag_attrs(t)
+    i <- match("style", a$name)
+    if (is.na(i)) {
+      return(sub("\\s*/?>$", paste0(' style="', css, '">'), t, perl = TRUE))
+    }
+    # Valueless (`style`, `style=`): replace the whole attribute
+    if (is.na(a$vstart[i])) {
+      return(paste0(substr(t, 1, a$astart[i] - 1), ' style="', css, '"',
+                    substr(t, a$astart[i] + a$alen[i], nchar(t))))
+    }
+    if (startsWith(a$value[i], css)) return(t)
+    # Rewrite the style value in place, quoted, our declarations first
+    new <- paste0('"', css, if (nzchar(a$value[i])) " ", gsub('"', "&quot;", a$value[i], fixed = TRUE), '"')
+    if (nzchar(a$quote[i]) && a$quote[i] == "'") {
+      new <- paste0("'", css, if (nzchar(a$value[i])) " ", a$value[i], "'")
+    }
+    paste0(substr(t, 1, a$vstart[i] - 1), new, substr(t, a$vstart[i] + a$vlen[i], nchar(t)))
   })
-  html
 }
 
 
@@ -196,22 +193,19 @@ style_tag <- function(html, tag, css) {
 #' @return HTML with each link opening in a new tab.
 #' @noRd
 inject_link_target <- function(html) {
-  m <- gregexpr(start_tag_regex("a"), html, perl = TRUE, ignore.case = TRUE)
-  regmatches(html, m) <- lapply(regmatches(html, m), function(tags) {
-    vapply(tags, function(t) {
-      a <- tag_attrs(t)
-      href <- a$value[match("href", a$name)]
-      # Not a link, or a link within the message, which stays in the message
-      if (is.na(href) || startsWith(trimws(href), "#")) return(t)
-      add <- c(
-        if (!"target" %in% a$name) 'target="_blank"',
-        if (!"rel" %in% a$name) 'rel="noopener noreferrer"'
-      )
-      if (length(add) == 0) return(t)
-      sub("\\s*>$", paste0(" ", paste(add, collapse = " "), ">"), t, perl = TRUE)
-    }, character(1), USE.NAMES = FALSE)
+  rewrite_start_tags(html, function(t, name) {
+    if (name != "a") return(t)
+    a <- tag_attrs(t)
+    href <- a$value[match("href", a$name)]
+    # Not a link, or a link within the message, which stays in the message
+    if (is.na(href) || startsWith(trimws(href), "#")) return(t)
+    add <- c(
+      if (!"target" %in% a$name) 'target="_blank"',
+      if (!"rel" %in% a$name) 'rel="noopener noreferrer"'
+    )
+    if (length(add) == 0) return(t)
+    sub("\\s*>$", paste0(" ", paste(add, collapse = " "), ">"), t, perl = TRUE)
   })
-  html
 }
 
 
@@ -231,19 +225,44 @@ html_attr_regex <- function(capture = FALSE) {
 }
 
 
-#' A regex for an HTML start tag, outside comments and raw text (internal)
+#' A regex for any HTML start tag, outside comments and raw text (internal)
 #'
 #' Attributes are consumed by [html_attr_regex()], so a `>` or a stray quote
 #' inside a value (kableExtra writes tooltips unescaped) does not end the tag.
 #' Comments, CDATA and the contents of `<script>` and `<style>` are skipped,
-#' as a reader skips them. `"th"` does not match `<thead>`.
+#' as a reader skips them. It matches every tag name, so a scan consumes each
+#' tag whole and never reads markup inside another tag's value; pick a tag by
+#' name afterwards, as [rewrite_start_tags()] does.
 #'
-#' @param name Element name, or a regex for any name (the default).
 #' @return A PCRE pattern matching one whole start tag.
 #' @noRd
-start_tag_regex <- function(name = "[A-Za-z][A-Za-z0-9-]*") {
+start_tag_regex <- function() {
   skip <- "(?:<!--.*?-->|<!\\[CDATA\\[.*?\\]\\]>|<(script|style)\\b.*?</\\1\\s*>)(*SKIP)(*FAIL)|"
-  paste0("(?s)", skip, "<(?:", name, ")(?:\\s+", html_attr_regex(), ")*+\\s*/?>")
+  paste0("(?s)", skip, "<[A-Za-z][A-Za-z0-9-]*(?:\\s+", html_attr_regex(), ")*+\\s*/?>")
+}
+
+
+#' Rewrite each HTML start tag in turn (internal)
+#'
+#' The one walk over start tags, shared by the table styles, the link pass and
+#' the cid reader, so all three see the same tags. A body that is not valid
+#' UTF-8 (a latin1 signature, say) has its bad bytes replaced with `?` first;
+#' otherwise the regex fails and the walk sees nothing.
+#'
+#' @param html Character string of HTML.
+#' @param fun Function of the tag text and its lower-case name, returning the
+#'   tag to put in its place.
+#' @return HTML with each start tag replaced by `fun()`'s result.
+#' @noRd
+rewrite_start_tags <- function(html, fun) {
+  if (!validUTF8(html)) html <- iconv(html, "UTF-8", "UTF-8", sub = "?")
+  m <- gregexpr(start_tag_regex(), html, perl = TRUE)
+  regmatches(html, m) <- lapply(regmatches(html, m), function(tags) {
+    vapply(tags, function(t) {
+      fun(t, tolower(regmatches(t, regexpr("(?<=^<)[A-Za-z][A-Za-z0-9-]*", t, perl = TRUE))))
+    }, character(1), USE.NAMES = FALSE)
+  })
+  html
 }
 
 

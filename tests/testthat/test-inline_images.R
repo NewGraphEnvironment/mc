@@ -235,3 +235,8 @@ test_that("invalid UTF-8 in the body does not blind the cid check", {
   expect_false(validUTF8(html))
   expect_error(suppressWarnings(mc:::check_inline_images(NULL, html)), "no inline_images")
 })
+
+test_that("invalid UTF-8 in an unquoted value does not end the tag for the cid check", {
+  html <- paste0("<img alt=Caf", rawToChar(as.raw(0xe9)), " src=cid:logo>")
+  expect_error(suppressWarnings(mc:::check_inline_images(NULL, html)), "no inline_images")
+})

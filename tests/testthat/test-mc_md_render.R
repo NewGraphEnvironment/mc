@@ -191,3 +191,18 @@ test_that("tags inside comments and script or style content are left alone", {
   x <- '<!-- <a href="https://a.com">old</a> --><style>td{}</style><script>var s = "<td>";</script>'
   expect_identical(mc:::inject_link_target(mc:::inline_table_styles(x)), x)
 })
+
+test_that("markup inside another tag's quoted value is not a tag", {
+  # kableExtra cell_spec(popover = ) and cell_spec(tooltip = ) write these unescaped
+  pop <- "<span data-content=\"see <a href='https://x.org'>site</a>\">1</span>"
+  expect_identical(mc:::inject_link_target(pop), pop)
+  expect_identical(
+    mc:::inline_table_styles('<span title="a <td> b">x</span>'),
+    '<span title="a <td> b">x</span>'
+  )
+  # A comment opener inside a value does not hide the cells after it
+  expect_identical(
+    mc:::inline_table_styles('<span title="<!-- x">s</span><td>1</td>'),
+    '<span title="<!-- x">s</span><td style="border: 1px solid #ddd; padding: 8px;">1</td>'
+  )
+})

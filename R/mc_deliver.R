@@ -369,10 +369,7 @@ check_inline_images <- function(inline_images, html) {
   # CSS url() in a style attribute, read from tags only, so "cid:" in prose,
   # in a code span or inside another attribute's value is not one, nor is
   # data-src.
-  # Read invalid UTF-8 (a latin1 signature, say) with the bad bytes escaped,
-  # rather than let the regex fail and the check pass by seeing nothing
-  scan <- if (validUTF8(html)) html else iconv(html, "UTF-8", "UTF-8", sub = "byte")
-  refs <- cid_refs(scan)
+  refs <- cid_refs(html)
   refs <- unique(refs)
   if (is.null(inline_images)) {
     if (length(refs)) stop("HTML references cid: ", paste(refs, collapse = ", "),
@@ -429,32 +426,29 @@ cid_walk <- function(html, replace = NULL) {
     r <- replace(id)
     if (is.na(r)) whole else r
   }
-  m <- gregexpr(start_tag_regex(), html, perl = TRUE)
-  regmatches(html, m) <- lapply(regmatches(html, m), function(tags) {
-    vapply(tags, function(t) {
-      a <- tag_attrs(t)
-      # Right to left, so earlier positions stay valid as values change length
-      for (i in rev(which(a$name %in% c("src", "background", "style")))) {
-        v <- a$value[i]
-        if (a$name[i] == "style") {
-          mm <- gregexpr(paste0("(?i)(url\\(\\s*[\"']?)cid:(", tok, ")"), v, perl = TRUE)
-          regmatches(v, mm) <- lapply(regmatches(v, mm), function(x) {
-            vapply(x, function(u) {
-              id <- sub(paste0("(?i)^url\\(\\s*[\"']?cid:(", tok, ")$"), "\\1", u, perl = TRUE)
-              paste0(sub("(?i)cid:.*$", "", u, perl = TRUE), swap(id, paste0("cid:", id)))
-            }, character(1), USE.NAMES = FALSE)
-          })
-        } else {
-          hit <- regmatches(v, regexec(paste0("(?i)^(\\s*)cid:(", tok, ")(.*)$"), v, perl = TRUE))[[1]]
-          if (length(hit) == 0) next
-          v <- paste0(hit[2], swap(hit[3], paste0("cid:", hit[3])), hit[4])
-        }
-        if (identical(v, a$value[i])) next
-        t <- paste0(substr(t, 1, a$vstart[i] - 1), a$quote[i], v, a$quote[i],
-                    substr(t, a$vstart[i] + a$vlen[i], nchar(t)))
+  html <- rewrite_start_tags(html, function(t, name) {
+    a <- tag_attrs(t)
+    # Right to left, so earlier positions stay valid as values change length
+    for (i in rev(which(a$name %in% c("src", "background", "style")))) {
+      v <- a$value[i]
+      if (a$name[i] == "style") {
+        mm <- gregexpr(paste0("(?i)(url\\(\\s*[\"']?)cid:(", tok, ")"), v, perl = TRUE)
+        regmatches(v, mm) <- lapply(regmatches(v, mm), function(x) {
+          vapply(x, function(u) {
+            id <- sub(paste0("(?i)^url\\(\\s*[\"']?cid:(", tok, ")$"), "\\1", u, perl = TRUE)
+            paste0(sub("(?i)cid:.*$", "", u, perl = TRUE), swap(id, paste0("cid:", id)))
+          }, character(1), USE.NAMES = FALSE)
+        })
+      } else {
+        hit <- regmatches(v, regexec(paste0("(?i)^(\\s*)cid:(", tok, ")(.*)$"), v, perl = TRUE))[[1]]
+        if (length(hit) == 0) next
+        v <- paste0(hit[2], swap(hit[3], paste0("cid:", hit[3])), hit[4])
       }
-      t
-    }, character(1), USE.NAMES = FALSE)
+      if (identical(v, a$value[i])) next
+      t <- paste0(substr(t, 1, a$vstart[i] - 1), a$quote[i], v, a$quote[i],
+                  substr(t, a$vstart[i] + a$vlen[i], nchar(t)))
+    }
+    t
   })
   list(refs = refs, html = html)
 }

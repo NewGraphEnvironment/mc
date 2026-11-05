@@ -140,3 +140,11 @@ test_that("the preview rewrites only the references a send checks", {
   expect_match(out, paste0('alt="a > b" src="', url, '"'), fixed = TRUE)
   expect_match(out, paste0("url('", url, "')"), fixed = TRUE)
 })
+
+test_that("the preview rewrites images in a body that is not valid UTF-8", {
+  img <- tempfile(fileext = ".png")
+  writeBin(as.raw(1:10), img)
+  html <- paste0('<img src="cid:card"><p>caf', rawToChar(as.raw(0xe9)), "</p>")
+  out <- suppressWarnings(mc:::preview_inline_images(html, list(card = img)))
+  expect_match(out, mc:::file_url(img), fixed = TRUE)
+})
