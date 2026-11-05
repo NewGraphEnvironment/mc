@@ -33,9 +33,13 @@ mc_deliver <- function(path = NULL,
                        labels_create = TRUE,
                        html = NULL,
                        send_at = NULL,
-                       scheduler = c("callr", "auto", "launchd", "at")) {
+                       scheduler = NULL) {
 
-  scheduler <- match.arg(scheduler)
+  scheduler <- if (is.null(scheduler)) {
+    default_scheduler()
+  } else {
+    match.arg(scheduler, c("auto", "callr", "launchd", "at"))
+  }
 
   # Before the chk block: `from` defaults to default_from(), and chk_string(from)
   # forces it. A call missing its body is an argument error, and it should be

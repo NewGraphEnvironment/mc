@@ -381,7 +381,7 @@ test_that("mc_send warns when send_at is non-NULL (lifecycle caveat)", {
     mc_send(
       html = "<p>x</p>", to = "test@test.com",
       subject = "scheduled", from = "test@test.com",
-      send_at = 5
+      send_at = 5, scheduler = "callr"
     ),
     "scheduled-send is unreliable"
   )
@@ -409,7 +409,7 @@ test_that("mc_send writes SCHEDULED log entry at submission time", {
     mc_send(
       html = "<p>x</p>", to = "test@test.com",
       subject = "scheduled subject", from = "test@test.com",
-      send_at = 5
+      send_at = 5, scheduler = "callr"
     )
   )
   # Exactly one SCHEDULED entry should land at submission, with target= detail

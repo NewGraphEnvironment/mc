@@ -20,7 +20,7 @@ mc_send(
   labels_create = TRUE,
   html = NULL,
   send_at = NULL,
-  scheduler = c("callr", "auto", "launchd", "at")
+  scheduler = NULL
 )
 }
 \arguments{
@@ -70,9 +70,12 @@ or a numeric number of minutes from now. Default \code{NULL} (send now).
 Scheduling is inherently a send, which is why it lives here and not on
 \code{\link[=mc_draft]{mc_draft()}}.}
 
-\item{scheduler}{Backend for scheduled send. One of \code{"callr"} (default),
-\code{"auto"} (OS-native: \code{launchd} on macOS, \code{at} on Linux), \code{"launchd"}, or
-\code{"at"}. Ignored when \code{send_at} is \code{NULL}.}
+\item{scheduler}{Backend for scheduled send. One of \code{"auto"} (OS-native:
+\code{launchd} on macOS, \code{at} on Linux), \code{"callr"}, \code{"launchd"}, or \code{"at"}.
+Default \code{NULL} uses \code{"auto"} on macOS and Linux, where the OS owns the job
+and it survives the R session exiting, and \code{"callr"} elsewhere, with a
+warning that its send can be dropped. An explicit \code{"auto"} errors on a
+platform with no OS-native backend. Ignored when \code{send_at} is \code{NULL}.}
 }
 \value{
 The Gmail thread ID of the sent message, invisibly. When \code{send_at}

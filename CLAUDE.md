@@ -29,7 +29,7 @@ Mail Composer — compose, draft, and send emails from markdown via the Gmail AP
 - Gmail API interaction via `gmailr`
 - **Default sender:** `default_from()` in `mc_auth.R` checks `getOption("mc.from")` → `MC_FROM` env → fallback
 - **Header stripping:** `strip_md_header()` in `mc_md_render.R` shared by `mc_md_render()` and `mc_compose()` — must stay in lockstep
-- **Scheduled send:** `send_at` param on `mc_send()` uses `callr::r_bg()` + `caffeinate` on macOS; OS-native scheduler (`launchd` / `at`) via `scheduler = "auto"` is the v0.2.10 path
+- **Scheduled send:** `send_at` param on `mc_send()`. `scheduler = NULL` (default) resolves via `default_scheduler()` in `mc_schedule.R` to `"auto"` (OS-native `launchd` / `at`) on macOS and Linux, `"callr"` (`callr::r_bg()` + `caffeinate`) elsewhere; an explicit `"auto"` still errors off those platforms
 - **Send notifications:** `send_log()` writes to `~/.mc/send_log.txt`; `send_notify()` fires macOS notification
 - **MIME parsing:** `extract_body()` recursively walks nested multipart for thread reading
 - **Custom `%||%`:** in `mc_thread_find.R` — masks base R 4.4+ version, also catches length-0 (don't replace with base)
@@ -56,7 +56,7 @@ Mail Composer — compose, draft, and send emails from markdown via the Gmail AP
 
 ## Known Issues
 
-- **#8:** `callr::r_bg()` children die when parent Rscript exits. `send_at` (callr path) only works from interactive sessions or scripts with a `while(proc$is_alive())` loop. The `scheduler = "auto"` OS-native path (launchd / at, v0.2.10) avoids this — prefer it for production use.
+- **callr scheduler lifecycle (#8, #36):** `callr::r_bg()` children die when the parent Rscript exits, so `scheduler = "callr"` only works from interactive sessions or scripts with a `while(proc$is_alive())` loop. The default is OS-native on macOS and Linux, so this bites only where callr is the fallback or is named explicitly.
 
 ## Working Conventions
 

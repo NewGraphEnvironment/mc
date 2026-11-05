@@ -359,3 +359,54 @@ test_that("mc_send pre-renders path-based markdown before scheduling", {
                info = "html should be pre-rendered into args before scheduling")
   expect_match(schedule_args$html, "body content", fixed = TRUE)
 })
+
+# --- scheduler default (#8) --------------------------------------------------
+# With no scheduler named, a scheduled send uses the OS-native backend where one
+# exists, and falls back to callr (with its warning) where none does. An explicit
+# scheduler = "auto" keeps erroring on an unsupported platform.
+
+capture_default_scheduler <- function(sysname, ...) {
+  resolved <- NULL
+  local_mocked_bindings(
+    Sys.info = function() c(sysname = sysname),
+    .package = "base"
+  )
+  local_mocked_bindings(
+    schedule_send = function(target_time, args, scheduler) {
+      resolved <<- resolve_scheduler(scheduler)
+      list(backend = resolved)
+    },
+    send_log = function(...) invisible(NULL),
+    .package = "mc"
+  )
+  suppressMessages(
+    mc_send(html = "<p>x</p>", to = "t@t.com", subject = "s",
+            from = "f@f.com", send_at = 5, ...)
+  )
+  resolved
+}
+
+test_that("a scheduled send with no scheduler named uses launchd on macOS", {
+  expect_no_warning(resolved <- capture_default_scheduler("Darwin"))
+  expect_equal(resolved, "launchd")
+})
+
+test_that("a scheduled send with no scheduler named uses at on Linux", {
+  expect_no_warning(resolved <- capture_default_scheduler("Linux"))
+  expect_equal(resolved, "at")
+})
+
+test_that("a scheduled send with no scheduler named falls back to callr elsewhere", {
+  expect_warning(
+    resolved <- capture_default_scheduler("Windows"),
+    "scheduled-send is unreliable"
+  )
+  expect_equal(resolved, "callr")
+})
+
+test_that("an explicit scheduler = 'auto' still errors on an unsupported platform", {
+  expect_error(
+    capture_default_scheduler("Windows", scheduler = "auto"),
+    "scheduler 'auto' not supported on Windows"
+  )
+})

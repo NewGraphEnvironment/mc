@@ -141,33 +141,33 @@ will match by subject line if it starts with "Re:").
 ## Scheduled send
 
 Send an email later with `send_at` — either minutes from now or a specific
-time. Use `scheduler = "auto"` for durable OS-native scheduling (recommended):
+time. On macOS and Linux the operating system schedules the send, so it fires
+even after the R session that made it has exited:
 
 ```r
 # Send in 10 minutes via launchd (macOS) or atd (Linux)
 mc_send("draft.md",
         to = "brandon@example.com",
         subject = "Cottonwood plugs",
-        send_at = 10,
-        scheduler = "auto")
+        send_at = 10)
 
 # Send at a specific time
 mc_send("draft.md",
         to = "brandon@example.com",
         subject = "Cottonwood plugs",
-        send_at = as.POSIXct("2026-02-24 09:11:00"),
-        scheduler = "auto")
+        send_at = as.POSIXct("2026-02-24 09:11:00"))
 ```
 
-The `scheduler` argument selects the backend:
+The `scheduler` argument selects the backend. Left unset, it is `"auto"` on
+macOS and Linux and `"callr"` elsewhere:
 
-- `"callr"` (default for backward compatibility) — `callr::r_bg` background R
-  process. Survives some session lifecycles but **can be cleaned up if its
-  parent context exits** (one-shot `Rscript -e`, RStudio sessions that close,
-  CI). Emits a `warning()` on use steering you toward `"auto"`.
 - `"auto"` — resolves to `launchd` on macOS or `at` on Linux. The OS-native
   daemon owns the job lifecycle independent of any R session — survives
   shell exit, parent process death, and (on macOS) sleep/wake cycles.
+- `"callr"` — `callr::r_bg` background R process, the fallback where no
+  OS-native backend exists. **Can be cleaned up if its parent context exits**
+  (one-shot `Rscript -e`, RStudio sessions that close, CI), and emits a
+  `warning()` saying so.
 - `"launchd"` / `"at"` — force a specific backend.
 
 Heartbeat log entries land in `~/.mc/send_log.txt` so missed fires are

@@ -47,7 +47,20 @@ resolve_scheduler <- function(scheduler) {
 }
 
 
-#' callr-based scheduler (existing default)
+#' Scheduler used when the caller names none
+#'
+#' `"auto"` where an OS-native backend exists, so a scheduled send survives the
+#' R session that made it (#8). Elsewhere `"callr"`, whose warning says the send
+#' can be dropped; an explicit `"auto"` there still errors in
+#' `resolve_scheduler()`.
+#'
+#' @noRd
+default_scheduler <- function() {
+  if (Sys.info()[["sysname"]] %in% c("Darwin", "Linux")) "auto" else "callr"
+}
+
+
+#' callr-based scheduler (the fallback where no OS-native backend exists)
 #'
 #' Spawns a `callr::r_bg` child that sleeps until `target_time` then invokes
 #' [mc_send()] via the recursive path. Caffeinate keeps the machine awake on

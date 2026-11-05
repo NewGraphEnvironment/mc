@@ -74,13 +74,13 @@ Plan approved by the user 2026-11-04 (plan mode, `/planning-init 47`).
 
 ## Phase 4: OS-native scheduler by default (#8)
 
-- [ ] Failing tests first, in `test-mc_schedule.R`, mocking `Sys.info` and `schedule_send`:
+- [x] Failing tests first, in `test-mc_schedule.R`, mocking `Sys.info` and `schedule_send`:
   - with no scheduler named, Darwin passes `"auto"`, which resolves to launchd, and Linux resolves to at
   - Windows uses `"callr"` and gives the callr warning
   - an explicit `"auto"` on Windows still errors
-- [ ] Add internal `default_scheduler()` in `mc_schedule.R`, plus the `NULL` default in `mc_send()` and `mc_deliver()`, with `match.arg(scheduler, choices)` when the scheduler is not `NULL`
-- [ ] Update `test-mc_send.R:363` and `:385` to pass `scheduler = "callr"` explicitly
-- [ ] Update the `mc_send()` `@param scheduler` text, the README "Scheduled send" section, and the CLAUDE.md lines above the marker (Key Patterns scheduler line; Known Issues #8)
+- [x] Add internal `default_scheduler()` in `mc_schedule.R`, plus the `NULL` default in `mc_send()` and `mc_deliver()`, with `match.arg(scheduler, choices)` when the scheduler is not `NULL`
+- [x] Update `test-mc_send.R:363` and `:385` to pass `scheduler = "callr"` explicitly
+- [x] Update the `mc_send()` `@param scheduler` text, the README "Scheduled send" section, and the CLAUDE.md lines above the marker (Key Patterns scheduler line; Known Issues #8)
 
 ## Phase 5: Auth preflight and troubleshooting (#38)
 
