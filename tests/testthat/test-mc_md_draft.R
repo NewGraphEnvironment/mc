@@ -95,7 +95,7 @@ test_that("mc_md_draft records a new draft's id in the frontmatter, body untouch
   expect_equal(res$draft_id, "r-123")
   expect_equal(mc_md_meta(p)$draft_id, "r-123")
   expect_equal(read_bytes(p),
-               paste0("---\nto: a@x.com\nsubject: Hi\ndraft_id: \"r-123\"\n---\n", body))
+               paste0("---\ndraft_id: \"r-123\"\nto: a@x.com\nsubject: Hi\n---\n", body))
 })
 
 test_that("running the file again replaces its own draft and leaves the file alone", {
@@ -124,7 +124,7 @@ test_that("the write keeps CRLF line endings", {
   mockery::stub(mc_md_draft, "mc_draft", fake_draft("r-1"))
   suppressMessages(mc_md_draft(p))
   expect_equal(read_bytes(p),
-               "---\r\nto: a@x.com\r\nsubject: Hi\r\ndraft_id: \"r-1\"\r\n---\r\nbody\r\n")
+               "---\r\ndraft_id: \"r-1\"\r\nto: a@x.com\r\nsubject: Hi\r\n---\r\nbody\r\n")
 })
 
 test_that("override = list(draft_id = ) wins over the frontmatter", {
@@ -162,7 +162,7 @@ test_that("frontmatter_set reads the block parse_frontmatter reads", {
   # A key-like line in the body after the block must not be touched
   p <- write_bytes("---\nto: a@x.com\n---\ndraft_id: in the body\n")
   frontmatter_set(p, "draft_id", "r-5")
-  expect_equal(read_bytes(p), "---\nto: a@x.com\ndraft_id: \"r-5\"\n---\ndraft_id: in the body\n")
+  expect_equal(read_bytes(p), "---\ndraft_id: \"r-5\"\nto: a@x.com\n---\ndraft_id: in the body\n")
   expect_equal(parse_frontmatter(p)$meta$draft_id, "r-5")
 })
 
@@ -235,4 +235,26 @@ test_that("mc_md_send with draft_id in the frontmatter reaches the real mc_send 
   )
   expect_message(mc_md_send(p), "Draft r-1 from this file is still in Gmail")
   expect_true(env$sent)
+})
+
+test_that("override = list(to_self = TRUE) is a test copy too", {
+  txt <- "---\nto: a@x.com\nsubject: Hi\ndraft_id: \"r-real\"\n---\nbody\n"
+  p <- write_bytes(txt)
+  captured <- NULL
+  mockery::stub(mc_md_draft, "mc_draft", function(...) {
+    captured <<- list(...)
+    invisible(list(draft_id = "r-test", thread_id = "t", message_id = "m"))
+  })
+  mc_md_draft(p, override = list(to_self = TRUE))
+  expect_null(captured$draft_id)
+  expect_equal(read_bytes(p), txt)
+})
+
+test_that("a block scalar ending the frontmatter does not stop the id being recorded", {
+  txt <- "---\nto: a@x.com\nsubject: Hi\nnotes: |\n  line one\n---\nbody\n"
+  p <- write_bytes(txt)
+  mockery::stub(mc_md_draft, "mc_draft", fake_draft("r-7"))
+  expect_no_warning(suppressMessages(mc_md_draft(p)))
+  expect_equal(mc_md_meta(p)$draft_id, "r-7")
+  expect_equal(mc_md_meta(p)$notes, "line one")
 })

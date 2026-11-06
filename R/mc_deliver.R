@@ -355,8 +355,12 @@ reply_headers <- function(thread_id) {
   msgs <- Filter(function(m) {
     !any(c("DRAFT", "TRASH", "SPAM") %in% unlist(m$labelIds))
   }, thread$messages %||% list())
-  mid <- if (length(msgs)) extract_header(msgs[[length(msgs)]], "Message-ID") else NA
-  if (is.na(mid) || !nzchar(trimws(mid))) {
+  # Header values come from mail someone else wrote, so only well-formed
+  # msg-ids (<...> with no whitespace, CR or LF inside) are copied, and a
+  # Message-ID that is not one is treated as missing.
+  msg_id <- "<[^<>[:space:]]+>"
+  mid <- if (length(msgs)) trimws(extract_header(msgs[[length(msgs)]], "Message-ID")) else NA
+  if (is.na(mid) || !grepl(paste0("^", msg_id, "$"), mid)) {
     warning(
       "Thread ", thread_id, " has no message with a Message-ID to reply to. ",
       "Threading by Gmail thread id only.",
@@ -364,11 +368,10 @@ reply_headers <- function(thread_id) {
     )
     return(list())
   }
-  mid <- trimws(mid)
   parent <- msgs[[length(msgs)]]
   prior <- extract_header(parent, "References")
   if (is.na(prior)) prior <- extract_header(parent, "In-Reply-To")
-  ids <- if (is.na(prior)) character() else regmatches(prior, gregexpr("<[^<>]+>", prior))[[1]]
+  ids <- if (is.na(prior)) character() else regmatches(prior, gregexpr(msg_id, prior))[[1]]
   ids <- c(ids, mid)
   if (length(ids) > 11) ids <- c(ids[1], utils::tail(ids, 10))
   list(`In-Reply-To` = mid, References = paste(ids, collapse = " "))

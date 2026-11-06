@@ -204,3 +204,25 @@ test_that("to_self drops the thread, so no thread read and no headers", {
   expect_false(grepl("In-Reply-To", env$raw, fixed = TRUE))
   expect_match(env$raw, "Subject: Hello", fixed = TRUE)
 })
+
+test_that("header values from the thread are copied only as well-formed msg-ids", {
+  env <- new.env()
+  mock_thread_draft(env, thread = list(messages = list(hdr_msg(
+    "INBOX", `Message-ID` = "<a@x>\r\nBcc: evil@attacker.example",
+    References = "<z@x> <b\r\nCc: evil2@attacker.example>"
+  ))))
+  expect_warning(suppressMessages(draft_into()), "no message with a Message-ID")
+  expect_false(grepl("attacker", env$raw, fixed = TRUE))
+  expect_false(grepl("In-Reply-To", env$raw, fixed = TRUE))
+
+  # A good Message-ID with a References token that smuggles a line break:
+  # the bad token is dropped, the good ones kept
+  env2 <- new.env()
+  mock_thread_draft(env2, thread = list(messages = list(hdr_msg(
+    "INBOX", `Message-ID` = "<a@x>",
+    References = "<z@x> <b\r\nCc: evil2@attacker.example>"
+  ))))
+  suppressMessages(draft_into())
+  expect_false(grepl("attacker", env2$raw, fixed = TRUE))
+  expect_match(env2$raw, "References: <z@x> <a@x>", fixed = TRUE)
+})

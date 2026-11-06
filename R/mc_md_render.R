@@ -134,7 +134,8 @@ parse_frontmatter <- function(path) {
 #' Set one top-level key in a markdown file's YAML frontmatter (internal)
 #'
 #' Replaces the line `key: ...` in the frontmatter block, or adds it as the
-#' block's last line, and leaves every other byte of the file as it was
+#' block's first line (after the opening `---`, where it cannot fall inside a
+#' block scalar that ends the block), and leaves every other byte of the file as it was
 #' (line endings included). The block is the one `parse_frontmatter()` reads.
 #' The file is written to a temporary file beside it and moved into place.
 #'
@@ -165,7 +166,7 @@ frontmatter_set <- function(path, key, value) {
   block <- if (n == 1) {
     sub(pattern, line, block, perl = TRUE, useBytes = TRUE)
   } else {
-    paste0(block, eol, line)
+    paste0(line, eol, block)
   }
   tmp <- tempfile(tmpdir = dirname(path), fileext = ".md")
   writeBin(charToRaw(paste0(hit[2], block, hit[4], hit[5])), tmp)

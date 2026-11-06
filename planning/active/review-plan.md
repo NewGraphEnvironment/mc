@@ -26,6 +26,6 @@ Spawned 23:34Z against the baseline (90b7419) while Phases 1–2 were landing. F
 | G11 | NEWS must list behaviour changes | — | Adopt in Phase 5 |
 | O1 | Phase 2 text says thread routing; code routes draft_id only | — | Code is right; Phase 3 adds thread routing |
 | O2 | Headers and `Re:` between `to_self` and `gm_subject()` | — | Adopt |
-| S1/S2 | soul's communications convention and `email-draft` skill say drafts cannot thread, and the skill commits before `mc_md_draft()` writes the id | — | Owed: file a soul issue |
+| S1/S2 | the internal communications convention and `email-draft` skill say drafts cannot thread, and the skill commits before `mc_md_draft()` writes the id | — | Filed in the internal conventions repo |
 | S3 | `mc_md_send()` leaves the file's draft in Gmail | — | Adopt: a message naming the draft still there (mc never deletes) |
 | S4 | `extract_header()` ignoring case; preview/index extras | — | Header case adopted; extras not adopted |

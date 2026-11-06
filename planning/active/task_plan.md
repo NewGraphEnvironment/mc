@@ -64,7 +64,7 @@ That is easy to get wrong. A filter on the To header alone also matches drafts t
 
 - [ ] Draft (not post) a short gmailr issue offering `thread_id` on `gm_create_draft()` and a `gm_update_draft()`, following the upstream rules (fork issue labelled `upstream-draft`, AI disclosed). Show it to you; nothing is posted without your word.
 
-- [ ] File a soul issue: `conventions/communications.md` and the `email-draft` skill say drafts cannot join a thread, and the skill commits the `.md` before `mc_md_draft()` writes `draft_id:` (S1, S2).
+- [x] Filed an issue in the internal conventions repo (2026-11-05): its communications convention and email-draft skill say drafts cannot join a thread, and the skill commits the `.md` before `mc_md_draft()` writes `draft_id:` (S1, S2). To land after the v0.5.0 release.
 
 ## Validation
 

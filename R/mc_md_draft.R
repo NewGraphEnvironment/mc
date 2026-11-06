@@ -46,11 +46,13 @@ mc_md_draft <- function(path, to_self = FALSE, override = list()) {
   file_id <- mc_md_meta(path)$draft_id
   if (identical(file_id, "")) file_id <- NULL
   # A to_self draft is a test copy, never the file's tracked draft: it neither
-  # replaces that draft nor is recorded in its place.
-  if (is.null(args$draft_id) && !to_self) args$draft_id <- file_id
+  # replaces that draft nor is recorded in its place. Read from args, after
+  # override, which can set to_self too.
+  test_copy <- isTRUE(args$to_self)
+  if (is.null(args$draft_id) && !test_copy) args$draft_id <- file_id
   res <- do.call(mc_draft, args)
   new_id <- res$draft_id
-  if (!to_self && is.character(new_id) && length(new_id) == 1 &&
+  if (!test_copy && is.character(new_id) && length(new_id) == 1 &&
         nzchar(new_id) && !identical(new_id, file_id)) {
     # The draft exists by now, so a failed write warns rather than errors:
     # the caller still gets the id, and the warning carries it.
