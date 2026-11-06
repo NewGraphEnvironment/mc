@@ -11,20 +11,20 @@
 ## Citation
 
 Source:
-[`inst/CITATION`](https://github.com/NewGraphEnvironment/mc/blob/main/inst/CITATION)
+[`inst/CITATION`](https://github.com/NewGraphEnvironment/mc/blob/v0.5.0/inst/CITATION)
 
 Irvine A (2026). *mc: Mail Composer - Email Composition and Delivery*.
 New Graph Environment Ltd.
 [doi:10.5281/zenodo.23524725](https://doi.org/10.5281/zenodo.23524725).
-Version 0.4.1, <https://github.com/NewGraphEnvironment/mc>.
+Version 0.5.0, <https://github.com/NewGraphEnvironment/mc>.
 
     @Manual{mc,
       title = {mc: Mail Composer - Email Composition and Delivery},
       author = {Allan Irvine},
       organization = {New Graph Environment Ltd.},
       year = {2026},
-      version = {0.4.1},
-      note = {Version 0.4.1},
+      version = {0.5.0},
+      note = {Version 0.5.0},
       url = {https://github.com/NewGraphEnvironment/mc},
       doi = {10.5281/zenodo.23524725},
     }
