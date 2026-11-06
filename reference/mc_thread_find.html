@@ -36,7 +36,7 @@ an existing conversation."><meta property="og:image" content="https://newgraphen
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Search Gmail for thread IDs</h1>
-      <small class="dont-index">Source: <a href="https://github.com/NewGraphEnvironment/mc/blob/v0.4.1/R/mc_thread_find.R" class="external-link"><code>R/mc_thread_find.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/NewGraphEnvironment/mc/blob/main/R/mc_thread_find.R" class="external-link"><code>R/mc_thread_find.R</code></a></small>
       <div class="d-none name"><code>mc_thread_find.Rd</code></div>
     </div>
 
@@ -56,8 +56,11 @@ an existing conversation.</p>
 
 
 <dl><dt id="arg-query">query<a class="anchor" aria-label="anchor" href="#arg-query"></a></dt>
-<dd><p>Gmail search query. Supports the same syntax as the Gmail
-search box (e.g., <code>"from:brandon subject:cottonwood"</code>).</p></dd>
+<dd><p>Gmail search query. Takes the same search operators as the
+Gmail search box, such as <code>from:</code>, <code>to:</code>, <code>subject:</code>, <code>has:attachment</code>,
+<code>newer_than:7d</code>, <code>is:unread</code> and <code>in:drafts</code>, combined with spaces
+(and), <code>OR</code>, <code>-</code> (not) and quotes for exact phrases. The full list is in
+Google's <a href="https://support.google.com/mail/answer/7190" class="external-link">search operator reference</a>.</p></dd>
 
 
 <dt id="arg-n">n<a class="anchor" aria-label="anchor" href="#arg-n"></a></dt>
@@ -80,8 +83,19 @@ operators (inclusive/exclusive semantics follow Gmail's behaviour:
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
+<span class="r-in"><span><span class="co"># One sender, one topic</span></span></span>
 <span class="r-in"><span><span class="fu">mc_thread_find</span><span class="op">(</span><span class="st">"from:brandon.geldart subject:cottonwood"</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Recent mail only</span></span></span>
 <span class="r-in"><span><span class="fu">mc_thread_find</span><span class="op">(</span><span class="st">"from:brandon newer_than:7d"</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Mail with an attachment, an exact phrase, and a word left out</span></span></span>
+<span class="r-in"><span><span class="fu">mc_thread_find</span><span class="op">(</span><span class="st">'has:attachment "site plan" -invoice'</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Either of two senders, unread</span></span></span>
+<span class="r-in"><span><span class="fu">mc_thread_find</span><span class="op">(</span><span class="st">"from:(brandon OR cindy) is:unread"</span>, n <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Date filters as arguments</span></span></span>
 <span class="r-in"><span><span class="fu">mc_thread_find</span><span class="op">(</span><span class="st">"newsletter"</span>, after <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html" class="external-link">Sys.Date</a></span><span class="op">(</span><span class="op">)</span> <span class="op">-</span> <span class="fl">7</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
 <span class="r-in"><span></span></span>

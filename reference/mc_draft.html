@@ -34,7 +34,7 @@ deliver a message, call mc_send()."><meta property="og:image" content="https://n
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Create a Gmail draft from a markdown file</h1>
-      <small class="dont-index">Source: <a href="https://github.com/NewGraphEnvironment/mc/blob/v0.4.1/R/mc_draft.R" class="external-link"><code>R/mc_draft.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/NewGraphEnvironment/mc/blob/main/R/mc_draft.R" class="external-link"><code>R/mc_draft.R</code></a></small>
       <div class="d-none name"><code>mc_draft.Rd</code></div>
     </div>
 
@@ -53,6 +53,7 @@ deliver a message, call <code><a href="mc_send.html">mc_send()</a></code>.</p>
 <span>  bcc <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  from <span class="op">=</span> <span class="fu">default_from</span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  thread_id <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  draft_id <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  to_self <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  sig <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  sig_path <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -96,7 +97,19 @@ then the <code>MC_FROM</code> environment variable. Errors if neither is set.</p
 
 <dt id="arg-thread-id">thread_id<a class="anchor" aria-label="anchor" href="#arg-thread-id"></a></dt>
 <dd><p>Gmail thread ID to reply into. Default <code>NULL</code> (new thread).
-Use <code><a href="mc_thread_find.html">mc_thread_find()</a></code> to look up thread IDs.</p></dd>
+Use <code><a href="mc_thread_find.html">mc_thread_find()</a></code> to look up thread IDs. The message answers the
+thread's latest message: it carries <code>In-Reply-To</code> and <code>References</code>
+headers naming it, so recipients' mail clients thread it too, and the
+subject gains a <code>Re: </code> prefix unless it already has one. The thread is
+read first; if it cannot be read, nothing is sent.</p></dd>
+
+
+<dt id="arg-draft-id">draft_id<a class="anchor" aria-label="anchor" href="#arg-draft-id"></a></dt>
+<dd><p><code>NULL</code> (default) to create a new draft, or the id of a draft
+to replace in place, as returned in <code>draft_id</code> by an earlier call. Only
+that draft changes, and it keeps its id. If Gmail does not know the id
+(the draft was sent or deleted, or the id is not a draft id), a warning is
+given and a new draft is created.</p></dd>
 
 
 <dt id="arg-to-self">to_self<a class="anchor" aria-label="anchor" href="#arg-to-self"></a></dt>
@@ -159,15 +172,25 @@ error. Any other argument errors as unused.</p></dd>
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>The Gmail thread ID of the resulting draft, invisibly. May be <code>NULL</code>
-if the gmailr response did not include one.</p>
+    <p>A list, invisibly, with <code>draft_id</code> (pass it back as <code>draft_id</code> to
+replace this draft), <code>thread_id</code> and <code>message_id</code>. <code>draft_id</code> stays the
+same across replacements; <code>message_id</code> is the Gmail API id of the draft's
+current message (not its <code>Message-ID</code> header) and changes on each
+replacement. An element is <code>NULL</code> when Gmail's response did not include
+it.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p><code><a href="https://gmailr.r-lib.org/reference/gm_create_draft.html" class="external-link">gmailr::gm_create_draft()</a></code> does not accept a <code>thread_id</code>, so drafts always
-land outside the conversation. Supplying <code>thread_id</code> warns. Either move the
-draft into the thread from the Gmail UI before sending, or use <code><a href="mc_send.html">mc_send()</a></code>
-to deliver straight into the thread.</p>
+    <p>With <code>thread_id</code>, the draft is created in that conversation, ready to
+review and send from the thread, and carries the reply headers described
+in <code><a href="mc_send.html">mc_send()</a></code>. Gmail decides whether a draft joins a thread; if it puts
+the draft somewhere else, a warning says so.</p>
+<p>mc never deletes a draft. To regenerate one (a re-rendered attachment, an
+edited body), pass the <code>draft_id</code> it returned; nothing else in the mailbox
+is touched. Replacing overwrites the draft as it stands, including any
+edits made to it in Gmail. Pass the same <code>thread_id</code> and <code>labels</code> as when
+the draft was made: a replacement without <code>thread_id</code> takes the draft out of
+its thread, and labels not given again are dropped.</p>
 <p><code>send_at</code> and <code>scheduler</code> are not accepted here. A scheduled message is by
 definition one that gets sent, so scheduling lives on <code><a href="mc_send.html">mc_send()</a></code>.</p>
     </div>
@@ -182,6 +205,15 @@ definition one that gets sent, so scheduling lives on <code><a href="mc_send.htm
 <span class="r-in"><span><span class="fu">mc_draft</span><span class="op">(</span><span class="st">"communications/newsletter.md"</span>,</span></span>
 <span class="r-in"><span>         to <span class="op">=</span> <span class="st">"someone@example.com"</span>,</span></span>
 <span class="r-in"><span>         subject <span class="op">=</span> <span class="st">"Spring newsletter"</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Replace that draft after editing the file: same draft, same id</span></span></span>
+<span class="r-in"><span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu">mc_draft</span><span class="op">(</span><span class="st">"communications/newsletter.md"</span>,</span></span>
+<span class="r-in"><span>              to <span class="op">=</span> <span class="st">"someone@example.com"</span>,</span></span>
+<span class="r-in"><span>              subject <span class="op">=</span> <span class="st">"Spring newsletter"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">mc_draft</span><span class="op">(</span><span class="st">"communications/newsletter.md"</span>,</span></span>
+<span class="r-in"><span>         to <span class="op">=</span> <span class="st">"someone@example.com"</span>,</span></span>
+<span class="r-in"><span>         subject <span class="op">=</span> <span class="st">"Spring newsletter"</span>,</span></span>
+<span class="r-in"><span>         draft_id <span class="op">=</span> <span class="va">d</span><span class="op">$</span><span class="va">draft_id</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Draft addressed to yourself, to check the rendering</span></span></span>
 <span class="r-in"><span><span class="fu">mc_draft</span><span class="op">(</span><span class="st">"communications/newsletter.md"</span>,</span></span>

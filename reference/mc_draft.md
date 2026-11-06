@@ -15,6 +15,7 @@ mc_draft(
   bcc = NULL,
   from = default_from(),
   thread_id = NULL,
+  draft_id = NULL,
   to_self = FALSE,
   sig = TRUE,
   sig_path = NULL,
@@ -59,7 +60,19 @@ mc_draft(
 
   Gmail thread ID to reply into. Default `NULL` (new thread). Use
   [`mc_thread_find()`](https://newgraphenvironment.github.io/mc/reference/mc_thread_find.md)
-  to look up thread IDs.
+  to look up thread IDs. The message answers the thread's latest
+  message: it carries `In-Reply-To` and `References` headers naming it,
+  so recipients' mail clients thread it too, and the subject gains a
+  `Re: ` prefix unless it already has one. The thread is read first; if
+  it cannot be read, nothing is sent.
+
+- draft_id:
+
+  `NULL` (default) to create a new draft, or the id of a draft to
+  replace in place, as returned in `draft_id` by an earlier call. Only
+  that draft changes, and it keeps its id. If Gmail does not know the id
+  (the draft was sent or deleted, or the id is not a draft id), a
+  warning is given and a new draft is created.
 
 - to_self:
 
@@ -131,17 +144,29 @@ mc_draft(
 
 ## Value
 
-The Gmail thread ID of the resulting draft, invisibly. May be `NULL` if
-the gmailr response did not include one.
+A list, invisibly, with `draft_id` (pass it back as `draft_id` to
+replace this draft), `thread_id` and `message_id`. `draft_id` stays the
+same across replacements; `message_id` is the Gmail API id of the
+draft's current message (not its `Message-ID` header) and changes on
+each replacement. An element is `NULL` when Gmail's response did not
+include it.
 
 ## Details
 
-[`gmailr::gm_create_draft()`](https://gmailr.r-lib.org/reference/gm_create_draft.html)
-does not accept a `thread_id`, so drafts always land outside the
-conversation. Supplying `thread_id` warns. Either move the draft into
-the thread from the Gmail UI before sending, or use
-[`mc_send()`](https://newgraphenvironment.github.io/mc/reference/mc_send.md)
-to deliver straight into the thread.
+With `thread_id`, the draft is created in that conversation, ready to
+review and send from the thread, and carries the reply headers described
+in
+[`mc_send()`](https://newgraphenvironment.github.io/mc/reference/mc_send.md).
+Gmail decides whether a draft joins a thread; if it puts the draft
+somewhere else, a warning says so.
+
+mc never deletes a draft. To regenerate one (a re-rendered attachment,
+an edited body), pass the `draft_id` it returned; nothing else in the
+mailbox is touched. Replacing overwrites the draft as it stands,
+including any edits made to it in Gmail. Pass the same `thread_id` and
+`labels` as when the draft was made: a replacement without `thread_id`
+takes the draft out of its thread, and labels not given again are
+dropped.
 
 `send_at` and `scheduler` are not accepted here. A scheduled message is
 by definition one that gets sent, so scheduling lives on
@@ -161,6 +186,15 @@ if (FALSE) { # \dontrun{
 mc_draft("communications/newsletter.md",
          to = "someone@example.com",
          subject = "Spring newsletter")
+
+# Replace that draft after editing the file: same draft, same id
+d <- mc_draft("communications/newsletter.md",
+              to = "someone@example.com",
+              subject = "Spring newsletter")
+mc_draft("communications/newsletter.md",
+         to = "someone@example.com",
+         subject = "Spring newsletter",
+         draft_id = d$draft_id)
 
 # Draft addressed to yourself, to check the rendering
 mc_draft("communications/newsletter.md",

@@ -36,7 +36,7 @@ a follow-up with mc_send()."><meta property="og:image" content="https://newgraph
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Read all messages in a Gmail thread</h1>
-      <small class="dont-index">Source: <a href="https://github.com/NewGraphEnvironment/mc/blob/v0.4.1/R/mc_thread_find.R" class="external-link"><code>R/mc_thread_find.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/NewGraphEnvironment/mc/blob/main/R/mc_thread_find.R" class="external-link"><code>R/mc_thread_find.R</code></a></small>
       <div class="d-none name"><code>mc_thread_read.Rd</code></div>
     </div>
 
@@ -60,9 +60,9 @@ a follow-up with <code><a href="mc_send.html">mc_send()</a></code>.</p>
 
 
 <dt id="arg-drafts">drafts<a class="anchor" aria-label="anchor" href="#arg-drafts"></a></dt>
-<dd><p>Logical. If <code>TRUE</code>, also include draft messages in the
-output and add a <code>status</code> column (<code>"sent"</code> or <code>"draft"</code>).
-Default <code>FALSE</code> for backwards compatibility.</p></dd>
+<dd><p>Logical. If <code>TRUE</code>, include the thread's unsent drafts and
+add a <code>status</code> column (<code>"sent"</code> or <code>"draft"</code>). If <code>FALSE</code> (default), drafts
+are left out.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -70,6 +70,12 @@ Default <code>FALSE</code> for backwards compatibility.</p></dd>
     <p>A data frame with columns <code>from</code>, <code>date</code>, <code>subject</code>, and <code>body</code>,
 ordered oldest to newest. When <code>drafts = TRUE</code>, an additional <code>status</code>
 column is included.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
+    <p>Each message is classified by its own Gmail labels: a message carrying the
+<code>DRAFT</code> label is an unsent draft, and anything else (sent or received) has
+status <code>"sent"</code>. Each draft is listed once.</p>
     </div>
 
     <div class="section level2">

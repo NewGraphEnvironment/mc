@@ -59,7 +59,11 @@ mc_send(
 
   Gmail thread ID to reply into. Default `NULL` (new thread). Use
   [`mc_thread_find()`](https://newgraphenvironment.github.io/mc/reference/mc_thread_find.md)
-  to look up thread IDs.
+  to look up thread IDs. The message answers the thread's latest
+  message: it carries `In-Reply-To` and `References` headers naming it,
+  so recipients' mail clients thread it too, and the subject gains a
+  `Re: ` prefix unless it already has one. The thread is read first; if
+  it cannot be read, nothing is sent.
 
 - to_self:
 

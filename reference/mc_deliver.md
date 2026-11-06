@@ -18,6 +18,7 @@ mc_deliver(
   bcc = NULL,
   from = default_from(),
   thread_id = NULL,
+  draft_id = NULL,
   .draft,
   to_self = FALSE,
   sig = TRUE,
@@ -64,7 +65,15 @@ mc_deliver(
 
   Gmail thread ID to reply into. Default `NULL` (new thread). Use
   [`mc_thread_find()`](https://newgraphenvironment.github.io/mc/reference/mc_thread_find.md)
-  to look up thread IDs.
+  to look up thread IDs. The message answers the thread's latest
+  message: it carries `In-Reply-To` and `References` headers naming it,
+  so recipients' mail clients thread it too, and the subject gains a
+  `Re: ` prefix unless it already has one. The thread is read first; if
+  it cannot be read, nothing is sent.
+
+- draft_id:
+
+  `NULL`, or the id of a draft to replace in place. Drafts only.
 
 - .draft:
 
@@ -153,7 +162,8 @@ mc_deliver(
 
 ## Value
 
-Gmail thread ID, invisibly.
+For a send, the Gmail thread ID, invisibly. For a draft, a list with
+`draft_id`, `thread_id` and `message_id`, invisibly.
 
 ## Details
 

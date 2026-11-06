@@ -154,13 +154,11 @@ mc_send("draft.md",
         thread_id = "19c05f0a98188c91")
 ```
 
-**Note:** `gm_create_draft()` does not support `thread_id`. Drafts are
-always standalone, and
 [`mc_draft()`](https://newgraphenvironment.github.io/mc/reference/mc_draft.md)
-warns if you pass one. Use
-[`mc_send()`](https://newgraphenvironment.github.io/mc/reference/mc_send.md)
-to deliver straight into a thread, or send the draft manually from the
-Gmail UI (Gmail will match by subject line if it starts with “Re:”).
+takes `thread_id` too: the draft lands in the conversation, ready to
+review and send from there. Drafts and sends into a thread carry
+`In-Reply-To` and `References` headers and a `Re:` subject, so
+recipients’ mail clients thread them as well.
 
 ## Scheduled send
 

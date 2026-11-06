@@ -20,15 +20,21 @@ mc_thread_read(thread_id, drafts = FALSE)
 
 - drafts:
 
-  Logical. If `TRUE`, also include draft messages in the output and add
-  a `status` column (`"sent"` or `"draft"`). Default `FALSE` for
-  backwards compatibility.
+  Logical. If `TRUE`, include the thread's unsent drafts and add a
+  `status` column (`"sent"` or `"draft"`). If `FALSE` (default), drafts
+  are left out.
 
 ## Value
 
 A data frame with columns `from`, `date`, `subject`, and `body`, ordered
 oldest to newest. When `drafts = TRUE`, an additional `status` column is
 included.
+
+## Details
+
+Each message is classified by its own Gmail labels: a message carrying
+the `DRAFT` label is an unsent draft, and anything else (sent or
+received) has status `"sent"`. Each draft is listed once.
 
 ## Examples
 

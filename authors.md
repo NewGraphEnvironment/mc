@@ -11,7 +11,7 @@
 ## Citation
 
 Source:
-[`inst/CITATION`](https://github.com/NewGraphEnvironment/mc/blob/v0.4.1/inst/CITATION)
+[`inst/CITATION`](https://github.com/NewGraphEnvironment/mc/blob/main/inst/CITATION)
 
 Irvine A (2026). *mc: Mail Composer - Email Composition and Delivery*.
 New Graph Environment Ltd.

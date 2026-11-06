@@ -23,7 +23,9 @@ mc_message_find(
 
 - query:
 
-  Gmail search query.
+  Gmail search query. Accepts the same operators as the Gmail search
+  box; see
+  [`mc_thread_find()`](https://newgraphenvironment.github.io/mc/reference/mc_thread_find.md).
 
 - n:
 
@@ -37,13 +39,17 @@ mc_message_find(
 - status:
 
   One of `"any"` (default), `"sent"`, or `"draft"`. `"sent"` restricts
-  to non-draft messages; `"draft"` searches drafts instead of messages.
+  the search to non-draft messages (`-in:drafts`), `"draft"` to unsent
+  drafts (`in:drafts`), and `"any"` searches both, returning up to `n`
+  messages in total. The query and the date filters apply in every case.
 
 ## Value
 
 A data frame with columns `message_id`, `thread_id`, `from`, `to`,
-`subject`, `date`, and `status`, most recent first. Returns an empty
-data frame (same columns) when no messages match.
+`subject`, `date`, and `status`, most recent first. `status` is
+`"draft"` for a message carrying Gmail's `DRAFT` label and `"sent"`
+otherwise. `message_id` is the message's id, not a draft id. Returns an
+empty data frame (same columns) when no messages match.
 
 ## Examples
 

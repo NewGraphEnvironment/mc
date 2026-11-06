@@ -157,7 +157,7 @@
 <span>        to <span class="op">=</span> <span class="st">"brandon@example.com"</span>,</span>
 <span>        subject <span class="op">=</span> <span class="st">"Re: Cottonwood plugs"</span>,</span>
 <span>        thread_id <span class="op">=</span> <span class="st">"19c05f0a98188c91"</span><span class="op">)</span></span></code></pre></div>
-<p><strong>Note:</strong> <code>gm_create_draft()</code> does not support <code>thread_id</code>. Drafts are always standalone, and <code><a href="reference/mc_draft.html">mc_draft()</a></code> warns if you pass one. Use <code><a href="reference/mc_send.html">mc_send()</a></code> to deliver straight into a thread, or send the draft manually from the Gmail UI (Gmail will match by subject line if it starts with “Re:”).</p>
+<p><code><a href="reference/mc_draft.html">mc_draft()</a></code> takes <code>thread_id</code> too: the draft lands in the conversation, ready to review and send from there. Drafts and sends into a thread carry <code>In-Reply-To</code> and <code>References</code> headers and a <code>Re:</code> subject, so recipients’ mail clients thread them as well.</p>
 </div>
 <div class="section level2">
 <h2 id="scheduled-send">Scheduled send<a class="anchor" aria-label="anchor" href="#scheduled-send"></a>

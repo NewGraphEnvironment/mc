@@ -38,7 +38,7 @@ to locate a specific message directly."><meta property="og:image" content="https
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Search Gmail at the message level</h1>
-      <small class="dont-index">Source: <a href="https://github.com/NewGraphEnvironment/mc/blob/v0.4.1/R/mc_message_find.R" class="external-link"><code>R/mc_message_find.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/NewGraphEnvironment/mc/blob/main/R/mc_message_find.R" class="external-link"><code>R/mc_message_find.R</code></a></small>
       <div class="d-none name"><code>mc_message_find.Rd</code></div>
     </div>
 
@@ -65,7 +65,8 @@ to locate a specific message directly.</p>
 
 
 <dl><dt id="arg-query">query<a class="anchor" aria-label="anchor" href="#arg-query"></a></dt>
-<dd><p>Gmail search query.</p></dd>
+<dd><p>Gmail search query. Accepts the same operators as the Gmail
+search box; see <code><a href="mc_thread_find.html">mc_thread_find()</a></code>.</p></dd>
 
 
 <dt id="arg-n">n<a class="anchor" aria-label="anchor" href="#arg-n"></a></dt>
@@ -79,14 +80,17 @@ string. See <code><a href="mc_thread_find.html">mc_thread_find()</a></code>.</p>
 
 <dt id="arg-status">status<a class="anchor" aria-label="anchor" href="#arg-status"></a></dt>
 <dd><p>One of <code>"any"</code> (default), <code>"sent"</code>, or <code>"draft"</code>. <code>"sent"</code>
-restricts to non-draft messages; <code>"draft"</code> searches drafts instead of
-messages.</p></dd>
+restricts the search to non-draft messages (<code>-in:drafts</code>), <code>"draft"</code> to
+unsent drafts (<code>in:drafts</code>), and <code>"any"</code> searches both, returning up to <code>n</code>
+messages in total. The query and the date filters apply in every case.</p></dd>
 
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A data frame with columns <code>message_id</code>, <code>thread_id</code>, <code>from</code>, <code>to</code>,
-<code>subject</code>, <code>date</code>, and <code>status</code>, most recent first. Returns an empty
+<code>subject</code>, <code>date</code>, and <code>status</code>, most recent first. <code>status</code> is <code>"draft"</code>
+for a message carrying Gmail's <code>DRAFT</code> label and <code>"sent"</code> otherwise.
+<code>message_id</code> is the message's id, not a draft id. Returns an empty
 data frame (same columns) when no messages match.</p>
     </div>
 
