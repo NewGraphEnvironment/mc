@@ -258,3 +258,30 @@ test_that("a block scalar ending the frontmatter does not stop the id being reco
   expect_equal(mc_md_meta(p)$draft_id, "r-7")
   expect_equal(mc_md_meta(p)$notes, "line one")
 })
+
+test_that("frontmatter keys are read exactly, never by prefix", {
+  # A sibling key that starts with a field's name must not stand in for it
+  p <- write_bytes(paste0(
+    "---\nto: a@x.com\nsubject: Hi\ndraft_id_old: \"r-OTHER\"\n",
+    "cc_old: old@x.com\nthread_id_was: t-OLD\n---\nbody\n"
+  ))
+  captured <- NULL
+  mockery::stub(mc_md_draft, "mc_draft", function(...) {
+    captured <<- list(...)
+    invisible(list(draft_id = "r-new", thread_id = "t", message_id = "m"))
+  })
+  suppressMessages(mc_md_draft(p))
+  expect_null(captured$draft_id)
+  expect_null(captured$cc)
+  expect_null(captured$thread_id)
+  expect_equal(mc_md_meta(p)[["draft_id"]], "r-new")
+
+  sent <- NULL
+  mockery::stub(mc_md_send, "mc_send", function(...) {
+    sent <<- list(...)
+    invisible("t")
+  })
+  mc_md_send(p)
+  expect_null(sent$cc)
+  expect_null(sent$thread_id)
+})

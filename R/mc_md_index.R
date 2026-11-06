@@ -71,11 +71,11 @@ index_row <- function(path) {
   data.frame(
     path = path,
     date = date,
-    to = collapse(meta$to),
-    cc = collapse(meta$cc),
-    subject = collapse(meta$subject),
-    thread_id = collapse(meta$thread_id),
-    has_attachments = !is.null(meta$attachments) && length(meta$attachments) > 0,
+    to = collapse(meta[["to"]]),
+    cc = collapse(meta[["cc"]]),
+    subject = collapse(meta[["subject"]]),
+    thread_id = collapse(meta[["thread_id"]]),
+    has_attachments = !is.null(meta[["attachments"]]) && length(meta[["attachments"]]) > 0,
     stringsAsFactors = FALSE
   )
 }

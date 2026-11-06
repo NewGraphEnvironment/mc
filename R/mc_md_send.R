@@ -48,7 +48,7 @@ mc_md_send <- function(path, to_self = FALSE, override = list()) {
   res <- do.call(mc_send, args)
   # mc never deletes a draft, so the file's draft is still in Gmail after the
   # send; say so, or it can be sent a second time by hand.
-  draft_id <- mc_md_meta(path)$draft_id
+  draft_id <- mc_md_meta(path)[["draft_id"]]
   if (is.character(draft_id) && length(draft_id) == 1 && nzchar(draft_id)) {
     message("Draft ", draft_id, " from this file is still in Gmail. ",
             "mc does not delete drafts.")

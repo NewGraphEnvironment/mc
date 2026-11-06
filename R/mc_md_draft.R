@@ -43,7 +43,7 @@ mc_md_draft <- function(path, to_self = FALSE, override = list()) {
   args <- md_dispatch_args(path, to_self = to_self, override = override)
   # Read here rather than in md_dispatch_args(), which mc_md_send() shares:
   # a send has no draft to replace.
-  file_id <- mc_md_meta(path)$draft_id
+  file_id <- mc_md_meta(path)[["draft_id"]]
   if (identical(file_id, "")) file_id <- NULL
   # A to_self draft is a test copy, never the file's tracked draft: it neither
   # replaces that draft nor is recorded in its place. Read from args, after
@@ -100,24 +100,24 @@ md_dispatch_args <- function(path, to_self = FALSE, override = list()) {
   # yaml.load() returns list() for empty flow-style arrays (`labels: []`)
   # and for explicit nulls (`labels: ~`). Coerce to NULL so chk_null_or()
   # accepts these as "no labels" rather than rejecting list().
-  meta_labels <- meta$labels
+  meta_labels <- meta[["labels"]]
   if (is.list(meta_labels) && length(meta_labels) == 0) meta_labels <- NULL
 
   args <- list(
     path = path,
-    to = meta$to,
-    subject = meta$subject,
-    cc = meta$cc,
-    bcc = meta$bcc,
-    thread_id = meta$thread_id,
-    attachments = meta$attachments,
-    inline_images = if (is.null(meta$inline_images)) NULL else unlist(meta$inline_images),
+    to = meta[["to"]],
+    subject = meta[["subject"]],
+    cc = meta[["cc"]],
+    bcc = meta[["bcc"]],
+    thread_id = meta[["thread_id"]],
+    attachments = meta[["attachments"]],
+    inline_images = if (is.null(meta[["inline_images"]])) NULL else unlist(meta[["inline_images"]]),
     labels = meta_labels,
     to_self = to_self
   )
-  if (!is.null(meta$from)) args$from <- meta$from
-  if (!is.null(meta$sig)) args$sig <- meta$sig
-  if (!is.null(meta$sig_path)) args$sig_path <- meta$sig_path
+  if (!is.null(meta[["from"]])) args$from <- meta[["from"]]
+  if (!is.null(meta[["sig"]])) args$sig <- meta[["sig"]]
+  if (!is.null(meta[["sig_path"]])) args$sig_path <- meta[["sig_path"]]
 
   if ("path" %in% names(override)) {
     stop(
