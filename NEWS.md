@@ -1,3 +1,22 @@
+# mc 0.5.0
+
+## Breaking changes
+
+* `mc_draft()` and `mc_md_draft()` return `list(draft_id, thread_id, message_id)` invisibly, not the bare thread id. Read the thread id as `res$thread_id` (#51).
+
+## New
+
+* **Replace a draft by its id.** `mc_draft(draft_id = )` replaces exactly that draft through Gmail's `drafts.update`, keeping its id; nothing else in the mailbox is touched, and mc never deletes a draft. An id Gmail does not know (sent, deleted, or not a draft id) warns and creates a new draft. Replacing overwrites edits made in Gmail; pass the same `thread_id` and `labels` again, since a replacement without `thread_id` leaves the thread and labels not given again are dropped (#51).
+* **`mc_md_draft()` tracks its own draft.** It writes the new draft's id into the file's frontmatter as `draft_id:`, changing only that line, so running the file again replaces its draft. `to_self = TRUE` makes a separate test copy and leaves the tracked draft alone. `mc_md_send()` ignores `draft_id` and notes that the file's draft is still in Gmail (#51).
+* **Drafts join threads.** A draft given `thread_id` is created in that conversation. Drafts and sends into a thread carry `In-Reply-To` and `References` naming the thread's latest message, and a `Re: ` subject unless it already has one, so recipients' clients thread them too. `mc_send(thread_id = )` reads the thread first, and stops before sending if it cannot (#55).
+* `mc_thread_find()` documents Gmail's search operators, with examples (#29).
+
+## Fixes
+
+* `mc_thread_read()` classifies each message by Gmail's `DRAFT` label: an unsent draft is listed once, as a draft, and `drafts = FALSE` leaves it out. `mc_thread_body_latest(status = "sent")` no longer returns an unsent draft (#49).
+* `mc_message_find(status = "draft")` applies the query and date filters; `status = "any"` returns up to `n` messages in total (#50).
+* Frontmatter fields are read by exact name, so a key such as `cc_old:` no longer stands in for a missing `cc:`.
+
 # mc 0.4.1
 
 ## New
