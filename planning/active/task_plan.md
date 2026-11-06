@@ -68,9 +68,9 @@ That is easy to get wrong. A filter on the To header alone also matches drafts t
 
 ## Validation
 
-- [ ] Tests pass
-- [ ] `/code-check` clean (each commit, or once over the branch with `/code-check branch`)
-- [ ] PWF checkboxes match landed work
+- [x] Tests pass
+- [x] `/code-check` clean (each commit, or once over the branch with `/code-check branch`)
+- [x] PWF checkboxes match landed work
 - [ ] `/planning-archive` on completion
 
 How each change is proved: unit tests written before each fix, red on the current code (#49's double row, #50's ignored query, #55's missing threadId) and green after; restore-the-bug check on the never-sends / never-drafts guards; `devtools::test()` + `lintr::lint_package()` clean per commit; integration run against Gmail before the PR is opened (replace keeps the id, the thread draft lands in the thread, the attachment survives the JSON path). The PR body carries `Fixes #49`, `Fixes #50`, `Fixes #51`, `Fixes #55`, `Fixes #29`.

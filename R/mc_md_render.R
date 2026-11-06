@@ -148,6 +148,9 @@ frontmatter_set <- function(path, key, value) {
   if (!grepl("^[A-Za-z0-9_-]+$", value)) {
     stop("Refusing to write ", key, " value '", value, "' to ", path, call. = FALSE)
   }
+  # Write the file a symlink points to, not over the link: the rename below
+  # replaces whatever sits at `path`.
+  path <- normalizePath(path, mustWork = TRUE)
   txt <- rawToChar(readBin(path, "raw", file.size(path)))
   # The block parse_frontmatter() reads, with its line endings kept
   hit <- regmatches(txt, regexec(

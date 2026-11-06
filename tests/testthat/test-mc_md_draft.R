@@ -285,3 +285,16 @@ test_that("frontmatter keys are read exactly, never by prefix", {
   expect_null(sent$cc)
   expect_null(sent$thread_id)
 })
+
+test_that("frontmatter_set through a symlink writes the target and keeps the link", {
+  skip_on_os("windows")
+  d <- tempfile()
+  dir.create(d)
+  real <- file.path(d, "real.md")
+  link <- file.path(d, "link.md")
+  writeBin(charToRaw("---\nto: a@x.com\n---\nbody\n"), real)
+  file.symlink(real, link)
+  frontmatter_set(link, "draft_id", "r-1")
+  expect_true(nzchar(Sys.readlink(link)))
+  expect_equal(parse_frontmatter(real)$meta[["draft_id"]], "r-1")
+})
