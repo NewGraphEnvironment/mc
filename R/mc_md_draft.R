@@ -1,21 +1,34 @@
 #' Create a Gmail draft from a markdown file with YAML frontmatter
 #'
 #' Reads metadata (`to`, `subject`, optional `cc`, `bcc`, `thread_id`,
-#' `attachments`, `inline_images`, `labels`, `from`) from the YAML frontmatter at the top of a
-#' markdown draft and dispatches to [mc_draft()].
+#' `draft_id`, `attachments`, `inline_images`, `labels`, `from`) from the YAML
+#' frontmatter at the top of a markdown draft and dispatches to [mc_draft()].
 #'
 #' Drafts only. Nothing passed here sends — use [mc_md_send()] to deliver.
 #'
 #' @inheritParams mc_md_send
 #'
-#' @return Invisibly returns whatever [mc_draft()] returns.
+#' @return Invisibly returns what [mc_draft()] returns: a list with
+#'   `draft_id`, `thread_id` and `message_id`.
 #'
 #' @details
 #' Required frontmatter fields: `to`, `subject`. Missing either triggers an
 #' error that names the file.
 #'
-#' A `thread_id` in the frontmatter warns: `gmailr::gm_create_draft()` cannot
-#' thread a draft. See [mc_draft()].
+#' The file keeps track of its own draft. When a draft is created, its id is
+#' written into the frontmatter as `draft_id:` (that one line is added or
+#' changed; the rest of the file is left as it was). Running the same file
+#' again replaces that draft in place, and only that draft. If the draft has
+#' since been sent or deleted, a new one is created and its id written in.
+#' Delete the `draft_id:` line to start a fresh draft. Replacing overwrites
+#' the draft as it stands in Gmail, including any edits made there.
+#'
+#' With `to_self = TRUE` the draft is a separate test copy: the file's
+#' `draft_id` is not used and the copy's id is not recorded, so the tracked
+#' draft is left alone. [mc_md_send()] ignores `draft_id`.
+#'
+#' A `thread_id` in the frontmatter creates the draft in that conversation.
+#' See [mc_draft()].
 #'
 #' @seealso [mc_md_send()] to send, [mc_draft()] for the argument-driven form.
 #'
@@ -28,7 +41,35 @@
 #' @export
 mc_md_draft <- function(path, to_self = FALSE, override = list()) {
   args <- md_dispatch_args(path, to_self = to_self, override = override)
-  invisible(do.call(mc_draft, args))
+  # Read here rather than in md_dispatch_args(), which mc_md_send() shares:
+  # a send has no draft to replace.
+  file_id <- mc_md_meta(path)[["draft_id"]]
+  if (identical(file_id, "")) file_id <- NULL
+  # A to_self draft is a test copy, never the file's tracked draft: it neither
+  # replaces that draft nor is recorded in its place. Read from args, after
+  # override, which can set to_self too.
+  test_copy <- isTRUE(args$to_self)
+  if (is.null(args$draft_id) && !test_copy) args$draft_id <- file_id
+  res <- do.call(mc_draft, args)
+  new_id <- res$draft_id
+  if (!test_copy && is.character(new_id) && length(new_id) == 1 &&
+        nzchar(new_id) && !identical(new_id, file_id)) {
+    # The draft exists by now, so a failed write warns rather than errors:
+    # the caller still gets the id, and the warning carries it.
+    tryCatch(
+      {
+        frontmatter_set(path, "draft_id", new_id)
+        message("Recorded draft_id ", new_id, " in ", path)
+      },
+      error = function(e) {
+        warning(
+          "Draft ", new_id, " created, but its id was not recorded in ",
+          path, ": ", conditionMessage(e), call. = FALSE
+        )
+      }
+    )
+  }
+  invisible(res)
 }
 
 
@@ -59,24 +100,24 @@ md_dispatch_args <- function(path, to_self = FALSE, override = list()) {
   # yaml.load() returns list() for empty flow-style arrays (`labels: []`)
   # and for explicit nulls (`labels: ~`). Coerce to NULL so chk_null_or()
   # accepts these as "no labels" rather than rejecting list().
-  meta_labels <- meta$labels
+  meta_labels <- meta[["labels"]]
   if (is.list(meta_labels) && length(meta_labels) == 0) meta_labels <- NULL
 
   args <- list(
     path = path,
-    to = meta$to,
-    subject = meta$subject,
-    cc = meta$cc,
-    bcc = meta$bcc,
-    thread_id = meta$thread_id,
-    attachments = meta$attachments,
-    inline_images = if (is.null(meta$inline_images)) NULL else unlist(meta$inline_images),
+    to = meta[["to"]],
+    subject = meta[["subject"]],
+    cc = meta[["cc"]],
+    bcc = meta[["bcc"]],
+    thread_id = meta[["thread_id"]],
+    attachments = meta[["attachments"]],
+    inline_images = if (is.null(meta[["inline_images"]])) NULL else unlist(meta[["inline_images"]]),
     labels = meta_labels,
     to_self = to_self
   )
-  if (!is.null(meta$from)) args$from <- meta$from
-  if (!is.null(meta$sig)) args$sig <- meta$sig
-  if (!is.null(meta$sig_path)) args$sig_path <- meta$sig_path
+  if (!is.null(meta[["from"]])) args$from <- meta[["from"]]
+  if (!is.null(meta[["sig"]])) args$sig <- meta[["sig"]]
+  if (!is.null(meta[["sig_path"]])) args$sig_path <- meta[["sig_path"]]
 
   if ("path" %in% names(override)) {
     stop(

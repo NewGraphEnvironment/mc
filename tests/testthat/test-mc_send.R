@@ -62,6 +62,12 @@ test_that("mc_send sends into a thread when thread_id is set", {
       captured_args <<- list(msg = msg, ...)
       list(threadId = "abc123")
     },
+    gm_thread = function(id, ...) {
+      list(messages = list(list(
+        labelIds = "INBOX",
+        payload = list(headers = list(list(name = "Message-ID", value = "<p1@x>")))
+      )))
+    },
     .package = "gmailr"
   )
   res <- mc_send(

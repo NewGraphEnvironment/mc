@@ -5,16 +5,20 @@
 #' scatter a logical conversation across multiple thread IDs and you want
 #' to locate a specific message directly.
 #'
-#' @param query Gmail search query.
+#' @param query Gmail search query. Accepts the same operators as the Gmail
+#'   search box; see [mc_thread_find()].
 #' @param n Maximum number of results. Default `10`.
 #' @param after,before Optional date filters. `Date` or `"YYYY-MM-DD"`
 #'   string. See [mc_thread_find()].
 #' @param status One of `"any"` (default), `"sent"`, or `"draft"`. `"sent"`
-#'   restricts to non-draft messages; `"draft"` searches drafts instead of
-#'   messages.
+#'   restricts the search to non-draft messages (`-in:drafts`), `"draft"` to
+#'   unsent drafts (`in:drafts`), and `"any"` searches both, returning up to `n`
+#'   messages in total. The query and the date filters apply in every case.
 #'
 #' @return A data frame with columns `message_id`, `thread_id`, `from`, `to`,
-#'   `subject`, `date`, and `status`, most recent first. Returns an empty
+#'   `subject`, `date`, and `status`, most recent first. `status` is `"draft"`
+#'   for a message carrying Gmail's `DRAFT` label and `"sent"` otherwise.
+#'   `message_id` is the message's id, not a draft id. Returns an empty
 #'   data frame (same columns) when no messages match.
 #'
 #' @examples
@@ -25,7 +29,7 @@
 #' }
 #'
 #' @importFrom chk chk_string chk_whole_number
-#' @importFrom gmailr gm_messages gm_id gm_message gm_drafts gm_draft
+#' @importFrom gmailr gm_messages gm_id gm_message
 #' @export
 mc_message_find <- function(query, n = 10, after = NULL, before = NULL,
                             status = c("any", "sent", "draft")) {
@@ -45,27 +49,19 @@ mc_message_find <- function(query, n = 10, after = NULL, before = NULL,
     stringsAsFactors = FALSE
   )
 
-  rows <- list()
-
-  if (status %in% c("any", "sent")) {
-    q <- paste(query, "-in:drafts")
-    results <- gmailr::gm_messages(search = q, num_results = n)
-    ids <- gmailr::gm_id(results)
-    for (id in ids) {
-      msg <- gmailr::gm_message(id)
-      rows[[length(rows) + 1]] <- message_row(msg, status = "sent")
-    }
-  }
-
-  if (status %in% c("any", "draft")) {
-    all_drafts <- gmailr::gm_drafts(num_results = n)
-    draft_list <- all_drafts[[1]]$drafts
-    for (d in draft_list %||% list()) {
-      detail <- gmailr::gm_draft(d$id)
-      msg <- detail$message
-      rows[[length(rows) + 1]] <- message_row(msg, status = "draft")
-    }
-  }
+  # Drafts are searched like any other message, so the query and the date
+  # filters reach them, and each row's status comes from its own labels (#50).
+  q <- switch(status,
+    any = query,
+    sent = paste(query, "-in:drafts"),
+    draft = paste(query, "in:drafts")
+  )
+  results <- gmailr::gm_messages(search = q, num_results = n)
+  ids <- gmailr::gm_id(results)
+  rows <- lapply(ids, function(id) {
+    msg <- gmailr::gm_message(id)
+    message_row(msg, status = if (is_draft_message(msg)) "draft" else "sent")
+  })
 
   if (length(rows) == 0) {
     message("No messages found for query: ", query)

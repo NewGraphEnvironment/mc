@@ -19,7 +19,11 @@
 #' @param from Sender address. Default uses `getOption("mc.from")`,
 #'   then the `MC_FROM` environment variable. Errors if neither is set.
 #' @param thread_id Gmail thread ID to reply into. Default `NULL` (new thread).
-#'   Use [mc_thread_find()] to look up thread IDs.
+#'   Use [mc_thread_find()] to look up thread IDs. The message answers the
+#'   thread's latest message: it carries `In-Reply-To` and `References`
+#'   headers naming it, so recipients' mail clients thread it too, and the
+#'   subject gains a `Re: ` prefix unless it already has one. The thread is
+#'   read first; if it cannot be read, nothing is sent.
 #' @param to_self Logical. If `TRUE`, override `to` with `from` and drop `cc`,
 #'   `bcc` and `thread_id`, so the message reaches nobody but the sender.
 #'   Default `FALSE`. This caps who receives the message; it does not stop the

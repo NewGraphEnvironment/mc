@@ -45,7 +45,7 @@ mc_preview <- function(html,
 
   if (endsWith(html, ".md") && file.exists(html)) {
     meta <- mc_md_meta(html)
-    body <- preview_inline_images(mc_md_render(html), meta$inline_images)
+    body <- preview_inline_images(mc_md_render(html), meta[["inline_images"]])
     html <- paste0(preview_header(meta), body)
   }
 
@@ -110,16 +110,16 @@ preview_header <- function(meta) {
     paste(as.character(x), collapse = ", ")
   }
   rows <- list(
-    c("To", fmt(meta$to)),
-    c("Cc", fmt(meta$cc))
+    c("To", fmt(meta[["to"]])),
+    c("Cc", fmt(meta[["cc"]]))
   )
-  if (!is.null(meta$bcc)) rows[[length(rows) + 1]] <- c("Bcc", fmt(meta$bcc))
+  if (!is.null(meta[["bcc"]])) rows[[length(rows) + 1]] <- c("Bcc", fmt(meta[["bcc"]]))
   rows <- c(rows, list(
-    c("Subject", fmt(meta$subject)),
-    c("Thread", fmt(meta$thread_id)),
-    c("Attach", fmt(meta$attachments))
+    c("Subject", fmt(meta[["subject"]])),
+    c("Thread", fmt(meta[["thread_id"]])),
+    c("Attach", fmt(meta[["attachments"]]))
   ))
-  imgs <- unlist(meta$inline_images)
+  imgs <- unlist(meta[["inline_images"]])
   if (length(imgs)) {
     rows[[length(rows) + 1]] <- c("Inline", fmt(paste0(names(imgs), ": ", imgs)))
   }

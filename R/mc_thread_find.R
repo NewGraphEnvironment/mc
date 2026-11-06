@@ -4,8 +4,11 @@
 #' finding the `thread_id` to pass to [mc_send()] when replying into
 #' an existing conversation.
 #'
-#' @param query Gmail search query. Supports the same syntax as the Gmail
-#'   search box (e.g., `"from:brandon subject:cottonwood"`).
+#' @param query Gmail search query. Takes the same search operators as the
+#'   Gmail search box, such as `from:`, `to:`, `subject:`, `has:attachment`,
+#'   `newer_than:7d`, `is:unread` and `in:drafts`, combined with spaces
+#'   (and), `OR`, `-` (not) and quotes for exact phrases. The full list is in
+#'   Google's [search operator reference](https://support.google.com/mail/answer/7190).
 #' @param n Maximum number of results. Default `5`.
 #' @param after,before Optional date filters. `Date` object or character
 #'   string in `"YYYY-MM-DD"` form. Translated to Gmail's `after:` / `before:`
@@ -17,8 +20,19 @@
 #'
 #' @examples
 #' \dontrun{
+#' # One sender, one topic
 #' mc_thread_find("from:brandon.geldart subject:cottonwood")
+#'
+#' # Recent mail only
 #' mc_thread_find("from:brandon newer_than:7d")
+#'
+#' # Mail with an attachment, an exact phrase, and a word left out
+#' mc_thread_find('has:attachment "site plan" -invoice')
+#'
+#' # Either of two senders, unread
+#' mc_thread_find("from:(brandon OR cindy) is:unread", n = 10)
+#'
+#' # Date filters as arguments
 #' mc_thread_find("newsletter", after = Sys.Date() - 7)
 #' }
 #'
@@ -65,9 +79,14 @@ mc_thread_find <- function(query, n = 5, after = NULL, before = NULL) {
 #' a follow-up with [mc_send()].
 #'
 #' @param thread_id Gmail thread ID (from [mc_thread_find()]).
-#' @param drafts Logical. If `TRUE`, also include draft messages in the
-#'   output and add a `status` column (`"sent"` or `"draft"`).
-#'   Default `FALSE` for backwards compatibility.
+#' @param drafts Logical. If `TRUE`, include the thread's unsent drafts and
+#'   add a `status` column (`"sent"` or `"draft"`). If `FALSE` (default), drafts
+#'   are left out.
+#'
+#' @details
+#' Each message is classified by its own Gmail labels: a message carrying the
+#' `DRAFT` label is an unsent draft, and anything else (sent or received) has
+#' status `"sent"`. Each draft is listed once.
 #'
 #' @return A data frame with columns `from`, `date`, `subject`, and `body`,
 #'   ordered oldest to newest. When `drafts = TRUE`, an additional `status`
@@ -81,7 +100,7 @@ mc_thread_find <- function(query, n = 5, after = NULL, before = NULL) {
 #' }
 #'
 #' @importFrom chk chk_string chk_flag
-#' @importFrom gmailr gm_thread gm_drafts gm_draft
+#' @importFrom gmailr gm_thread
 #' @importFrom jsonlite base64url_dec
 #' @export
 mc_thread_read <- function(thread_id, drafts = FALSE) {
@@ -89,7 +108,7 @@ mc_thread_read <- function(thread_id, drafts = FALSE) {
   chk::chk_flag(drafts)
 
   thread <- gmailr::gm_thread(id = thread_id)
-  msgs <- thread$messages
+  msgs <- thread$messages %||% list()
 
   empty <- data.frame(
     from = character(0),
@@ -100,47 +119,60 @@ mc_thread_read <- function(thread_id, drafts = FALSE) {
   )
   if (drafts) empty$status <- character(0)
 
-  if (is.null(msgs) || length(msgs) == 0) {
-    if (!drafts) {
-      message("No messages in thread: ", thread_id)
-      return(empty)
-    }
-  }
+  is_draft <- vapply(msgs, is_draft_message, logical(1))
+  if (!drafts) msgs <- msgs[!is_draft]
 
-  rows <- lapply(msgs %||% list(), function(msg) {
-    body <- extract_body(msg$payload, "text/plain")
-    if (!nzchar(body)) {
-      body_html <- extract_body(msg$payload, "text/html")
-      if (nzchar(body_html)) {
-        body <- gsub("<[^>]+>", " ", body_html)
-        body <- gsub("[ \t]+", " ", body)
-        body <- trimws(body)
-      }
-    }
-    row <- data.frame(
-      from = extract_header(msg, "From"),
-      date = extract_header(msg, "Date"),
-      subject = extract_header(msg, "Subject"),
-      body = body,
-      stringsAsFactors = FALSE
-    )
-    if (drafts) row$status <- "sent"
-    row
-  })
-
-  if (drafts) {
-    draft_rows <- fetch_thread_drafts(thread_id)
-    rows <- c(rows, draft_rows)
-  }
-
-  result <- do.call(rbind, rows)
-
-  if (is.null(result) || nrow(result) == 0) {
+  if (length(msgs) == 0) {
     message("No messages in thread: ", thread_id)
     return(empty)
   }
 
-  result
+  rows <- lapply(msgs, function(msg) {
+    row <- data.frame(
+      from = extract_header(msg, "From"),
+      date = extract_header(msg, "Date"),
+      subject = extract_header(msg, "Subject"),
+      body = message_text(msg),
+      stringsAsFactors = FALSE
+    )
+    if (drafts) row$status <- if (is_draft_message(msg)) "draft" else "sent"
+    row
+  })
+
+  do.call(rbind, rows)
+}
+
+
+#' Is a gmailr message an unsent draft? (internal)
+#'
+#' Gmail marks a draft's message with the `DRAFT` label; sent and received
+#' messages do not carry it.
+#' @param msg A gmailr message object.
+#' @return `TRUE` or `FALSE`.
+#' @noRd
+is_draft_message <- function(msg) {
+  "DRAFT" %in% unlist(msg$labelIds)
+}
+
+
+#' Plain-text body of a gmailr message (internal)
+#'
+#' The `text/plain` part, or the `text/html` part with tags stripped when there
+#' is no plain part.
+#' @param msg A gmailr message object.
+#' @return Character string, possibly `""`.
+#' @noRd
+message_text <- function(msg) {
+  body <- extract_body(msg$payload, "text/plain")
+  if (!nzchar(body)) {
+    body_html <- extract_body(msg$payload, "text/html")
+    if (nzchar(body_html)) {
+      body <- gsub("<[^>]+>", " ", body_html)
+      body <- gsub("[ \t]+", " ", body)
+      body <- trimws(body)
+    }
+  }
+  body
 }
 
 
@@ -206,46 +238,6 @@ strip_quoted <- function(text) {
 }
 
 
-#' Fetch draft messages belonging to a specific thread
-#'
-#' Scans Gmail drafts and returns rows for any that belong to the given
-#' thread. Used internally by [mc_thread_read()] when `drafts = TRUE`.
-#' @param thread_id Gmail thread ID.
-#' @return List of data frame rows (may be empty).
-#' @noRd
-fetch_thread_drafts <- function(thread_id) {
-  all_drafts <- gmailr::gm_drafts(num_results = 50)
-  draft_list <- all_drafts[[1]]$drafts
-  if (is.null(draft_list) || length(draft_list) == 0) return(list())
-
-  rows <- list()
-  for (d in draft_list) {
-    detail <- gmailr::gm_draft(d$id)
-    msg <- detail$message
-    if (!identical(msg$threadId, thread_id)) next
-
-    body <- extract_body(msg$payload, "text/plain")
-    if (!nzchar(body)) {
-      body_html <- extract_body(msg$payload, "text/html")
-      if (nzchar(body_html)) {
-        body <- gsub("<[^>]+>", " ", body_html)
-        body <- gsub("[ \t]+", " ", body)
-        body <- trimws(body)
-      }
-    }
-    rows[[length(rows) + 1]] <- data.frame(
-      from = extract_header(msg, "From"),
-      date = extract_header(msg, "Date"),
-      subject = extract_header(msg, "Subject"),
-      body = body,
-      status = "draft",
-      stringsAsFactors = FALSE
-    )
-  }
-  rows
-}
-
-
 #' Translate `after`/`before` Date or character args into Gmail operators
 #'
 #' Appends `after:YYYY/MM/DD` / `before:YYYY/MM/DD` to a search query. Each
@@ -308,6 +300,9 @@ extract_body <- function(payload, mime_type) {
 
 
 #' Extract a header value from a gmailr message
+#'
+#' Header names are matched ignoring case, as RFC 5322 has them: senders
+#' write `Message-ID` and `Message-Id` alike.
 #' @param msg A gmailr message object.
 #' @param name Header name (e.g., "From", "Subject", "Date").
 #' @return Character string or `NA_character_`.
@@ -316,7 +311,7 @@ extract_header <- function(msg, name) {
   headers <- msg$payload$headers
   if (is.null(headers)) return(NA_character_)
   for (h in headers) {
-    if (identical(h$name, name)) return(h$value)
+    if (identical(tolower(h$name %||% ""), tolower(name))) return(h$value)
   }
   NA_character_
 }

@@ -31,59 +31,89 @@ test_that("mc_thread_read without drafts has no status column", {
   expect_false("status" %in% names(result))
 })
 
-test_that("mc_thread_read with drafts=TRUE adds status column", {
-  mock_msg <- list(
+# A message as gm_thread() returns it: its own labelIds say whether it is a
+# draft (#49).
+thread_msg <- function(body, labels, from = "al@test.com",
+                       date = "Mon, 1 Jan 2026 00:00:00 +0000",
+                       subject = "Test thread", id = "m1") {
+  list(
+    id = id,
+    labelIds = labels,
     payload = list(
       mimeType = "text/plain",
-      body = list(
-        size = 5,
-        data = jsonlite::base64url_enc(charToRaw("Hello"))
-      ),
+      body = list(size = nchar(body),
+                  data = jsonlite::base64url_enc(charToRaw(body))),
       headers = list(
-        list(name = "From", value = "test@test.com"),
-        list(name = "Date", value = "Mon, 1 Jan 2026 00:00:00 +0000"),
-        list(name = "Subject", value = "Test")
+        list(name = "From", value = from),
+        list(name = "Date", value = date),
+        list(name = "Subject", value = subject)
       )
     )
   )
-  mockery::stub(mc_thread_read, "gmailr::gm_thread",
-    list(messages = list(mock_msg)))
-  mockery::stub(mc_thread_read, "fetch_thread_drafts", list())
+}
+
+# One received message and one unsent reply draft, the thread observed in #49.
+received_and_draft <- function() {
+  list(messages = list(
+    thread_msg("received", c("IMPORTANT", "CATEGORY_PERSONAL", "INBOX"),
+               from = "sender@test.com", id = "m1"),
+    thread_msg("draft reply", "DRAFT", subject = "Re: Test thread",
+               date = "Tue, 2 Jan 2026 00:00:00 +0000", id = "m2")
+  ))
+}
+
+test_that("mc_thread_read with drafts=TRUE adds status column", {
+  local_mocked_bindings(
+    gm_thread = function(id, ...) list(messages = list(thread_msg("Hello", "INBOX"))),
+    .package = "gmailr"
+  )
   result <- mc_thread_read("fake_id", drafts = TRUE)
   expect_true("status" %in% names(result))
   expect_equal(result$status, "sent")
 })
 
-test_that("mc_thread_read with drafts=TRUE includes draft messages", {
-  mock_sent <- list(
-    payload = list(
-      mimeType = "text/plain",
-      body = list(
-        size = 4,
-        data = jsonlite::base64url_enc(charToRaw("sent"))
-      ),
-      headers = list(
-        list(name = "From", value = "al@test.com"),
-        list(name = "Date", value = "Mon, 1 Jan 2026 00:00:00 +0000"),
-        list(name = "Subject", value = "Test thread")
-      )
-    )
+test_that("mc_thread_read classifies a draft by its own DRAFT label, once", {
+  local_mocked_bindings(
+    gm_thread = function(id, ...) received_and_draft(),
+    # The account-wide drafts list must not be what finds the thread's draft
+    gm_drafts = function(...) stop("mc_thread_read must not list drafts"),
+    .package = "gmailr"
   )
-  mock_draft_row <- data.frame(
-    from = "al@test.com",
-    date = "Tue, 2 Jan 2026 00:00:00 +0000",
-    subject = "Re: Test thread",
-    body = "draft reply",
-    status = "draft",
-    stringsAsFactors = FALSE
-  )
-  mockery::stub(mc_thread_read, "gmailr::gm_thread",
-    list(messages = list(mock_sent)))
-  mockery::stub(mc_thread_read, "fetch_thread_drafts", list(mock_draft_row))
   result <- mc_thread_read("fake_id", drafts = TRUE)
   expect_equal(nrow(result), 2)
   expect_equal(result$status, c("sent", "draft"))
-  expect_equal(result$body, c("sent", "draft reply"))
+  expect_equal(result$body, c("received", "draft reply"))
+})
+
+test_that("mc_thread_read with drafts=FALSE drops the thread's drafts", {
+  local_mocked_bindings(
+    gm_thread = function(id, ...) received_and_draft(),
+    .package = "gmailr"
+  )
+  result <- mc_thread_read("fake_id")
+  expect_equal(nrow(result), 1)
+  expect_equal(result$body, "received")
+  expect_false("status" %in% names(result))
+})
+
+test_that("mc_thread_read with drafts=FALSE on a drafts-only thread is empty", {
+  local_mocked_bindings(
+    gm_thread = function(id, ...) list(messages = list(thread_msg("d", "DRAFT"))),
+    .package = "gmailr"
+  )
+  expect_message(result <- mc_thread_read("fake_id"), "No messages")
+  expect_equal(nrow(result), 0)
+  expect_equal(names(result), c("from", "date", "subject", "body"))
+})
+
+test_that("mc_thread_body_latest(status = 'sent') never returns an unsent draft", {
+  local_mocked_bindings(
+    gm_thread = function(id, ...) received_and_draft(),
+    .package = "gmailr"
+  )
+  expect_equal(mc_thread_body_latest("fake_id", status = "sent"), "received")
+  expect_equal(mc_thread_body_latest("fake_id", status = "draft"), "draft reply")
+  expect_equal(mc_thread_body_latest("fake_id"), "draft reply")
 })
 
 test_that("mc_thread_read empty thread with drafts=FALSE returns empty df", {
@@ -97,7 +127,6 @@ test_that("mc_thread_read empty thread with drafts=FALSE returns empty df", {
 test_that("mc_thread_read empty thread with drafts=TRUE returns empty df with status", {
   mockery::stub(mc_thread_read, "gmailr::gm_thread",
     list(messages = NULL))
-  mockery::stub(mc_thread_read, "fetch_thread_drafts", list())
   result <- mc_thread_read("fake_id", drafts = TRUE)
   expect_equal(nrow(result), 0)
   expect_equal(names(result), c("from", "date", "subject", "body", "status"))

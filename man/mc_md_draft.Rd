@@ -18,12 +18,13 @@ at call time (e.g. \code{list(subject = "New subject")}). Overrides merge
 \strong{after} frontmatter, so \code{override} wins.}
 }
 \value{
-Invisibly returns whatever \code{\link[=mc_draft]{mc_draft()}} returns.
+Invisibly returns what \code{\link[=mc_draft]{mc_draft()}} returns: a list with
+\code{draft_id}, \code{thread_id} and \code{message_id}.
 }
 \description{
 Reads metadata (\code{to}, \code{subject}, optional \code{cc}, \code{bcc}, \code{thread_id},
-\code{attachments}, \code{inline_images}, \code{labels}, \code{from}) from the YAML frontmatter at the top of a
-markdown draft and dispatches to \code{\link[=mc_draft]{mc_draft()}}.
+\code{draft_id}, \code{attachments}, \code{inline_images}, \code{labels}, \code{from}) from the YAML
+frontmatter at the top of a markdown draft and dispatches to \code{\link[=mc_draft]{mc_draft()}}.
 }
 \details{
 Drafts only. Nothing passed here sends — use \code{\link[=mc_md_send]{mc_md_send()}} to deliver.
@@ -31,8 +32,20 @@ Drafts only. Nothing passed here sends — use \code{\link[=mc_md_send]{mc_md_se
 Required frontmatter fields: \code{to}, \code{subject}. Missing either triggers an
 error that names the file.
 
-A \code{thread_id} in the frontmatter warns: \code{gmailr::gm_create_draft()} cannot
-thread a draft. See \code{\link[=mc_draft]{mc_draft()}}.
+The file keeps track of its own draft. When a draft is created, its id is
+written into the frontmatter as \verb{draft_id:} (that one line is added or
+changed; the rest of the file is left as it was). Running the same file
+again replaces that draft in place, and only that draft. If the draft has
+since been sent or deleted, a new one is created and its id written in.
+Delete the \verb{draft_id:} line to start a fresh draft. Replacing overwrites
+the draft as it stands in Gmail, including any edits made there.
+
+With \code{to_self = TRUE} the draft is a separate test copy: the file's
+\code{draft_id} is not used and the copy's id is not recorded, so the tracked
+draft is left alone. \code{\link[=mc_md_send]{mc_md_send()}} ignores \code{draft_id}.
+
+A \code{thread_id} in the frontmatter creates the draft in that conversation.
+See \code{\link[=mc_draft]{mc_draft()}}.
 }
 \examples{
 \dontrun{

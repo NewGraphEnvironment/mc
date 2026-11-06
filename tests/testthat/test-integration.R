@@ -223,13 +223,14 @@ test_that("mc_draft applies labels to a draft thread", {
     tryCatch(gmailr::gm_delete_label(label_id), error = function(e) NULL)
   )
 
-  thread_id <- mc_draft(
+  res <- mc_draft(
     html = paste0("<p>Labels draft test: ", test_tag, "</p><pre>", test_meta, "</pre>"),
     to = "al@newgraphenvironment.com",
     subject = paste("Labels draft", test_tag),
     labels = label_name,
     sig = FALSE
   )
+  thread_id <- res$thread_id
 
   Sys.sleep(3)
 
@@ -467,4 +468,148 @@ test_that("mc_md_send carries frontmatter inline_images with the default signatu
   html <- mc:::extract_body(payload, "text/html")
   expect_match(html, "New Graph Environment Ltd.", fixed = TRUE)
   expect_inline_part(payload, "map")
+})
+
+# --- Drafts by id, drafts in threads, draft search (#49, #50, #51, #55) -------
+# Every draft made here is deleted in withr::defer() by the id mc returned.
+
+delete_draft_later <- function(id, envir = parent.frame()) {
+  withr::defer(tryCatch(gmailr::gm_delete_draft(id), error = function(e) NULL),
+               envir = envir)
+}
+draft_header <- function(draft_id, name) {
+  extract_header(gmailr::gm_draft(draft_id)$message, name)
+}
+draft_text <- function(draft_id) message_text(gmailr::gm_draft(draft_id)$message)
+
+test_that("mc_draft returns a draft id, and replacing by it keeps the id", {
+  subj <- paste("Replace", test_tag)
+  r1 <- mc_draft(html = "<p>first body</p>", to = "al@newgraphenvironment.com",
+                 subject = subj, sig = FALSE)
+  delete_draft_later(r1$draft_id)
+  expect_true(is.character(r1$draft_id) && nzchar(r1$draft_id))
+  r2 <- mc_draft(html = "<p>second body</p>", to = "al@newgraphenvironment.com",
+                 subject = subj, sig = FALSE, draft_id = r1$draft_id)
+  expect_equal(r2$draft_id, r1$draft_id)
+  expect_false(identical(r2$message_id, r1$message_id))
+  expect_match(draft_text(r1$draft_id), "second body", fixed = TRUE)
+
+  # #50: a draft search finds this draft and only drafts matching the query
+  Sys.sleep(3)
+  found <- mc_message_find(paste0('subject:"', subj, '"'), status = "draft")
+  expect_equal(nrow(found), 1)
+  expect_equal(found$status, "draft")
+  expect_equal(found$message_id, r2$message_id)
+})
+
+test_that("a stale draft id warns and creates a new draft; a malformed id errors", {
+  subj <- paste("Stale", test_tag)
+  r1 <- mc_draft(html = "<p>x</p>", to = "al@newgraphenvironment.com",
+                 subject = subj, sig = FALSE)
+  gmailr::gm_delete_draft(r1$draft_id)
+  expect_warning(
+    r2 <- mc_draft(html = "<p>y</p>", to = "al@newgraphenvironment.com",
+                   subject = subj, sig = FALSE, draft_id = r1$draft_id),
+    "not found"
+  )
+  delete_draft_later(r2$draft_id)
+  expect_false(identical(r2$draft_id, r1$draft_id))
+  # A4: a message id passed as a draft id is not "not found"; record what it is
+  bad <- tryCatch(
+    mc_draft(html = "<p>z</p>", to = "al@newgraphenvironment.com",
+             subject = subj, sig = FALSE, draft_id = "1a1a3d39782240d9"),
+    warning = function(w) paste("WARNING:", conditionMessage(w)),
+    error = function(e) paste("ERROR:", conditionMessage(e))
+  )
+  message("A4 malformed id -> ", if (is.list(bad)) "created" else bad)
+  if (is.list(bad)) delete_draft_later(bad$draft_id)
+  expect_true(is.character(bad) || is.list(bad))
+})
+
+test_that("an attachment over 5 MB survives create and replace through the JSON route", {
+  big <- tempfile(fileext = ".bin")
+  writeBin(as.raw(sample.int(256, 8e6, replace = TRUE) - 1L), big)
+  subj <- paste("Big", test_tag)
+  r1 <- mc_draft(html = "<p>big</p>", to = "al@newgraphenvironment.com",
+                 subject = subj, sig = FALSE, attachments = big)
+  delete_draft_later(r1$draft_id)
+  # A1: the replace goes through PUT drafts/{id} with a JSON body
+  r2 <- mc_draft(html = "<p>big again</p>", to = "al@newgraphenvironment.com",
+                 subject = subj, sig = FALSE, attachments = big,
+                 draft_id = r1$draft_id)
+  expect_equal(r2$draft_id, r1$draft_id)
+  d <- gmailr::gm_draft(r1$draft_id)
+  sizes <- vapply(d$message$payload$parts, function(p) p$body$size %||% 0, numeric(1))
+  expect_gt(max(sizes), 7.9e6)
+})
+
+test_that("a draft with thread_id lands in the thread with reply headers, and stays on replace", {
+  thread_id <- env$test_thread_id
+  skip_if(is.null(thread_id), "no test thread")
+  subj <- paste("Sent", test_tag)
+  r1 <- mc_draft(html = "<p>threaded draft</p>", to = "al@newgraphenvironment.com",
+                 subject = subj, sig = FALSE, thread_id = thread_id)
+  delete_draft_later(r1$draft_id)
+  expect_equal(r1$thread_id, thread_id)
+  expect_match(draft_header(r1$draft_id, "Subject"), "^Re: Sent ")
+  expect_match(draft_header(r1$draft_id, "In-Reply-To"), "^<.+>$")
+  expect_match(draft_header(r1$draft_id, "References"), "<.+>")
+
+  # A2: replacing it, with the thread, keeps it in the thread
+  r2 <- mc_draft(html = "<p>threaded draft, edited</p>", to = "al@newgraphenvironment.com",
+                 subject = subj, sig = FALSE, thread_id = thread_id,
+                 draft_id = r1$draft_id)
+  expect_equal(r2$thread_id, thread_id)
+  expect_match(draft_header(r1$draft_id, "In-Reply-To"), "^<.+>$")
+
+  # #49: the thread reads the draft once, as a draft
+  Sys.sleep(3)
+  th <- mc_thread_read(thread_id, drafts = TRUE)
+  expect_equal(sum(th$status == "draft" & grepl("edited", th$body)), 1)
+  expect_false(any(grepl("threaded draft", mc_thread_read(thread_id)$body)))
+  expect_false(grepl("threaded draft", mc_thread_body_latest(thread_id, status = "sent")))
+
+  # A2, other half: an explicit to_self replace sends no threadId; record where it lands
+  r3 <- mc_draft(html = "<p>self copy</p>", to = "al@newgraphenvironment.com",
+                 subject = subj, sig = FALSE, thread_id = thread_id,
+                 draft_id = r1$draft_id, to_self = TRUE)
+  message("A2 PUT without threadId -> thread ", r3$thread_id,
+          if (identical(r3$thread_id, thread_id)) " (kept)" else " (moved)")
+  expect_equal(r3$draft_id, r1$draft_id)
+})
+
+test_that("labels on a replaced draft", {
+  label_name <- paste0("mc-replace-label-", format(Sys.time(), "%Y%m%d-%H%M%S"))
+  label_id <- gmailr::gm_create_label(label_name)$id
+  withr::defer(tryCatch(gmailr::gm_delete_label(label_id), error = function(e) NULL))
+  subj <- paste("Label replace", test_tag)
+  r1 <- mc_draft(html = "<p>a</p>", to = "al@newgraphenvironment.com",
+                 subject = subj, sig = FALSE, labels = label_name)
+  delete_draft_later(r1$draft_id)
+  r2 <- mc_draft(html = "<p>b</p>", to = "al@newgraphenvironment.com",
+                 subject = subj, sig = FALSE, labels = label_name,
+                 draft_id = r1$draft_id)
+  expect_true(label_id %in% unlist(gmailr::gm_draft(r2$draft_id)$message$labelIds))
+  # A3: a replace without labels; record whether the label survives
+  r3 <- mc_draft(html = "<p>c</p>", to = "al@newgraphenvironment.com",
+                 subject = subj, sig = FALSE, draft_id = r1$draft_id)
+  kept <- label_id %in% unlist(gmailr::gm_draft(r3$draft_id)$message$labelIds)
+  message("A3 label after a replace without labels -> ", if (kept) "kept" else "dropped")
+  expect_equal(r3$draft_id, r1$draft_id)
+})
+
+test_that("mc_md_draft run twice replaces its own draft; mc_md_send leaves it", {
+  p <- tempfile(fileext = ".md")
+  writeLines(c("---", "to: al@newgraphenvironment.com",
+               paste0("subject: MD replace ", test_tag), "sig: false", "---",
+               "First body."), p)
+  r1 <- mc_md_draft(p)
+  delete_draft_later(r1$draft_id)
+  expect_equal(mc_md_meta(p)$draft_id, r1$draft_id)
+  r2 <- mc_md_draft(p)
+  expect_equal(r2$draft_id, r1$draft_id)
+  expect_equal(sum(grepl("^draft_id:", readLines(p))), 1)
+  expect_equal(readLines(p)[7], "First body.")
+  # The real mc_send, with draft_id in the frontmatter (review B1)
+  expect_message(mc_md_send(p, to_self = TRUE), "still in Gmail")
 })

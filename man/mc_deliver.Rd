@@ -12,6 +12,7 @@ mc_deliver(
   bcc = NULL,
   from = default_from(),
   thread_id = NULL,
+  draft_id = NULL,
   .draft,
   to_self = FALSE,
   sig = TRUE,
@@ -40,7 +41,14 @@ mc_deliver(
 then the \code{MC_FROM} environment variable. Errors if neither is set.}
 
 \item{thread_id}{Gmail thread ID to reply into. Default \code{NULL} (new thread).
-Use \code{\link[=mc_thread_find]{mc_thread_find()}} to look up thread IDs.}
+Use \code{\link[=mc_thread_find]{mc_thread_find()}} to look up thread IDs. The message answers the
+thread's latest message: it carries \code{In-Reply-To} and \code{References}
+headers naming it, so recipients' mail clients thread it too, and the
+subject gains a \verb{Re: } prefix unless it already has one. The thread is
+read first; if it cannot be read, nothing is sent.}
+
+\item{draft_id}{\code{NULL}, or the id of a draft to replace in place. Drafts
+only.}
 
 \item{.draft}{Logical. \code{TRUE} creates a Gmail draft, \code{FALSE} sends.
 Supplied by the wrapper, never by the caller.}
@@ -96,7 +104,8 @@ warning that its send can be dropped. An explicit \code{"auto"} errors on a
 platform with no OS-native backend. Ignored when \code{send_at} is \code{NULL}.}
 }
 \value{
-Gmail thread ID, invisibly.
+For a send, the Gmail thread ID, invisibly. For a draft, a list with
+\code{draft_id}, \code{thread_id} and \code{message_id}, invisibly.
 }
 \description{
 Shared implementation behind \code{\link[=mc_draft]{mc_draft()}} and \code{\link[=mc_send]{mc_send()}}. Renders the body,
