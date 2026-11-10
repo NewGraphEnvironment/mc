@@ -1030,7 +1030,7 @@ A script that reads a file, transforms it, and writes it **back to the same path
 - Tools that scan an R Markdown document for prose — citation detection, cross-references, spell-check, word counts — skip code chunks.
 
 ### `fs::dir_ls(glob = )` matches the FULL path, so a bare filename pattern matches nothing
-- `fs::dir_ls(dir, glob = "form_*.gpkg")` returns **zero** for a directory full of `form_*.gpkg` files.
+Give `fs::dir_ls()` an anchored `regexp =`, never a `glob =`: a glob is matched against the whole path, and its `[...]` classes are escaped.
 
 ### `glue()` trims common leading whitespace
 - `glue::glue()` strips the common indentation of its input, so a template whose output must preserve exact indentation (XML, YAML, Makefiles, Python) comes out subtly wrong — valid-looking, wrongly indented.
@@ -1347,6 +1347,9 @@ Record the condition in the handler (`hit <<- TRUE`) and raise after `tryCatch()
 ### `fs::file_move()` onto an existing directory nests the source inside it
 Move a directory into place with `base::file.rename()` and check its return value, which is FALSE where the target is a non-empty directory, a symlink or a file.
 
+### `normalizePath()` renames through a symlink and returns a missing path as it was
+Make a path absolute with `file.path(normalizePath(dirname(x), mustWork = TRUE), basename(x))`, which keeps its name.
+
 ### Base `file.info()` has no inode column, so `file.info(x)$ino` is NULL and any comparison of it passes
 Read an inode with `fs::file_info(x)$inode`.
 
@@ -1373,6 +1376,12 @@ Paste a per-element suffix on instead (`paste0(sub("]$", "", x), suffix)`): a `r
 
 ### `officer::body_replace_all_text()` misses a phrase that spans Word runs
 Replace whole paragraphs, not phrases inside them: officer matches within one text run, and Word splits a paragraph into runs wherever formatting or editing history changes.
+
+### Fill an xlsx template through its sheet XML, not openxlsx's `saveWorkbook()`
+Write the input cells into the sheet XML with xml2 and re-zip, so only the parts you edit change.
+
+### Copy a live SQLite database with its `-wal`
+Keep the pair only if both files' mtime and size held across the copy.
 
 # Code Check — Shell
 Tool-level traps in bash, sed, git and `gh`, and in the host toolchain those commands depend on.
@@ -1440,7 +1449,7 @@ Here Homebrew puts GNU coreutils ahead of `/usr/bin`, so BSD-style `stat -f` and
 `gh api repos/ORG/REPO/compare/upstream:main...ORG:main` returning `ahead: 0, behind: 0, status: identical` reads as *"this fork has no local work"*.
 
 ### A destructive setup and its undo must not share one timeout-able command
-Never chain a destructive setup and its undo (`git stash && slow && git stash pop`) in one timeout-able command; compare with `git show HEAD:path`, or restore from one `trap … EXIT` handler guarded by a flag set once the setup happened.
+Never chain a destructive setup and its undo (`git stash && slow && git stash pop`) in one timeout-able command.
 
 ### `git checkout <path>` restores from the index, not from HEAD
 After a `git add`, `git checkout <path>` reinstates the broken *staged* copy — so the "fix" reproduces the failure and reads as though the edit was wrong.
@@ -1467,7 +1476,7 @@ An assertion around something that might hang can only pass or hang, never fail 
 `aws s3 cp` gives one exit 1 and 404 text for a missing key and a missing bucket, so probe `s3api head-bucket` then `head-object`: only a 404 from a reachable bucket means absent; a 403 is permissions.
 
 ### An S3 multipart ETag depends on the uploader's part size, so try every size that gives its part count
-Verify an upload by comparing each object's ETag with its file, trying for a multipart ETag every part size that gives its part count: the size is the uploader's `multipart_chunksize`, which differs between machines.
+Verify an upload by comparing each object's ETag with its file, trying for a multipart ETag every part size that gives its part count.
 
 ### A verification command can be shadowed by a shell function or alias
 - The shell is initialized from the user's profile, so `diff`, `grep`, `ls`, `cat` and friends may resolve to a wrapper rather than the binary you assume.
@@ -1509,7 +1518,7 @@ Pass `-e QT_QPA_PLATFORM=offscreen` to any `docker run` that starts QGIS or anot
 Query one path per `s3cmd ls` call, or `--recursive` on the prefix and `grep`: given several paths it lists only the first, with exit 0.
 
 ### `grep -c` prints the count AND exits 1 when it is zero
-Write `n=$(grep -c …) || n=0`, never `|| echo 0` inside the substitution: `grep -c` already prints `0` and exits 1, so that fallback appends a second line, while the bare assignment aborts a `set -e` script.
+Write `n=$(grep -c …) || n=0`, never `|| echo 0` inside the substitution.
 
 ### A failed `git fetch` leaves the comparison you make next reading stale refs
 `git fetch` and the check that follows it are two commands, and nothing links them.
@@ -1539,10 +1548,10 @@ Supply a default ssh command only when `GIT_SSH_COMMAND`, `core.sshCommand` and 
 Count instead: `while :; do left=0; for i in $ids; do done_yet "$i" || left=$((left+1)); done; [ "$left" -eq 0 ] && break; sleep 90; done`.
 
 ### A failed `cd` lets every later command run in the directory you were already in
-Write `cd "$D" || exit 1` (or `cd "$D" && …`), never `cd "$D"; …`: without the guard, a missing directory prints one error and the rest of the line runs wherever the shell stood, including its file writes.
+Write `cd "$D" || exit 1` (or `cd "$D" && …`), never `cd "$D"; …`.
 
 ### macOS `/bin/bash` 3.2 quote-matches a heredoc inside `$( )`, so an apostrophe in the body is a syntax error
-Pass multi-line text through a file (`--body-file`, `-F`), never `"$(cat <<'EOF' … EOF)"`.
+Pass multi-line text through a file (`--body-file`, `-F`), never a heredoc inside `$( )`, and open each `case` pattern inside `$( )` with `(`.
 
 ### A skill's bash blocks run as separate calls, and its `$` + digits are replaced by its arguments
 Open every block after the first with guards on what it inherits: re-set its variables, confirm the path is the expected tree, and refuse edits or commits the previous block did not check.
@@ -1554,10 +1563,10 @@ Keep apostrophes out of the message of a `"${VAR:?…}"` guard.
 After a rejected push, read the remote ref before concluding anything: `git fetch -q origin && git merge-base --is-ancestor HEAD origin/<branch>`.
 
 ### Over Tailscale SSH to a Mac, `ssh` exits 0 whatever the remote command returned
-Never branch on the exit status of `ssh <mac-host> cmd` when the host serves Tailscale SSH: test what the command prints (`ssh host 'test -e f && echo YES'` compared to `YES`), or move the loop to the remote side and gate on its output.
+Never branch on the exit status of `ssh <mac-host> cmd` when the host serves Tailscale SSH: test what the command prints, or move the loop to the remote side and gate on its output.
 
 ### awk `==` compares version strings as numbers, so `1.1` matches `1.10`
-Compare a field to a version as strings, `($i "") == (v "")`: awk gives `split()` fields, `$i` and `-v` values string-or-number status, so when both sides look numeric `==` compares numbers, and `1.1 == 1.10` and `2.0 == 2` are true.
+Compare a field to a version as strings, `($i "") == (v "")`.
 
 ### `gh api` prints an HTTP error's body on stdout and exits 1, ignoring `--jq`
 Branch on `gh api`'s exit status before reading its output.
@@ -1581,13 +1590,13 @@ Assign the command on its own line under `set -e` (`out=$(cmd)`), then filter `o
 Never pipe a `sed`/`awk` range extract into an interpreter.
 
 ### A Python CLI redirected to a log writes nothing until it exits, so the log cannot show progress
-Run a long Python command with `PYTHONUNBUFFERED=1` (or `python -u`) when its output goes to a file: stdout to a file is block-buffered, so the log stays at 0 bytes for the whole run and an empty log reads as a stalled job.
+Run a long Python command with `PYTHONUNBUFFERED=1` (or `python -u`) when its output goes to a file.
 
 ### `aws s3` progress lines end in `\r`, so a line-based count of a saved log reads zero
 Translate before counting: `tr '\r' '\n' < log | grep -c '^upload:'`.
 
 ### `a && b || c` runs `c` when any step before the `||` fails
-Give each setup step its own `|| exit 1` and branch with `if`: in `a && b || c`, `c` runs when `a` fails as well as when `b` does, so a failed setup reaches the fallback with its variable unset.
+Give each setup step its own `|| exit 1` and branch with `if`.
 
 # Code Check — Spatial
 terra, sf, bcdata, GDAL/OGR CLIs.
@@ -1670,7 +1679,7 @@ A spatial layer that also carries `LATITUDE` / `LONGITUDE` columns has the same 
 `sf::st_write()` and `ogr2ogr` will write GeoJSON from a projected object and emit a `crs` member naming it:
 
 ### `sf::st_perimeter()` needs lwgeom on projected data, and lwgeom is not a dependency of sf
-An exported sf function whose body branches on `requireNamespace("lwgeom")` is an undeclared dependency: `R CMD check` does not report it, and a test suite cannot see it on a machine that happens to have lwgeom installed.
+An exported sf function whose body branches on `requireNamespace("lwgeom")` is an undeclared dependency.
 
 ### terra keeps a result in memory whenever it fits, so a per-class loop over a large grid accumulates full-grid rasters
 `ifel()`, `focal()`, arithmetic and `rasterize()` return in-memory SpatRasters whenever the result fits under `memfrac` (60% of RAM by default).
@@ -1682,7 +1691,7 @@ A `NULL` `data` argument does not error and does not warn — the layer inherits
 Two contracts inside `terra::app()` that read as the opposite of what they are, both measured on terra 1.9.34 (drift#9, 2026-09-05):
 
 ### terra: `levels<-` and `coltab<-` copy first; `set.cats()` mutates in place, setting or stripping
-`terra::set.cats()` mutates the raster it is given whether it strips (`value = NULL`) or sets levels; `levels<-` and `coltab<-` deep-copy first, so on a caller's raster call `set.cats()` only on the copy one of them returned, or on a `deepcopy()` you own.
+`terra::set.cats()` mutates the raster it is given whether it strips (`value = NULL`) or sets levels.
 
 ### terra `metags()`: the empty case is `NULL`, and the sidecar is half the artefact
 Three measured facts about raster **container** metadata, all of which fail quietly (floodplains#83, 2026-09-05, terra 1.9.34 / GDAL 3.8.5).
@@ -1730,7 +1739,7 @@ GDAL's curl handles do not survive a fork.
 Two independent reasons a parallel raster job uses far more memory than its data, both measured 2026-09-20 on a 64 GB machine (fly#58) while a sweep was killed four times.
 
 ### `terra::distance(x, target = NA)` measures FROM the NA cells, so every data cell reads 0
-Reaching for it to answer "how far is each data cell from the nearest nodata" gives the opposite: `distance()` fills the **target** cells with their distance to the nearest non-target, so data cells come back `0` and any `dist < threshold` test is true everywhere.
+Reaching for it to answer "how far is each data cell from the nearest nodata" gives the opposite.
 
 ### `summarise()` on a grouped `sf` returns an `sf`, and the geometry rides into your CSV
 `dplyr::summarise()` dispatches to `summarise.sf` on an `sf` object.
@@ -1808,7 +1817,7 @@ Hold any raw WFS read to the server's own count.
 To tell a throttle from any other bcdata failure, record the status off the request itself (wrap `crul:::crul_fetch`), not from the message.
 
 ### sf and terra can link different GDALs, so a probe through one says nothing about the other
-Check `sf::sf_extSoftVersion()[["GDAL"]]` and `terra::gdal()` before concluding that "GDAL" cannot read something: one R session can hold two GDALs, and a driver or codec missing from one may be present in the other.
+Check `sf::sf_extSoftVersion()[["GDAL"]]` and `terra::gdal()` before concluding that "GDAL" cannot read something.
 
 ### `arrow::write_parquet()` of a geoarrow table is not GeoParquet
 Write GeoParquet with GDAL's Parquet driver (`ogr2ogr -f Parquet`), and check the file's schema metadata carries a `geo` key.
@@ -2001,6 +2010,9 @@ Before reporting that a spreadsheet value is off by a factor, check the cell's *
 
 ### Extracted PDF text carries corrupted glyphs, and a tolerant parser turns them into wrong numbers
 Never strip non-digits to clean a number extracted from PDF text.
+
+### Merge PDFs with `qpdf`, and check the merged file
+Merge with `qpdf --empty --pages a.pdf b.pdf -- out.pdf`, not `pdfunite`, and run `qpdf --check` on the result.
 
 
 # NGE Feature Workflow
