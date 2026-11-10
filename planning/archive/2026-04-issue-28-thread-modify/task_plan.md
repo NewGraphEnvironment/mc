@@ -37,4 +37,4 @@
 - [x] `devtools::check()` — pre-existing WARNING/ERROR unrelated to this work
 - [ ] Commit on `mc_thread_modify` branch
 - [ ] File upstream gmailr bug issue
-- [ ] Push and open PR (`Fixes #28`, `Relates to sred-2025-2026#1`)
+- [ ] Push and open PR (`Fixes #28`, `Relates to an internal issue`)
