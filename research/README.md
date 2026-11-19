@@ -6,5 +6,6 @@ is in the `planning/archive/` directory each file names.
 | File | Covers |
 |------|--------|
 | [gmail-inline-images.md](gmail-inline-images.md) | Whether Gmail shows inline (`cid:`) images from gmailr's `multipart/mixed` in the body or as attachments |
+| [gmail-scheduled-send.md](gmail-scheduled-send.md) | Whether the Gmail API can schedule a send, and what it can do with a message scheduled in the Gmail app |
 
 Naming: `<topic>.md`, revised in place, from 2026-11-05.
